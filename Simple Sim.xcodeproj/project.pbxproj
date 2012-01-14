@@ -7,28 +7,87 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		5B01B0BF14BE71720032A301 /* PlotController.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B01B0BE14BE71710032A301 /* PlotController.m */; };
+		5B01B0C214BFC4FE0032A301 /* PlotItem.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B01B0C114BFC4FD0032A301 /* PlotItem.m */; };
+		5B01B0C614BFFF580032A301 /* PlotView.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B01B0C514BFFF570032A301 /* PlotView.m */; };
+		5B01B0C914C026C10032A301 /* SimpleScatterPlot.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B01B0C814C026C00032A301 /* SimpleScatterPlot.m */; };
+		5B01B0CD14C029270032A301 /* PlotGallery.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B01B0CC14C029260032A301 /* PlotGallery.m */; };
+		5B7723B214A2F901007B6978 /* DataIO.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B7723B114A2F901007B6978 /* DataIO.m */; };
+		5B88332314BAC44000352C83 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5B88332214BAC44000352C83 /* QuartzCore.framework */; };
 		5B8C03DD149ECEC60071189F /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5B8C03DC149ECEC60071189F /* Cocoa.framework */; };
 		5B8C03E7149ECEC70071189F /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 5B8C03E5149ECEC70071189F /* InfoPlist.strings */; };
 		5B8C03E9149ECEC70071189F /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B8C03E8149ECEC70071189F /* main.m */; };
 		5B8C03ED149ECEC70071189F /* Credits.rtf in Resources */ = {isa = PBXBuildFile; fileRef = 5B8C03EB149ECEC70071189F /* Credits.rtf */; };
 		5B8C03F0149ECEC70071189F /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B8C03EF149ECEC70071189F /* AppDelegate.m */; };
 		5B8C03F3149ECEC70071189F /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 5B8C03F1149ECEC70071189F /* MainMenu.xib */; };
+		5B8C03FE149ED0870071189F /* AppController.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B8C03FD149ED0870071189F /* AppController.m */; };
+		5B9049ED14B2D8FD008A20AA /* FMDatabase.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B9049E814B2D8FD008A20AA /* FMDatabase.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
+		5B9049EE14B2D8FD008A20AA /* FMDatabaseAdditions.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B9049EA14B2D8FD008A20AA /* FMDatabaseAdditions.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
+		5B9049EF14B2D8FD008A20AA /* FMResultSet.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B9049EC14B2D8FD008A20AA /* FMResultSet.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
+		5B9049F314B2DA3D008A20AA /* libsqlite3.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 5B9049F214B2DA3D008A20AA /* libsqlite3.dylib */; };
+		5B9049FA14B43122008A20AA /* IdNamePair.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B9049F914B43121008A20AA /* IdNamePair.m */; };
+		5B9049FD14B6CD9A008A20AA /* EpochTime.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B9049FC14B6CD9A008A20AA /* EpochTime.m */; };
+		5B904A0414B7368E008A20AA /* DataSeries.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B904A0314B7368E008A20AA /* DataSeries.m */; };
+		5B904C0614BC0F16008A20AA /* CorePlot.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5B904C0514BC0F16008A20AA /* CorePlot.framework */; };
+		5B904C0814BC104B008A20AA /* CorePlot.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 5B904C0714BC104B008A20AA /* CorePlot.framework */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		5B88333314BAD6C700352C83 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				5B904C0814BC104B008A20AA /* CorePlot.framework in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		5B01B0BD14BE71710032A301 /* PlotController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PlotController.h; sourceTree = "<group>"; };
+		5B01B0BE14BE71710032A301 /* PlotController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PlotController.m; sourceTree = "<group>"; };
+		5B01B0C014BFC4FC0032A301 /* PlotItem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PlotItem.h; sourceTree = "<group>"; };
+		5B01B0C114BFC4FD0032A301 /* PlotItem.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PlotItem.m; sourceTree = "<group>"; };
+		5B01B0C414BFFF560032A301 /* PlotView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PlotView.h; sourceTree = "<group>"; };
+		5B01B0C514BFFF570032A301 /* PlotView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PlotView.m; sourceTree = "<group>"; };
+		5B01B0C714C026C00032A301 /* SimpleScatterPlot.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SimpleScatterPlot.h; path = "Simple Sim/SimpleScatterPlot.h"; sourceTree = "<group>"; };
+		5B01B0C814C026C00032A301 /* SimpleScatterPlot.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = SimpleScatterPlot.m; path = "Simple Sim/SimpleScatterPlot.m"; sourceTree = "<group>"; };
+		5B01B0CB14C029250032A301 /* PlotGallery.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PlotGallery.h; sourceTree = "<group>"; };
+		5B01B0CC14C029260032A301 /* PlotGallery.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PlotGallery.m; sourceTree = "<group>"; };
+		5B7723B014A2F901007B6978 /* DataIO.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DataIO.h; sourceTree = "<group>"; };
+		5B7723B114A2F901007B6978 /* DataIO.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DataIO.m; sourceTree = "<group>"; };
+		5B88332214BAC44000352C83 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
 		5B8C03D8149ECEC60071189F /* Simple Sim.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Simple Sim.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		5B8C03DC149ECEC60071189F /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		5B8C03DF149ECEC70071189F /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
-		5B8C03E0149ECEC70071189F /* CoreData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreData.framework; path = System/Library/Frameworks/CoreData.framework; sourceTree = SDKROOT; };
 		5B8C03E1149ECEC70071189F /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
-		5B8C03E4149ECEC70071189F /* Simple Sim-Info.plist */ = {isa = PBXFileReference; path = "Simple Sim-Info.plist"; sourceTree = "<group>"; };
+		5B8C03E4149ECEC70071189F /* Simple Sim-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Simple Sim-Info.plist"; sourceTree = "<group>"; };
 		5B8C03E6149ECEC70071189F /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		5B8C03E8149ECEC70071189F /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
-		5B8C03EA149ECEC70071189F /* Simple Sim-Prefix.pch */ = {isa = PBXFileReference; path = "Simple Sim-Prefix.pch"; sourceTree = "<group>"; };
+		5B8C03EA149ECEC70071189F /* Simple Sim-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Simple Sim-Prefix.pch"; sourceTree = "<group>"; };
 		5B8C03EC149ECEC70071189F /* en */ = {isa = PBXFileReference; lastKnownFileType = text.rtf; name = en; path = en.lproj/Credits.rtf; sourceTree = "<group>"; };
-		5B8C03EE149ECEC70071189F /* AppDelegate.h */ = {isa = PBXFileReference; path = AppDelegate.h; sourceTree = "<group>"; };
+		5B8C03EE149ECEC70071189F /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		5B8C03EF149ECEC70071189F /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
 		5B8C03F2149ECEC70071189F /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = en.lproj/MainMenu.xib; sourceTree = "<group>"; };
+		5B8C03FC149ED0870071189F /* AppController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AppController.h; sourceTree = "<group>"; };
+		5B8C03FD149ED0870071189F /* AppController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AppController.m; sourceTree = "<group>"; };
+		5B9049E714B2D8FC008A20AA /* FMDatabase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FMDatabase.h; sourceTree = "<group>"; };
+		5B9049E814B2D8FD008A20AA /* FMDatabase.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FMDatabase.m; sourceTree = "<group>"; };
+		5B9049E914B2D8FD008A20AA /* FMDatabaseAdditions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FMDatabaseAdditions.h; sourceTree = "<group>"; };
+		5B9049EA14B2D8FD008A20AA /* FMDatabaseAdditions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FMDatabaseAdditions.m; sourceTree = "<group>"; };
+		5B9049EB14B2D8FD008A20AA /* FMResultSet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FMResultSet.h; sourceTree = "<group>"; };
+		5B9049EC14B2D8FD008A20AA /* FMResultSet.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FMResultSet.m; sourceTree = "<group>"; };
+		5B9049F214B2DA3D008A20AA /* libsqlite3.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libsqlite3.dylib; path = usr/lib/libsqlite3.dylib; sourceTree = SDKROOT; };
+		5B9049F814B43121008A20AA /* IdNamePair.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IdNamePair.h; sourceTree = "<group>"; };
+		5B9049F914B43121008A20AA /* IdNamePair.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = IdNamePair.m; sourceTree = "<group>"; };
+		5B9049FB14B6CD99008A20AA /* EpochTime.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = EpochTime.h; sourceTree = "<group>"; };
+		5B9049FC14B6CD9A008A20AA /* EpochTime.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = EpochTime.m; sourceTree = "<group>"; };
+		5B904A0214B7368D008A20AA /* DataSeries.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DataSeries.h; sourceTree = "<group>"; };
+		5B904A0314B7368E008A20AA /* DataSeries.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DataSeries.m; sourceTree = "<group>"; };
+		5B904C0514BC0F16008A20AA /* CorePlot.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CorePlot.framework; path = "../../../../../core-plot/build/Debug/CorePlot.framework"; sourceTree = "<group>"; };
+		5B904C0714BC104B008A20AA /* CorePlot.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CorePlot.framework; path = "../../../../../core-plot/build/Debug/CorePlot.framework"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -36,6 +95,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5B904C0614BC0F16008A20AA /* CorePlot.framework in Frameworks */,
+				5B88332314BAC44000352C83 /* QuartzCore.framework in Frameworks */,
+				5B9049F314B2DA3D008A20AA /* libsqlite3.dylib in Frameworks */,
 				5B8C03DD149ECEC60071189F /* Cocoa.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -43,9 +105,22 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		5B01B0CA14C0273C0032A301 /* Plots */ = {
+			isa = PBXGroup;
+			children = (
+				5B01B0C714C026C00032A301 /* SimpleScatterPlot.h */,
+				5B01B0C814C026C00032A301 /* SimpleScatterPlot.m */,
+			);
+			name = Plots;
+			path = ..;
+			sourceTree = "<group>";
+		};
 		5B8C03CD149ECEC60071189F = {
 			isa = PBXGroup;
 			children = (
+				5B904C0714BC104B008A20AA /* CorePlot.framework */,
+				5B904C0514BC0F16008A20AA /* CorePlot.framework */,
+				5B9049F214B2DA3D008A20AA /* libsqlite3.dylib */,
 				5B8C03E2149ECEC70071189F /* Simple Sim */,
 				5B8C03DB149ECEC60071189F /* Frameworks */,
 				5B8C03D9149ECEC60071189F /* Products */,
@@ -63,6 +138,7 @@
 		5B8C03DB149ECEC60071189F /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				5B88332214BAC44000352C83 /* QuartzCore.framework */,
 				5B8C03DC149ECEC60071189F /* Cocoa.framework */,
 				5B8C03DE149ECEC70071189F /* Other Frameworks */,
 			);
@@ -73,7 +149,6 @@
 			isa = PBXGroup;
 			children = (
 				5B8C03DF149ECEC70071189F /* AppKit.framework */,
-				5B8C03E0149ECEC70071189F /* CoreData.framework */,
 				5B8C03E1149ECEC70071189F /* Foundation.framework */,
 			);
 			name = "Other Frameworks";
@@ -84,7 +159,27 @@
 			children = (
 				5B8C03EE149ECEC70071189F /* AppDelegate.h */,
 				5B8C03EF149ECEC70071189F /* AppDelegate.m */,
+				5B8C03FC149ED0870071189F /* AppController.h */,
+				5B8C03FD149ED0870071189F /* AppController.m */,
+				5B01B0BD14BE71710032A301 /* PlotController.h */,
+				5B01B0BE14BE71710032A301 /* PlotController.m */,
+				5B01B0C414BFFF560032A301 /* PlotView.h */,
+				5B01B0C514BFFF570032A301 /* PlotView.m */,
+				5B7723B014A2F901007B6978 /* DataIO.h */,
+				5B01B0C114BFC4FD0032A301 /* PlotItem.m */,
+				5B01B0C014BFC4FC0032A301 /* PlotItem.h */,
+				5B01B0CB14C029250032A301 /* PlotGallery.h */,
+				5B01B0CC14C029260032A301 /* PlotGallery.m */,
+				5B7723B114A2F901007B6978 /* DataIO.m */,
+				5B9049F814B43121008A20AA /* IdNamePair.h */,
+				5B9049F914B43121008A20AA /* IdNamePair.m */,
+				5B9049FB14B6CD99008A20AA /* EpochTime.h */,
+				5B9049FC14B6CD9A008A20AA /* EpochTime.m */,
+				5B904A0214B7368D008A20AA /* DataSeries.h */,
+				5B904A0314B7368E008A20AA /* DataSeries.m */,
 				5B8C03F1149ECEC70071189F /* MainMenu.xib */,
+				5B01B0CA14C0273C0032A301 /* Plots */,
+				5B9049F114B2D909008A20AA /* FMDB */,
 				5B8C03E3149ECEC70071189F /* Supporting Files */,
 			);
 			path = "Simple Sim";
@@ -102,6 +197,19 @@
 			name = "Supporting Files";
 			sourceTree = "<group>";
 		};
+		5B9049F114B2D909008A20AA /* FMDB */ = {
+			isa = PBXGroup;
+			children = (
+				5B9049E714B2D8FC008A20AA /* FMDatabase.h */,
+				5B9049E814B2D8FD008A20AA /* FMDatabase.m */,
+				5B9049E914B2D8FD008A20AA /* FMDatabaseAdditions.h */,
+				5B9049EA14B2D8FD008A20AA /* FMDatabaseAdditions.m */,
+				5B9049EB14B2D8FD008A20AA /* FMResultSet.h */,
+				5B9049EC14B2D8FD008A20AA /* FMResultSet.m */,
+			);
+			name = FMDB;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -112,6 +220,7 @@
 				5B8C03D4149ECEC60071189F /* Sources */,
 				5B8C03D5149ECEC60071189F /* Frameworks */,
 				5B8C03D6149ECEC60071189F /* Resources */,
+				5B88333314BAD6C700352C83 /* CopyFiles */,
 			);
 			buildRules = (
 			);
@@ -136,6 +245,7 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
+				English,
 			);
 			mainGroup = 5B8C03CD149ECEC60071189F;
 			productRefGroup = 5B8C03D9149ECEC60071189F /* Products */;
@@ -167,6 +277,19 @@
 			files = (
 				5B8C03E9149ECEC70071189F /* main.m in Sources */,
 				5B8C03F0149ECEC70071189F /* AppDelegate.m in Sources */,
+				5B8C03FE149ED0870071189F /* AppController.m in Sources */,
+				5B7723B214A2F901007B6978 /* DataIO.m in Sources */,
+				5B9049ED14B2D8FD008A20AA /* FMDatabase.m in Sources */,
+				5B9049EE14B2D8FD008A20AA /* FMDatabaseAdditions.m in Sources */,
+				5B9049EF14B2D8FD008A20AA /* FMResultSet.m in Sources */,
+				5B9049FA14B43122008A20AA /* IdNamePair.m in Sources */,
+				5B9049FD14B6CD9A008A20AA /* EpochTime.m in Sources */,
+				5B904A0414B7368E008A20AA /* DataSeries.m in Sources */,
+				5B01B0BF14BE71720032A301 /* PlotController.m in Sources */,
+				5B01B0C214BFC4FE0032A301 /* PlotItem.m in Sources */,
+				5B01B0C614BFFF580032A301 /* PlotView.m in Sources */,
+				5B01B0C914C026C10032A301 /* SimpleScatterPlot.m in Sources */,
+				5B01B0CD14C029270032A301 /* PlotGallery.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -250,6 +373,10 @@
 		5B8C03F7149ECEC70071189F /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SRCROOT)/../../../../../core-plot/build/Debug\"",
+				);
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "Simple Sim/Simple Sim-Prefix.pch";
 				INFOPLIST_FILE = "Simple Sim/Simple Sim-Info.plist";
@@ -261,6 +388,10 @@
 		5B8C03F8149ECEC70071189F /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SRCROOT)/../../../../../core-plot/build/Debug\"",
+				);
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "Simple Sim/Simple Sim-Prefix.pch";
 				INFOPLIST_FILE = "Simple Sim/Simple Sim-Info.plist";
@@ -288,6 +419,7 @@
 				5B8C03F8149ECEC70071189F /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
