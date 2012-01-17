@@ -179,12 +179,14 @@ FMDatabase *db;
     NSUInteger resultCount;
     NSUInteger rowCount;
     DataSeries *returnedData;
-        
+    double pipSize;
+    
     @try{
         if([self connected] == YES)
         {
             seriesName = [db stringForQuery:[NSString stringWithFormat:@"SELECT SeriesName FROM SeriesName WHERE SeriesId = %d", dbid]];
                //NSLog([NSString stringWithFormat:@"SELECT COUNT(*) FROM DataSeries WHERE SeriesId = %d AND TimeDate >= %ld AND TimeDate <= %ld",dbid,startTime,endTime]);
+            pipSize = [db doubleForQuery:[NSString stringWithFormat:@"SELECT PipSize FROM SeriesName WHERE SeriesId = %d", dbid]];
             resultCount = [db intForQuery:[NSString stringWithFormat:@"SELECT COUNT(*) FROM DataSeries WHERE SeriesId = %d AND DataTypeId = %d AND TimeDate >= %ld AND TimeDate <= %ld",dbid,dataTypeId,startTime,endTime]];
         }else{
                 success = NO;
@@ -195,15 +197,16 @@ FMDatabase *db;
     NSLog(@"main: Caught %@: %@", [exception name], [exception reason]);
     success = NO;
     }
-
+    //resultCount = 200; This was here for testing
     if(success){
         returnedData = [[DataSeries alloc] initWithName:seriesName AndDbTag:dbid];
+        [returnedData setPipSize:pipSize];
         long minDate, maxDate;
         double minValue, maxValue;
-        NSMutableData * newXData = [NSMutableData dataWithLength:resultCount * sizeof(long)]; 
+        NSMutableData * newXData = [NSMutableData dataWithLength:resultCount * sizeof(double)]; 
         NSMutableData * newYData = [NSMutableData dataWithLength:resultCount * sizeof(double)]; 
-        double *newXlongs = [newXData mutableBytes]; 
-        long *newYDoubles = [newYData mutableBytes]; 
+        long *newXDoubles = [newXData mutableBytes]; 
+        double *newYDoubles = [newYData mutableBytes]; 
         @try{
             if([self connected] == YES)
             {
@@ -211,10 +214,10 @@ FMDatabase *db;
                 rowCount = 0;
                 while ([rs next ] && (rowCount < resultCount)) 
                 {
-                    newXlongs[rowCount] = [rs longForColumnIndex:0];
+                    newXDoubles[rowCount] = (double)[rs longForColumnIndex:0];
                     newYDoubles[rowCount] = [rs doubleForColumnIndex:1];
                     if(rowCount == 0){
-                        minDate = newXlongs[rowCount];
+                        minDate = newXDoubles[rowCount];
                         minValue = newYDoubles[rowCount];
                         maxValue = newYDoubles[rowCount];
                     }else{
@@ -226,9 +229,9 @@ FMDatabase *db;
                 if(rowCount != resultCount){
                     NSLog(@"****The result count didn't seem to be added in full, check!!!!!!");
                 }
-                maxDate = newXlongs[rowCount - 1];                       
+                maxDate = newXDoubles[rowCount - 1];                       
                 CPTNumericData * xData = [CPTNumericData numericDataWithData:newXData 
-                                           dataType:CPTDataType(CPTFloatingPointDataType, 
+                                           dataType:CPTDataType(CPTIntegerDataType, 
                                                                 sizeof(long), 
                                                                 CFByteOrderGetCurrent()) 
                                               shape:nil]; 

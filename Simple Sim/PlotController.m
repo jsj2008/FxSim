@@ -24,10 +24,6 @@ const float CPT_SPLIT_VIEW_MIN_LHS_WIDTH = 150.0f;
 #define kThemeTableViewControllerNoTheme	  @"None"
 #define kThemeTableViewControllerDefaultTheme @"Default"
 
-@interface PlotController()
--(void)plotFirstPlotInGallery;
-@end 
-
 
 @implementation PlotController
 @synthesize pairPicker;
@@ -39,7 +35,7 @@ const float CPT_SPLIT_VIEW_MIN_LHS_WIDTH = 150.0f;
 @synthesize minAvailableDate;
 @synthesize maxAvailableDate;
 @dynamic plotItem;
-@synthesize currentThemeName;
+//@synthesize currentThemeName;
 
 NSArray *pairListWithId;
 NSArray *dataTypeListWithId;
@@ -47,16 +43,8 @@ long *pairListMinDates;
 long *pairListMaxDates;
 
 
--(void)plotFirstPlotInGallery
-{
-    PlotItem *item = [[PlotGallery sharedPlotGallery] objectAtIndex:0];
-    [self setPlotItem:item];  
-}
-
-
-
--(void)setupThemes
-{
+//-(void)setupThemes
+//{
 //	[themePopUpButton addItemWithTitle:kThemeTableViewControllerDefaultTheme];
 //	[themePopUpButton addItemWithTitle:kThemeTableViewControllerNoTheme];
 //    
@@ -64,9 +52,9 @@ long *pairListMaxDates;
 //		[themePopUpButton addItemWithTitle:[c name]];
 //	}
 //    
-	self.currentThemeName = kThemeTableViewControllerDefaultTheme;
+//	self.currentThemeName = kThemeTableViewControllerDefaultTheme;
 //	[themePopUpButton selectItemWithTitle:kThemeTableViewControllerDefaultTheme];
-}
+//}
 
 -(void)awakeFromNib
 {
@@ -134,7 +122,12 @@ long *pairListMaxDates;
      
 	[hostingView setDelegate:self];
     
-	[self setupThemes];
+    //theme = kCPTPlainBlackTheme;
+	//[self setupThemes];
+    
+    //PlotItem *item = [[PlotGallery sharedPlotGallery] objectAtIndex:1];
+    //[self setPlotItem:item];
+
     
 }
 
@@ -164,7 +157,6 @@ long *pairListMaxDates;
     long dateEndTime;
     DataSeries *dataToPlot;
     DataIO *getData = [[DataIO alloc] init];
-    
   
     dateStartTime = [datePicked timeIntervalSince1970];
     dateEndTime = [EpochTime epochTimeNextDayAtZeroHour:dateStartTime];
@@ -173,26 +165,13 @@ long *pairListMaxDates;
     NSLog(@"PLotting data for %d %@ on %@ from %lu to %lu",selectedItem, selectedItemName,[dateFormatter stringFromDate:datePicked],dateStartTime,dateEndTime);
     dataToPlot = [getData getDataSeriesForId:selectedItem  AndType:1 AndStartTime:dateStartTime AndEndTime:dateEndTime];
     NSLog(@"Plotting %lu values of %@",[dataToPlot count],[dataToPlot name]);
-//    dataToPlot = [getData getDataSeriesForId:selectedItem  AndType:1 AndStartTime:dateStartTime AndEndTime:dateEndTime AndGranularity:60];
-//    NSLog(@"Plotting %d values of %@",[dataToPlot length],[dataToPlot name]); 
     
-    
-    // Add some data
-    
-//    NSMutableArray *newData = [NSMutableArray array];
-//    NSUInteger i;
-//    for ( i = 0; i < 7; i++ ) {
-//        NSTimeInterval x = 60 * 60 * 24 * i * 0.5f;
-//        id y			 = [NSDecimalNumber numberWithFloat:1.2 * rand() / (float)RAND_MAX + 1.2];
-//        [newData addObject:
-//         [NSDictionary dictionaryWithObjectsAndKeys:
-//          [NSDecimalNumber numberWithFloat:x], [NSNumber numberWithInt:CPTScatterPlotFieldX], y, [NSNumber numberWithInt:CPTScatterPlotFieldY], nil]];
-//     }
-    //PlotController *appDelegate = (AppDelegate *)[NSApp delegate];
-    //[PlotController setPlotData:newData]; 
-    //[[PlotController graph] reloadData];
-    
-    [self plotFirstPlotInGallery];
+    PlotItem *item = [[PlotGallery sharedPlotGallery] objectAtIndex:0];
+    [item setData:dataToPlot];
+    [self setPlotItem:item];
+//    PlotItem *item = [[PlotGallery sharedPlotGallery] objectAtIndex:1];
+//    [self setPlotItem:item];
+
     NSLog(@"Set the plot data");
 }
 
@@ -254,54 +233,48 @@ long *pairListMaxDates;
     NSLog(@"Date is now %@",datePicked);
 }
 
+//#pragma mark -
+//#pragma mark Theme Selection
 
-
-
-
-
-
-#pragma mark -
-#pragma mark Theme Selection
-
--(CPTTheme *)currentTheme
-{
-	CPTTheme *theme;
-    
-	if ( currentThemeName == kThemeTableViewControllerNoTheme ) {
-		theme = (id)[NSNull null];
-	}
-	else if ( currentThemeName == kThemeTableViewControllerDefaultTheme ) {
-		theme = nil;
-	}
-	else {
-		theme = [CPTTheme themeNamed:currentThemeName];
-	}
-    theme = (id)[NSNull null];
-	return theme;
-}
-
--(IBAction)themeSelectionDidChange:(id)sender
-{
-	self.currentThemeName = [sender titleOfSelectedItem];
-	[plotItem renderInView:hostingView withTheme:[self currentTheme]];
-}
+//-(CPTTheme *)currentTheme
+//{
+//	CPTTheme *theme;
+//    
+//	if ( currentThemeName == kThemeTableViewControllerNoTheme ) {
+//		theme = (id)[NSNull null];
+//	}
+//	else if ( currentThemeName == kThemeTableViewControllerDefaultTheme ) {
+//		theme = nil;
+//	}
+//	else {
+//		theme = [CPTTheme themeNamed:currentThemeName];
+//	}
+//    //theme = (id)[NSNull null];
+//	return theme;
+//}
+//
+//-(IBAction)themeSelectionDidChange:(id)sender
+//{
+//	self.currentThemeName = [sender titleOfSelectedItem];
+//	[plotItem renderInView:hostingView withTheme:[self currentTheme]];
+//}
 
 #pragma mark -
 #pragma mark PlotItem Property
 
 -(PlotItem *)plotItem
 {
-	return [self plotItem];
+	return plotItem;
 }
 
 -(void)setPlotItem:(PlotItem *)item
 {
-	if ( plotItem != item ) {
-		[plotItem killGraph];
-        
+//	if ( plotItem != item ) {
+//		[plotItem killGraph];
+//        
 		plotItem = item;
-    }    
-		[plotItem renderInView:hostingView withTheme:[self currentTheme]];
+//    }    
+		[plotItem renderInView:hostingView withTheme:[CPTTheme themeNamed:kCPTPlainBlackTheme]];
 	
 }
 

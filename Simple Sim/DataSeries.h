@@ -10,12 +10,13 @@
 
 #import <Foundation/Foundation.h> 
 #import <corePlot/corePlot.h> 
-@interface DataSeries : NSObject 
+@interface DataSeries : NSObject<CPTPlotDataSource> 
 @property (assign)            NSString *name;
 @property (assign)            NSUInteger idtag;
 @property (nonatomic)         NSUInteger       count; 
 @property (nonatomic, strong) CPTNumericData * xData; 
 @property (nonatomic, strong) CPTNumericData * yData; 
+@property (assign)            double pipSize;  
 @property (nonatomic)         NSUInteger       passFilter; 
 @property (nonatomic)         long       minXdata; 
 @property (nonatomic)         long       maxXdata;
@@ -32,6 +33,13 @@
 -(void)setDataSeriesWithLength: (NSUInteger)length AndMinDate:(long) minDate AndMaxDate:(long) maxDate AndDates:(CPTNumericData *)epochdates AndData: (CPTNumericData *)dataSeries AndMinDataValue:(double) minValue AndMaxDataValue:(double) maxValue;
 
 -(void)setDataSeriesWithLength: (NSUInteger)length AndMinDate:(long) minDate AndMaxDate:(long) maxDate AndDates:(CPTNumericData *)epochdates AndData: (CPTNumericData *)dataSeries AndPassFilter:(NSUInteger) passfilter;
+
+
+-(NSUInteger)numberOfRecordsForPlot:(CPTPlot *)plot;
+
+- (CPTNumericData *)dataForPlot:(CPTPlot  *)plot 
+                          field:(NSUInteger)field 
+               recordIndexRange:(NSRange   )indexRange; 
 
 @end 
 

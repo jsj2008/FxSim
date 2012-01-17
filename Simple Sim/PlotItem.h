@@ -8,6 +8,7 @@
 
 #import <Foundation/Foundation.h>
 #import <CorePlot/CorePlot.h>
+@class DataSeries;
 typedef NSRect CGNSRect;
 
 
@@ -47,6 +48,8 @@ typedef NSRect CGNSRect;
 -(void)killGraph;
 
 -(void)generateData;
+
+-(void)setData:(DataSeries *) plotData;
 
 -(NSComparisonResult)titleCompare:(PlotItem *)other;
 

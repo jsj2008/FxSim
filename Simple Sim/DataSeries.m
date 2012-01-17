@@ -99,6 +99,45 @@
 @synthesize maxXdata;
 @synthesize minYdata;
 @synthesize maxYdata;
+@synthesize pipSize;
+
+
+#pragma mark -
+#pragma mark Plot Data Source Methods
+
+-(NSUInteger)numberOfRecordsForPlot:(CPTPlot *)plot
+{
+	return [self count];
+}
+
+- (CPTNumericData *)dataForPlot:(CPTPlot  *)plot 
+                          field:(NSUInteger)field 
+               recordIndexRange:(NSRange   )indexRange 
+{ 
+    CPTNumericData * data; 
+    if (field == CPTScatterPlotFieldX) 
+    {
+        data = self.xData; 
+    }else{
+        data = self.yData;    
+    }
+    if (NSEqualRanges(indexRange, NSMakeRange(0, self.count))) 
+    { 
+        return data; 
+    } 
+    else 
+    { 
+        CPTNumericDataType dataType = data.dataType; 
+        NSRange subRange = NSMakeRange(indexRange.location * dataType.sampleBytes, indexRange.length * dataType.sampleBytes); 
+        return [CPTNumericData numericDataWithData:[data.data subdataWithRange:subRange] 
+                                          dataType:dataType 
+                                             shape:nil]; 
+    } 
+}
+
+
+
+
 
 @end 
 

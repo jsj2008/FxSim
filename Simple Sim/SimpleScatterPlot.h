@@ -7,14 +7,19 @@
 //
 
 #import "PlotItem.h"
+@class DataSeries;
 
-@interface SimpleScatterPlot : PlotItem<CPTPlotSpaceDelegate,
-CPTPlotDataSource,
-CPTScatterPlotDelegate>
+@interface SimpleScatterPlot : PlotItem<CPTPlotDataSource, CPTPlotSpaceDelegate>
 {
 	CPTPlotSpaceAnnotation *symbolTextAnnotation;
     
-	NSArray *plotData;
+	//NSArray *plotData;
+    DataSeries *plotData;
 }
 
+-(void)setData:(DataSeries *) newData;
+
 @end
+
+
+//CPTPlotSpaceDelegate

@@ -88,6 +88,10 @@
 {
 }
 
+-(void)setData:(DataSeries *) plotData
+{
+}
+
 -(NSComparisonResult)titleCompare:(PlotItem *)other
 {
 	return [title caseInsensitiveCompare:other.title];
@@ -193,7 +197,7 @@
 	[defaultLayerHostingView setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
     
 	[hostingView addSubview:defaultLayerHostingView];
-	[self generateData];
+	//[self generateData];
 	[self renderInLayer:defaultLayerHostingView withTheme:theme];
 }
 
