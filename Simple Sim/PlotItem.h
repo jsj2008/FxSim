@@ -28,7 +28,7 @@ typedef NSRect CGNSRect;
 @property (nonatomic, retain) NSMutableArray *graphs;
 @property (nonatomic, retain) NSString *title;
 
- +(void)registerPlotItem:(id)item;
+// +(void)registerPlotItem:(id)item;
 
 -(void)renderInView:(NSView *)hostingView withTheme:(CPTTheme *)theme;
 -(void)setFrameSize:(NSSize)size;
@@ -47,7 +47,7 @@ typedef NSRect CGNSRect;
 -(void)addGraph:(CPTGraph *)graph toHostingView:(CPTGraphHostingView *)layerHostingView;
 -(void)killGraph;
 
--(void)generateData;
+-(void)showSeries:(NSString *)seriesName;
 
 -(void)setData:(DataSeries *) plotData;
 

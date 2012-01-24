@@ -19,6 +19,7 @@
 -(NSArray *)getListofDataTypes;
 -(long *)getDateRangeForSeries:(NSInteger) seriesId;
 -(DataSeries *)getDataSeriesForId: (int) dbid AndType: (int) dataTypeId AndStartTime: (long) startTime AndEndTime: (long) endTime;
+-(BOOL)addDataSeriesTo:(DataSeries *) dataSeries ForType: (int) dataTypeId; 
 //-(DataSeries *)getDataSeriesForId: (int) dbid AndType: (int) dataTypeId AndStartTime: (long) startTime AndEndTime: (long) endTime AndGranularity: (int) inSeconds;
 
 

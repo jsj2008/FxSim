@@ -12,10 +12,10 @@ NSString *kPlotIdentifier		= @"Data Source Plot";
 
 @implementation RealTimePlot
 
-+(void)load
-{
-	[super registerPlotItem:self];
-}
+//+(void)load
+//{
+////	[super registerPlotItem:self];
+//}
 
 -(id)init
 {

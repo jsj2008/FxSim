@@ -11,10 +11,10 @@
 
 @implementation SimpleScatterPlot
 
-+(void)load
-{
-	[super registerPlotItem:self];
-}
+//+(void)load
+//{
+////	[super registerPlotItem:self];
+//}
 
 -(id)init
 {
@@ -46,18 +46,31 @@
 }
 
 
--(void)generateData
+-(void)showSeries:(NSString *)seriesName;
 {
-//	if ( plotData == nil ) {
-//		NSMutableArray *contentArray = [NSMutableArray array];
-//		for ( NSUInteger i = 0; i < 10; i++ ) {
-//			id x = [NSDecimalNumber numberWithDouble:1.0 + i * 0.05];
-//			id y = [NSDecimalNumber numberWithDouble:1.2 * rand() / (double)RAND_MAX + 0.5];
-//			[contentArray addObject:[NSMutableDictionary dictionaryWithObjectsAndKeys:x, @"x", y, @"y", nil]];
-//		}
-//		plotData = contentArray;
-//	}
+    if([seriesName isEqual:[NSString stringWithString:@"ALL"]])
+    {
+        for(CPTGraph *graph in graphs) {
+            for(CPTPlot *plot in [graph allPlots]){
+                plot.hidden = NO;
+            }
+        }
+    }else{
+        for(CPTGraph *graph in graphs) {
+            for(CPTPlot *plot in [graph allPlots]){
+                if([[plot identifier] isEqual:seriesName]){
+                    plot.hidden = NO;
+                }else{
+                    plot.hidden = YES;
+                }
+            }
+        }
+    }
 }
+
+
+
+
 
 -(void)renderInLayer:(CPTGraphHostingView *)layerHostingView withTheme:(CPTTheme *)theme
 {
@@ -68,7 +81,12 @@
 	[self applyTheme:theme toGraph:graph withDefault:[CPTTheme themeNamed:kCPTDarkGradientTheme]];
     
 	[self setTitleDefaultsForGraph:graph withBounds:bounds];
-	[self setPaddingDefaultsForGraph:graph withBounds:bounds];
+    
+    [graph setPaddingLeft:0];
+	[graph setPaddingTop:0];
+	[graph setPaddingRight:0];
+	[graph setPaddingBottom:0];
+    
     
 	// Setup scatter plot space
 	CPTXYPlotSpace *plotSpace = (CPTXYPlotSpace *)graph.defaultPlotSpace;
@@ -88,190 +106,197 @@
     axisLineStyle.lineWidth = 0.5;
     axisLineStyle.lineColor = [[CPTColor whiteColor] colorWithAlphaComponent:0.5];
    
-    
-    
-//	CPTMutableLineStyle *redLineStyle = [CPTMutableLineStyle lineStyle];
-//	redLineStyle.lineWidth = 10.0;
-//	redLineStyle.lineColor = [[CPTColor redColor] colorWithAlphaComponent:0.5];
-    
-    [graph setTitle:[plotData name]];
-    
-    
-    
+    //[graph setTitle:[plotData name]];
+
 	// Axes
+    double minYdataForPlot, maxYdataForPlot;
+    NSArray *fieldnames = [plotData.yData allKeys];
+    minYdataForPlot = [[plotData.minYdataForPlot valueForKey:[fieldnames objectAtIndex:0]] doubleValue];
+    maxYdataForPlot = [[plotData.maxYdataForPlot valueForKey:[fieldnames objectAtIndex:0]] doubleValue]; 
+    for (NSString *fieldname in fieldnames) {
+        minYdataForPlot = fmin(minYdataForPlot,[[plotData.minYdataForPlot valueForKey:fieldname] doubleValue]); 
+        maxYdataForPlot = fmax(maxYdataForPlot,[[plotData.maxYdataForPlot valueForKey:fieldname] doubleValue]); 
+    }
+        
+    
     double majorIntervalY = 10 * [plotData pipSize];
-    while((([plotData maxYdata]-[plotData minYdata])/majorIntervalY)>10){
+    while(((maxYdataForPlot-minYdataForPlot)/majorIntervalY)>10){
         majorIntervalY = majorIntervalY * 2;
     }
     
-    double xAxisYValue = majorIntervalY*floor([plotData minYdata]/majorIntervalY);
-    double yAxisLength = ([plotData maxYdata] - xAxisYValue) * 1.4;
-    double yAxisMin = xAxisYValue - (([plotData maxYdata] - xAxisYValue) * 0.2);
+        
+        
+    double xAxisYValue = majorIntervalY*floor(minYdataForPlot/majorIntervalY);
+    double yAxisLength = (maxYdataForPlot - xAxisYValue) * 1.4;
+    double yAxisMin = xAxisYValue - ((maxYdataForPlot - xAxisYValue) * 0.2);
     
 	// Label x axis with a fixed interval policy
 	CPTXYAxisSet *axisSet = (CPTXYAxisSet *)graph.axisSet;
 	CPTXYAxis *x		  = axisSet.xAxis;
     
+    NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init] ;
+    // If it more than 3 days, major tic is 1 day, otherwise a major tic is 6 hours
+    long minXdataForPlot, maxXdataForPlot;
+    minXdataForPlot = [[[plotData xData] sampleValue:[plotData startIndexForPlot]] longValue];
+    maxXdataForPlot = [[[plotData xData] sampleValue:([plotData startIndexForPlot] + [plotData countForPlot]-1) ] longValue];
     
-	x.majorIntervalLength		  = CPTDecimalFromString(@"14400"); // 4 hours
+    if(((maxXdataForPlot - minXdataForPlot)/(3*60 * 60 * 24))>1){
+        x.majorIntervalLength		  = CPTDecimalFromInt(24 * 60 * 60);
+        //dateFormatter.dateStyle = kCFDateFormatterShortStyle;
+        [dateFormatter setDateFormat:@"MM/dd"];
+    }else{
+        x.majorIntervalLength		  = CPTDecimalFromInt(4 * 60 * 60); // 4 hours
+        
+        dateFormatter.dateStyle = kCFDateFormatterNoStyle;
+        dateFormatter.timeStyle = kCFDateFormatterShortStyle;
+        dateFormatter.timeZone = [NSTimeZone timeZoneWithName:@"GMT"];
+        
+        // America/New_York
+        // Europe/London
+        // Europe/Paris
+        // Asia/Tokyo
+    }
     x.orthogonalCoordinateDecimal = CPTDecimalFromDouble(xAxisYValue);
 	x.minorTicksPerInterval		  = 3;
 	x.majorGridLineStyle		  = majorGridLineStyle;
 	x.minorGridLineStyle		  = minorGridLineStyle;
-    
-	x.title			= @"X Axis";
-	x.titleOffset	= 30.0;
-	x.titleLocation = CPTDecimalFromString(@"1.25");
-    
     x.axisLineStyle = axisLineStyle;
    
-    
-    NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init] ;
-	dateFormatter.dateStyle = kCFDateFormatterNoStyle;
-    dateFormatter.timeStyle = kCFDateFormatterShortStyle;
-    dateFormatter.timeZone = [NSTimeZone timeZoneWithName:@"GMT"];
-    
-    // America/New_York
-    // Europe/London
-    // Europe/Paris
-    // Asia/Tokyo
-    
-	CPTTimeFormatter *timeFormatter = [[CPTTimeFormatter alloc] initWithDateFormatter:dateFormatter] ;
+    CPTTimeFormatter *timeFormatter = [[CPTTimeFormatter alloc] initWithDateFormatter:dateFormatter] ;
     NSDate *refDate = [NSDate dateWithTimeIntervalSince1970:0];
-	timeFormatter.referenceDate = refDate;
-	x.labelFormatter			= timeFormatter;
+    timeFormatter.referenceDate = refDate;
+ 	x.labelFormatter			= timeFormatter;
 	x.labelRotation				= M_PI / 4;
     
     
-    NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];
+            
+    CPTXYAxis *y = axisSet.yAxis;
+    y.majorIntervalLength		  = CPTDecimalFromDouble(majorIntervalY);
+    y.orthogonalCoordinateDecimal = CPTDecimalFromDouble((double)minXdataForPlot);
+    y.minorTicksPerInterval		  = 1;
+    y.majorGridLineStyle		  = majorGridLineStyle;
+    y.minorGridLineStyle		  = minorGridLineStyle;
+    y.axisLineStyle               = axisLineStyle;
+   
+	NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];
     [numberFormatter setNumberStyle:NSNumberFormatterDecimalStyle];
     if([plotData pipSize] <= 0.001){
         [numberFormatter setMinimumFractionDigits:3];
     }else{
         [numberFormatter setMinimumFractionDigits:1];
     }
-        
-    CPTXYAxis *y = axisSet.yAxis;
-    y.majorIntervalLength		  = CPTDecimalFromDouble(majorIntervalY);
-    y.orthogonalCoordinateDecimal = CPTDecimalFromDouble((double)[plotData minXdata]);
-    y.minorTicksPerInterval		  = 1;
-    y.majorGridLineStyle		  = majorGridLineStyle;
-    y.minorGridLineStyle		  = minorGridLineStyle;
     y.labelFormatter              = numberFormatter;
     
-    y.axisLineStyle               = axisLineStyle;
-    
-	// Label y with an automatic label policy.
-//	CPTXYAxis *y = axisSet.yAxis;
-//	y.labelingPolicy			  = CPTAxisLabelingPolicyAutomatic;
-//	y.orthogonalCoordinateDecimal = CPTDecimalFromDouble((double)[plotData minXdata]);
-//	y.minorTicksPerInterval		  = 2;
-//	y.preferredNumberOfMajorTicks = 8;
-//	y.majorGridLineStyle		  = majorGridLineStyle;
-//	y.minorGridLineStyle		  = minorGridLineStyle;
-//	y.labelOffset				  = 10.0;
-    
-//	y.title			= @"Y Axis";
-//	y.titleOffset	= 30.0;
-//	y.titleLocation = CPTDecimalFromString(@"1.0");
-    
-	// Set axes
-	//graph.axisSet.axes = [NSArray arrayWithObjects:x, y, y2, nil];
+    // Set axes
 	graph.axisSet.axes = [NSArray arrayWithObjects:x, y, nil];
     
     
 	// Create a plot that uses the data source method
 	CPTScatterPlot *dataSourceLinePlot = [[CPTScatterPlot alloc] init];
-	dataSourceLinePlot.identifier = @"BID";
+	dataSourceLinePlot.identifier = @"ASK";
     
 	CPTMutableLineStyle *lineStyle = [dataSourceLinePlot.dataLineStyle mutableCopy];
 	lineStyle.lineWidth				 = 1.0;
 	lineStyle.lineColor				 = [CPTColor greenColor];
 	dataSourceLinePlot.dataLineStyle = lineStyle;
     
-	dataSourceLinePlot.dataSource = self;
-	[graph addPlot:dataSourceLinePlot];
+    if([plotData countForPlot] > 1){
     
-	// Auto scale the plot space to fit the plot data
-	// Extend the ranges by 30% for neatness
-	[plotSpace scaleToFitPlots:[NSArray arrayWithObjects:dataSourceLinePlot, nil]];
-	CPTMutablePlotRange *xRange = [plotSpace.xRange mutableCopy];
-	CPTMutablePlotRange *yRange = [plotSpace.yRange mutableCopy];
-	[xRange expandRangeByFactor:CPTDecimalFromDouble(1.2)];
-	[yRange expandRangeByFactor:CPTDecimalFromDouble(1.5)];
+        dataSourceLinePlot.dataSource =  plotData;
+        [graph addPlot:dataSourceLinePlot];
     
-//    if(CPDecimalFloatValue([yRange location] >= xAxisYValue ){
-//       [yRange setLocation:xAxisYValue] 
-//    }
-//       
-//       CPTDecimalFromDouble
-//    
+        // Create a plot that uses the data source method
+        CPTScatterPlot *dataSourceLinePlot2 = [[CPTScatterPlot alloc] init];
+        dataSourceLinePlot2.identifier = @"BID";
+    
+        lineStyle = [dataSourceLinePlot.dataLineStyle mutableCopy];
+        lineStyle.lineWidth				 = 1.0;
+        lineStyle.lineColor				 = [CPTColor redColor];
+        dataSourceLinePlot2.dataLineStyle = lineStyle;
+    
+        dataSourceLinePlot2.dataSource =  plotData;
+        [graph addPlot:dataSourceLinePlot2];
+
+        
+        // Create a plot that uses the data source method
+        CPTScatterPlot *dataSourceLinePlot3 = [[CPTScatterPlot alloc] init];
+        dataSourceLinePlot3.identifier = @"EWMA";
+        
+        lineStyle = [dataSourceLinePlot.dataLineStyle mutableCopy];
+        lineStyle.lineWidth				 = 1.0;
+        lineStyle.lineColor				 = [CPTColor yellowColor];
+        dataSourceLinePlot3.dataLineStyle = lineStyle;
+        
+        dataSourceLinePlot3.dataSource =  plotData;
+        [graph addPlot:dataSourceLinePlot3];
+         
+        
+        // Auto scale the plot space to fit the plot data
+        // Extend the ranges for neatness
+        [plotSpace scaleToFitPlots:[NSArray arrayWithObjects:dataSourceLinePlot, nil]];
+        CPTMutablePlotRange *xRange = [plotSpace.xRange mutableCopy];
+        CPTMutablePlotRange *yRange = [plotSpace.yRange mutableCopy];
+        [xRange expandRangeByFactor:CPTDecimalFromDouble(1.2)];
+        [yRange expandRangeByFactor:CPTDecimalFromDouble(1.2)];
+
+        CPTPlotRange *plotRangeForY  = [CPTPlotRange plotRangeWithLocation:CPTDecimalFromDouble(yAxisMin) length:CPTDecimalFromDouble(yAxisLength)];
        
-    CPTPlotRange *plotRangeForY  = [CPTPlotRange plotRangeWithLocation:CPTDecimalFromDouble(yAxisMin) length:CPTDecimalFromDouble(yAxisLength)];
-       
-	plotSpace.xRange = xRange;
-	plotSpace.yRange = plotRangeForY;
+        plotSpace.xRange = xRange;
+        plotSpace.yRange = plotRangeForY;
     
+        // Restrict y range to a global range
+        //CPTPlotRange *globalYRange = [CPTPlotRange plotRangeWithLocation:CPTDecimalFromDouble([plotData minYdata]-(1.2*majorIntervalY))
+        //														  length:CPTDecimalFromDouble(([plotData maxYdata]-[plotData minYdata])+(2*majorIntervalY))];
+        //plotSpace.globalYRange = globalYRange;
+        plotSpace.globalYRange = 0;
+    }else{
+        if([[plotData name] isEqualToString:@"OCR"])
+        {
+            graph.title = @"OCR";
+            
+            
+            
+            CPTMutableTextStyle *textStyle = [CPTMutableTextStyle textStyle];
+            textStyle.color				   = [CPTColor grayColor];
+            textStyle.fontName			   = @"Courier";
+            textStyle.fontSize			   = round(bounds.size.height / (CGFloat)4.0);
+            graph.titleTextStyle		   = textStyle;
+            graph.titleDisplacement		   = CGPointMake( 0.0f, round(bounds.size.height / (CGFloat)8.0) ); 
+            
+            CPTMutableTextStyle *subStringStyle = [CPTMutableTextStyle textStyle];
+            subStringStyle.color	= [CPTColor grayColor];
+            subStringStyle.fontSize = 12.0f;
+            subStringStyle.fontName = @"Courier";
+            
+            // Determine point of symbol in plot coordinates
+            NSArray *anchorPoint = [NSArray arrayWithObjects:[NSDecimalNumber numberWithFloat:0.5],[NSDecimalNumber numberWithFloat:0.4], nil];
+            
+            // Add annotation
+            NSString *subString = [NSString stringWithString:@"2012, O'Connor Research"];
+            
+            // Now add the annotation to the plot area
+            CPTTextLayer *textLayer = [[CPTTextLayer alloc] initWithText:subString style:subStringStyle];
+            CPTPlotSpaceAnnotation *subTitleAnnotation = [[CPTPlotSpaceAnnotation alloc] initWithPlotSpace:graph.defaultPlotSpace anchorPlotPoint:anchorPoint];
+            subTitleAnnotation.contentLayer = textLayer;
+            //subTitleAnnotation.displacement = graph.titleDisplacement; //CGPointMake(0.0f, 20.0f);
+            [graph.plotAreaFrame.plotArea addAnnotation:subTitleAnnotation];
+        }else{
+            graph.title = @"No Data";
+            CPTMutableTextStyle *textStyle = [CPTMutableTextStyle textStyle];
+            textStyle.color				   = [CPTColor grayColor];
+            textStyle.fontName			   = @"Helvetica-Bold";
+            textStyle.fontSize			   = round(bounds.size.height / (CGFloat)12.0);
+            graph.titleTextStyle		   = textStyle;
+            graph.titleDisplacement		   = CGPointMake( 0.0f, round(bounds.size.height / (CGFloat)18.0) ); 
+            // Ensure that title displacement falls on an integral pixel
+            
+        }
+        
+       graph.titlePlotAreaFrameAnchor = CPTRectAnchorCenter;
+        
+    }
     
-    
-    
-	// Restrict y range to a global range
-	//CPTPlotRange *globalYRange = [CPTPlotRange plotRangeWithLocation:CPTDecimalFromDouble([plotData minYdata]-(1.2*majorIntervalY))
-	//														  length:CPTDecimalFromDouble(([plotData maxYdata]-[plotData minYdata])+(2*majorIntervalY))];
-    
-	//plotSpace.globalYRange = globalYRange;
-    plotSpace.globalYRange = 0;
-	// Add plot symbols
-	//CPTMutableLineStyle *symbolLineStyle = [CPTMutableLineStyle lineStyle];
-	//symbolLineStyle.lineColor = [CPTColor blackColor];
-	//CPTPlotSymbol *plotSymbol = [CPTPlotSymbol ellipsePlotSymbol];
-	//plotSymbol.fill				  = [CPTFill fillWithColor:[CPTColor blueColor]];
-	//plotSymbol.lineStyle		  = symbolLineStyle;
-	//plotSymbol.size				  = CGSizeMake(10.0, 10.0);
-	//dataSourceLinePlot.plotSymbol = plotSymbol;
-    
-	// Set plot delegate, to know when symbols have been touched
-	// We will display an annotation when a symbol is touched
-	//dataSourceLinePlot.delegate						   = self;
-	//dataSourceLinePlot.plotSymbolMarginForHitDetection = 5.0f;
-    
-//	// Add legend
-//	graph.legend				 = [CPTLegend legendWithGraph:graph];
-//	graph.legend.textStyle		 = x.titleTextStyle;
-//	graph.legend.fill			 = [CPTFill fillWithColor:[CPTColor darkGrayColor]];
-//	graph.legend.borderLineStyle = x.axisLineStyle;
-//	graph.legend.cornerRadius	 = 5.0;
-//	graph.legend.swatchSize		 = CGSizeMake(25.0, 25.0);
-//	graph.legendAnchor			 = CPTRectAnchorBottom;
-//	graph.legendDisplacement	 = CGPointMake(0.0, 12.0);
 }
-
-#pragma mark -
-#pragma mark Plot Data Source Methods
-
--(NSUInteger)numberOfRecordsForPlot:(CPTPlot *)plot
-{
-	return [plotData count];
-}
-
-- (CPTNumericData *)dataForPlot:(CPTPlot  *)plot 
-                          field:(NSUInteger)field 
-               recordIndexRange:(NSRange   )indexRange 
-{
-    return [plotData dataForPlot:plot field:field recordIndexRange:indexRange];
-    
-}
-
-//-(NSNumber *)numberForPlot:(CPTPlot *)plot field:(NSUInteger)fieldEnum recordIndex:(NSUInteger)index
-//{
-//	NSString *key = (fieldEnum == CPTScatterPlotFieldX ? @"x" : @"y");
-//	NSNumber *num = [[plotData objectAtIndex:index] valueForKey:key];
-//    
-//	if ( fieldEnum == CPTScatterPlotFieldY ) {
-//		num = [NSNumber numberWithDouble:[num doubleValue]];
-//	}
-//	return num;
-//}
 
 #pragma mark -
 #pragma mark Plot Space Delegate Methods
@@ -280,7 +305,12 @@
 {
 	// Impose a limit on how far user can scroll in x
 	if ( coordinate == CPTCoordinateX ) {
-		CPTPlotRange *maxRange			  = [CPTPlotRange plotRangeWithLocation:CPTDecimalFromInt((int)[plotData minXdata]-(60*60*3)) length:CPTDecimalFromInt((int)(60*60*30))];
+        long minXdataForPlot, maxXdataForPlot;
+        minXdataForPlot = [[[plotData xData] sampleValue:[plotData startIndexForPlot]] longValue];
+        maxXdataForPlot = [[[plotData xData] sampleValue:([plotData startIndexForPlot] + [plotData countForPlot]-1) ] longValue];
+        
+        int allowedXoffset = (int)(maxXdataForPlot - minXdataForPlot)/5;
+		CPTPlotRange *maxRange			  = [CPTPlotRange plotRangeWithLocation:CPTDecimalFromInt((int)minXdataForPlot-allowedXoffset) length:CPTDecimalFromInt((allowedXoffset * 7))];
 		CPTMutablePlotRange *changedRange = [newRange mutableCopy];
 		[changedRange shiftEndToFitInRange:maxRange];
 		[changedRange shiftLocationToFitInRange:maxRange];
@@ -288,7 +318,17 @@
 	}
     
     if ( coordinate == CPTCoordinateY ) {
-		CPTPlotRange *maxRange = [CPTPlotRange plotRangeWithLocation:CPTDecimalFromDouble([plotData minYdata]-(0.5*([plotData maxYdata]-[plotData minYdata]))) length:CPTDecimalFromDouble(((2*([plotData maxYdata]-[plotData minYdata]))))];
+        double minYdataForPlot, maxYdataForPlot;
+        NSArray *fieldnames = [plotData.yData allKeys];
+        minYdataForPlot = [[plotData.minYdataForPlot valueForKey:[fieldnames objectAtIndex:0]] doubleValue];
+        maxYdataForPlot = [[plotData.maxYdataForPlot valueForKey:[fieldnames objectAtIndex:0]] doubleValue]; 
+        for (NSString *fieldname in fieldnames) {
+            minYdataForPlot = fmin(minYdataForPlot,[[plotData.minYdataForPlot valueForKey:fieldname] doubleValue]); 
+            maxYdataForPlot = fmax(maxYdataForPlot,[[plotData.maxYdataForPlot valueForKey:fieldname] doubleValue]); 
+        }
+        
+        double allowedYoffset = (maxYdataForPlot - minYdataForPlot);
+		CPTPlotRange *maxRange = [CPTPlotRange plotRangeWithLocation:CPTDecimalFromDouble(minYdataForPlot-(allowedYoffset)) length:CPTDecimalFromDouble(allowedYoffset*3)];
 		CPTMutablePlotRange *changedRange = [newRange mutableCopy];
 		[changedRange shiftEndToFitInRange:maxRange];
 		[changedRange shiftLocationToFitInRange:maxRange];
@@ -297,50 +337,5 @@
     
 	return newRange;
 }
-
--(BOOL)plotSpace:(CPTPlotSpace *)space shouldHandlePointingDeviceDraggedEvent:(id)event atPoint:(CGPoint)point
-{
-    NSLog(@"Drag Event");
-    return NO;
-}
-
-
-//#pragma mark -
-//#pragma mark CPTScatterPlot delegate method
-
-//-(void)scatterPlot:(CPTScatterPlot *)plot plotSymbolWasSelectedAtRecordIndex:(NSUInteger)index
-//{
-//	CPTXYGraph *graph = [graphs objectAtIndex:0];
-//    
-//	if ( symbolTextAnnotation ) {
-//		[graph.plotAreaFrame.plotArea removeAnnotation:symbolTextAnnotation];
-////		[symbolTextAnnotation release];
-//		symbolTextAnnotation = nil;
-//	}
-//    
-//	// Setup a style for the annotation
-//	CPTMutableTextStyle *hitAnnotationTextStyle = [CPTMutableTextStyle textStyle];
-//	hitAnnotationTextStyle.color	= [CPTColor whiteColor];
-//	hitAnnotationTextStyle.fontSize = 16.0f;
-//	hitAnnotationTextStyle.fontName = @"Helvetica-Bold";
-//    
-//	// Determine point of symbol in plot coordinates
-//	NSNumber *x			 = [[plotData objectAtIndex:index] valueForKey:@"x"];
-//	NSNumber *y			 = [[plotData objectAtIndex:index] valueForKey:@"y"];
-//	NSArray *anchorPoint = [NSArray arrayWithObjects:x, y, nil];
-//    
-//	// Add annotation
-//	// First make a string for the y value
-//	NSNumberFormatter *formatter = [[NSNumberFormatter alloc] init];
-//	[formatter setMaximumFractionDigits:2];
-//	NSString *yString = [formatter stringFromNumber:y];
-//    
-//	// Now add the annotation to the plot area
-//	CPTTextLayer *textLayer = [[CPTTextLayer alloc] initWithText:yString style:hitAnnotationTextStyle];
-//	symbolTextAnnotation			  = [[CPTPlotSpaceAnnotation alloc] initWithPlotSpace:graph.defaultPlotSpace anchorPlotPoint:anchorPoint];
-//	symbolTextAnnotation.contentLayer = textLayer;
-//	symbolTextAnnotation.displacement = CGPointMake(0.0f, 20.0f);
-//	[graph.plotAreaFrame.plotArea addAnnotation:symbolTextAnnotation];
-//}
 
 @end

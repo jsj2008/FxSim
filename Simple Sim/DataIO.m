@@ -121,61 +121,11 @@ FMDatabase *db;
 }
 
 
-//-(DataSeries *)getDataSeriesForId: (int) dbid  AndType: (int) dataTypeId AndStartTime: (long) startTime AndEndTime: (long) endTime 
-//{
-//    BOOL success = YES;
-//    NSString *seriesName; 
-//    int resultCount;
-//    int rowCount;
-//    DataSeries *returnedData;
-//    
-//    @try{
-//        if([self connected] == YES)
-//        {
-//            seriesName = [db stringForQuery:[NSString stringWithFormat:@"SELECT SeriesName FROM SeriesName WHERE SeriesId = %d", dbid]];
-//            //NSLog([NSString stringWithFormat:@"SELECT COUNT(*) FROM DataSeries WHERE SeriesId = %d AND TimeDate >= %ld AND TimeDate <= %ld",dbid,startTime,endTime]);
-//            resultCount = [db intForQuery:[NSString stringWithFormat:@"SELECT COUNT(*) FROM DataSeries WHERE SeriesId = %d AND DataTypeId = %d AND TimeDate >= %ld AND TimeDate <= %ld",dbid,dataTypeId,startTime,endTime]];
-//        }else{
-//            success = NO;
-//            NSLog(@"Database error");
-//        }
-//    }
-//    @catch (NSException *exception) {
-//        NSLog(@"main: Caught %@: %@", [exception name], [exception reason]);
-//        success = NO;
-//    }
-//    
-//    if(success){
-//        returnedData = [[DataSeries alloc] initWithName:seriesName AndDbTag:dbid AndLength:(int)resultCount];
-//        @try{
-//            if([self connected] == YES)
-//            {
-//                FMResultSet *rs = [db executeQuery:[NSString stringWithFormat:@"SELECT TimeDate, Value FROM DataSeries WHERE SeriesId = %d AND DataTypeId = %d AND TimeDate >= %ld AND TimeDate <= %ld ORDER BY TimeDate ASC", dbid,1,startTime,endTime]];
-//                rowCount = 0;
-//                while ([rs next ] && (rowCount < resultCount)) {
-//                    [returnedData setValueAtIndex:rowCount WithDateTime:[rs intForColumnIndex:0] AndValue:[rs intForColumnIndex:1]];
-//                     rowCount = rowCount + 1;
-//                }
-//                if(rowCount != resultCount){
-//                    NSLog(@"****The result count didn't seem to be added in full, check!!!!!!");
-//                }
-//            }else{
-//                NSLog(@"Database error");
-//            }
-//        }
-//        @catch (NSException *exception) {
-//            NSLog(@"main: Caught %@: %@", [exception name], [exception reason]);
-//        }
-//    }
-//    return returnedData;
-//    
-//    
-//}
-
 -(DataSeries *)getDataSeriesForId: (int) dbid  AndType: (int) dataTypeId AndStartTime: (long) startTime AndEndTime: (long) endTime 
 {
     BOOL success = YES;
     NSString *seriesName; 
+    NSString *fieldName;
     NSUInteger resultCount;
     NSUInteger rowCount;
     DataSeries *returnedData;
@@ -185,27 +135,28 @@ FMDatabase *db;
         if([self connected] == YES)
         {
             seriesName = [db stringForQuery:[NSString stringWithFormat:@"SELECT SeriesName FROM SeriesName WHERE SeriesId = %d", dbid]];
-               //NSLog([NSString stringWithFormat:@"SELECT COUNT(*) FROM DataSeries WHERE SeriesId = %d AND TimeDate >= %ld AND TimeDate <= %ld",dbid,startTime,endTime]);
+            fieldName = [db stringForQuery:[NSString stringWithFormat:@"SELECT Description FROM DataType WHERE DataTypeId = %d", dataTypeId]];
             pipSize = [db doubleForQuery:[NSString stringWithFormat:@"SELECT PipSize FROM SeriesName WHERE SeriesId = %d", dbid]];
             resultCount = [db intForQuery:[NSString stringWithFormat:@"SELECT COUNT(*) FROM DataSeries WHERE SeriesId = %d AND DataTypeId = %d AND TimeDate >= %ld AND TimeDate <= %ld",dbid,dataTypeId,startTime,endTime]];
+            
         }else{
-                success = NO;
-                NSLog(@"Database error");
+            success = NO;
+            NSLog(@"Database error");
         }
     }
     @catch (NSException *exception) {
-    NSLog(@"main: Caught %@: %@", [exception name], [exception reason]);
-    success = NO;
+        NSLog(@"main: Caught %@: %@", [exception name], [exception reason]);
+        success = NO;
     }
-    //resultCount = 200; This was here for testing
+    
     if(success){
         returnedData = [[DataSeries alloc] initWithName:seriesName AndDbTag:dbid];
         [returnedData setPipSize:pipSize];
         long minDate, maxDate;
         double minValue, maxValue;
-        NSMutableData * newXData = [NSMutableData dataWithLength:resultCount * sizeof(double)]; 
+        NSMutableData * newXData = [NSMutableData dataWithLength:resultCount * sizeof(long)]; 
         NSMutableData * newYData = [NSMutableData dataWithLength:resultCount * sizeof(double)]; 
-        long *newXDoubles = [newXData mutableBytes]; 
+        long *newXLongs = [newXData mutableBytes]; 
         double *newYDoubles = [newYData mutableBytes]; 
         @try{
             if([self connected] == YES)
@@ -214,10 +165,10 @@ FMDatabase *db;
                 rowCount = 0;
                 while ([rs next ] && (rowCount < resultCount)) 
                 {
-                    newXDoubles[rowCount] = (double)[rs longForColumnIndex:0];
+                    newXLongs[rowCount] = [rs longForColumnIndex:0];
                     newYDoubles[rowCount] = [rs doubleForColumnIndex:1];
                     if(rowCount == 0){
-                        minDate = newXDoubles[rowCount];
+                        minDate = newXLongs[rowCount];
                         minValue = newYDoubles[rowCount];
                         maxValue = newYDoubles[rowCount];
                     }else{
@@ -229,18 +180,18 @@ FMDatabase *db;
                 if(rowCount != resultCount){
                     NSLog(@"****The result count didn't seem to be added in full, check!!!!!!");
                 }
-                maxDate = newXDoubles[rowCount - 1];                       
+                maxDate = newXLongs[rowCount - 1];                       
                 CPTNumericData * xData = [CPTNumericData numericDataWithData:newXData 
-                                           dataType:CPTDataType(CPTIntegerDataType, 
-                                                                sizeof(long), 
-                                                                CFByteOrderGetCurrent()) 
-                                              shape:nil]; 
+                                                                    dataType:CPTDataType(CPTIntegerDataType, 
+                                                                                         sizeof(long), 
+                                                                                         CFByteOrderGetCurrent()) 
+                                                                       shape:nil]; 
                 CPTNumericData * yData = [CPTNumericData numericDataWithData:newYData 
-                                           dataType:CPTDataType(CPTFloatingPointDataType, 
-                                                                sizeof(double), 
-                                                                CFByteOrderGetCurrent()) 
-                                              shape:nil]; 
-                [returnedData setDataSeriesWithLength:rowCount AndMinDate:minDate AndMaxDate:maxDate AndDates:xData AndData:yData AndMinDataValue:minValue AndMaxDataValue: maxValue];
+                                                                    dataType:CPTDataType(CPTFloatingPointDataType, 
+                                                                                         sizeof(double), 
+                                                                                         CFByteOrderGetCurrent()) 
+                                                                       shape:nil]; 
+                [returnedData setDataSeriesWithFieldName:fieldName AndLength:rowCount AndMinDate:minDate AndMaxDate:maxDate AndDates:xData AndData:yData AndMinDataValue:minValue AndMaxDataValue: maxValue];
             }else{
                 NSLog(@"Database error");
             }
@@ -253,44 +204,78 @@ FMDatabase *db;
     return returnedData;
 }
 
-
-
-//-(DataSeries *)getDataSeriesForId: (int) dbid AndType: (int) dataTypeId AndStartTime: (long) startTime AndEndTime: (long) endTime AndGranularity: (int) secondsStep
-//{
-//    long firstDateTime;
-//    long lastDateTime;
-//    long startOfDay;
-//    int lengthOfFilter;
-//    int filterIndex;
-//    long currentDateTime;
-// 
-//    DataSeries *filteredValues;
-//    DataSeries *fullData;
-//    fullData = [self getDataSeriesForId:dbid AndType:dataTypeId AndStartTime:startTime AndEndTime:endTime];
-//    
-//    firstDateTime = [fullData getFirstDateTime];
-//    lastDateTime = [fullData getLastDateTime];
-//    
-//    startOfDay = [EpochTime epochTimeAtZeroHour:firstDateTime];;
-//    startOfDay = startOfDay + (((firstDateTime - startOfDay) / secondsStep)+1) * secondsStep;
-//    
-//    lengthOfFilter = (int)((lastDateTime - startOfDay) / secondsStep);
-//    
-//    filteredValues = [[DataSeries alloc ] initWithName:[fullData name] AndDbTag:[fullData tag] AndLength:lengthOfFilter];
-//    
-//    currentDateTime = startOfDay;
-//    filterIndex = 0;
-//    for(int i = 0; i < [fullData length];i++)
-//    {
-//        if([fullData getDateTimeAtZeroBasedIndex:i] > currentDateTime)
-//        {
-//            [filteredValues setValueAtIndex:filterIndex WithDateTime:currentDateTime AndValue:[fullData getValueAtZeroBasedIndex:i]];
-//            filterIndex++;
-//            currentDateTime = startOfDay + (filterIndex*secondsStep);
-//        }
-//    }
-//    return filteredValues;
-//}
+-(BOOL)addDataSeriesTo:(DataSeries *) dataSeries ForType: (int) dataTypeId 
+{
+    BOOL success = YES;
+    NSString *fieldName;
+    NSUInteger resultCount;
+    NSUInteger rowCount;
+    
+    @try{
+        if([self connected] == YES)
+        {
+           resultCount = [db intForQuery:[NSString stringWithFormat:@"SELECT COUNT(*) FROM DataSeries WHERE SeriesId = %d AND DataTypeId = %d AND TimeDate >= %ld AND TimeDate <= %ld",[dataSeries idtag],dataTypeId,[dataSeries minXdata],[dataSeries maxXdata]]];
+            fieldName = [db stringForQuery:[NSString stringWithFormat:@"SELECT Description FROM DataType WHERE DataTypeId = %d", dataTypeId]];
+        }else{
+            success = NO;
+            NSLog(@"Database error");
+        }
+    }
+    @catch (NSException *exception) {
+        NSLog(@"main: Caught %@: %@", [exception name], [exception reason]);
+        success = NO;
+    }
+    if(resultCount == [dataSeries count]){
+        success = YES;
+    }else{
+        success = NO;
+    }
+    if(success){
+        double minValue, maxValue;
+        //NSMutableData * newXData = [NSMutableData dataWithLength:resultCount * sizeof(long)]; 
+        NSMutableData * newYData = [NSMutableData dataWithLength:resultCount * sizeof(double)]; 
+        //long *newXLongs = [newXData mutableBytes]; 
+        double *newYDoubles = [newYData mutableBytes]; 
+        @try{
+            if([self connected] == YES)
+            {
+                FMResultSet *rs = [db executeQuery:[NSString stringWithFormat:@"SELECT TimeDate, Value FROM DataSeries WHERE SeriesId = %d AND DataTypeId = %d AND TimeDate >= %ld AND TimeDate <= %ld ORDER BY TimeDate ASC", [dataSeries idtag],dataTypeId,[dataSeries minXdata],[dataSeries maxXdata]]];
+                rowCount = 0;
+                while ([rs next ] && (rowCount < resultCount)) 
+                {
+                    //newXLongs[rowCount] = [rs longForColumnIndex:0];
+                    newYDoubles[rowCount] = [rs doubleForColumnIndex:1];
+                    if(rowCount == 0){
+                        minValue = newYDoubles[rowCount];
+                        maxValue = newYDoubles[rowCount];
+                    }else{
+                        minValue = fmin(newYDoubles[rowCount], minValue); 
+                        maxValue = fmax(newYDoubles[rowCount], maxValue); 
+                    }
+                    rowCount = rowCount + 1;
+                }
+                if(rowCount != resultCount){
+                    NSLog(@"****The result count didn't seem to be added in full, check!!!!!!");
+                }
+                //Need to fully check the equality of the xData. BUT WE DON'T DO IT. 
+                CPTNumericData * yData = [CPTNumericData numericDataWithData:newYData 
+                                                                    dataType:CPTDataType(CPTFloatingPointDataType, 
+                                                                                         sizeof(double), 
+                                                                                         CFByteOrderGetCurrent()) 
+                                                                       shape:nil]; 
+                [[dataSeries yData] setObject:yData forKey:fieldName];
+                [dataSeries setMinYdata:fmin(minValue,[dataSeries minYdata])];
+                [dataSeries setMaxYdata:fmax(maxValue,[dataSeries maxYdata])];
+            }else{
+                NSLog(@"Database error");
+            }
+        }
+        @catch (NSException *exception) {
+            NSLog(@"main: Caught %@: %@", [exception name], [exception reason]);
+        }
+    }
+    NSLog(@"added %@",fieldName);
+}
 
 
 @end

@@ -7,7 +7,7 @@
 //
 
 //#import "PlotController.h"
-#import "PlotGallery.h"
+#import "PlotItem.h"
 
 #import <tgmath.h>
 
@@ -22,20 +22,6 @@
 @synthesize defaultLayerHostingView;
 @synthesize graphs;
 @synthesize title;
-
-+(void)registerPlotItem:(id)item
-{
-	NSLog(@"registerPlotItem for class %@", [item class]);
-    
-	Class itemClass = [item class];
-    
-	if ( itemClass ) {
-        PlotItem *plotItem = [[itemClass alloc] init];
-		if ( plotItem ) {
-			[[PlotGallery sharedPlotGallery] addPlotItem:plotItem];
-		}
-	}
-}
 
 -(id)init
 {
@@ -77,15 +63,14 @@
 	[graphs removeAllObjects];
 }
 
+-(void)showSeries:(NSString *)seriesName
+{
+    
+}
+
 -(void)dealloc
 {
 	[self killGraph];
-	//[super dealloc];
-}
-
-// override to generate data for the plot if needed
--(void)generateData
-{
 }
 
 -(void)setData:(DataSeries *) plotData
@@ -126,50 +111,6 @@
 	graph.paddingBottom = boundsPadding;
 }
 
-//-(NSImage *)image
-//{
-//	if ( cachedImage == nil ) {
-//		CGRect imageFrame = CGRectMake(0, 0, 400, 300);
-//        
-//		NSView *imageView = [[NSView alloc] initWithFrame:NSRectFromCGRect(imageFrame)];
-//		[imageView setWantsLayer:YES];
-//        
-//		[self renderInView:imageView withTheme:nil];
-//        
-//		CGSize boundsSize = imageFrame.size;
-//        
-//		NSBitmapImageRep *layerImage = [[NSBitmapImageRep alloc]
-//										initWithBitmapDataPlanes:NULL
-//                                        pixelsWide:boundsSize.width
-//                                        pixelsHigh:boundsSize.height
-//                                        bitsPerSample:8
-//                                        samplesPerPixel:4
-//                                        hasAlpha:YES
-//                                        isPlanar:NO
-//                                        colorSpaceName:NSCalibratedRGBColorSpace
-//                                        bytesPerRow:(NSInteger)boundsSize.width * 4
-//                                        bitsPerPixel:32];
-//        
-//		NSGraphicsContext *bitmapContext = [NSGraphicsContext graphicsContextWithBitmapImageRep:layerImage];
-//		CGContextRef context			 = (CGContextRef)[bitmapContext graphicsPort];
-//        
-//		CGContextClearRect( context, CGRectMake(0.0, 0.0, boundsSize.width, boundsSize.height) );
-//		CGContextSetAllowsAntialiasing(context, true);
-//		CGContextSetShouldSmoothFonts(context, false);
-//		[imageView.layer renderInContext:context];
-//		CGContextFlush(context);
-//        
-//		cachedImage = [[NSImage alloc] initWithSize:NSSizeFromCGSize(boundsSize)];
-//		[cachedImage addRepresentation:layerImage];
-//		//[layerImage release];
-//        
-//		//[imageView release];
-//	}
-//    
-//	return cachedImage;
-//}
-
-
 
 -(void)applyTheme:(CPTTheme *)theme toGraph:(CPTGraph *)graph withDefault:(CPTTheme *)defaultTheme
 {
@@ -184,8 +125,6 @@
 -(void)setFrameSize:(NSSize)size
 {
 }
-
-
 
 -(void)renderInView:(NSView *)hostingView withTheme:(CPTTheme *)theme
 {
@@ -212,40 +151,5 @@
 		[g reloadData];
 	}
 }
-
-//#pragma mark -
-//#pragma mark IKImageBrowserItem methods
-//
-//#if TARGET_IPHONE_SIMULATOR || TARGET_OS_IPHONE
-//#else
-//
-//-(NSString *)imageUID
-//{
-//	return title;
-//}
-//
-//-(NSString *)imageRepresentationType
-//{
-//	return IKImageBrowserNSImageRepresentationType;
-//}
-
-//-(id)imageRepresentation
-//{
-//	return [self image];
-//}
-
-//-(NSString *)imageTitle
-//{
-//	return title;
-//}
-
-/*
- * - (NSString*)imageSubtitle
- * {
- *  return graph.title;
- * }
- */
-
-//#endif
 
 @end

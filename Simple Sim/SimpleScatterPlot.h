@@ -9,7 +9,7 @@
 #import "PlotItem.h"
 @class DataSeries;
 
-@interface SimpleScatterPlot : PlotItem<CPTPlotDataSource, CPTPlotSpaceDelegate>
+@interface SimpleScatterPlot : PlotItem<CPTPlotSpaceDelegate>
 {
 	CPTPlotSpaceAnnotation *symbolTextAnnotation;
     
@@ -22,4 +22,3 @@
 @end
 
 
-//CPTPlotSpaceDelegate
