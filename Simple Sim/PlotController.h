@@ -11,10 +11,9 @@
 #import <Quartz/Quartz.h>
 
 #import "PlotItem.h"
-//#import "PlotView.h"
 #import "DataController.h"
 
-@interface PlotController : NSObject //<PlotViewDelegate>
+@interface PlotController : NSObject 
 {
     __weak NSTextField *fromDateLabel;
     __weak NSTextField *toDateLabel;

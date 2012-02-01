@@ -10,45 +10,30 @@
 
 #import <Foundation/Foundation.h> 
 #import <corePlot/corePlot.h> 
-@interface DataSeries : NSObject<CPTPlotDataSource>{
+@interface DataSeries: NSObject{
     NSUInteger startIndexForPlot;
     NSUInteger countForPlot;
 }
 @property (assign)            NSString *name;
-@property (assign)            NSUInteger idtag;
-@property (nonatomic)         NSUInteger count;
+@property (assign)            NSUInteger dbId;
 @property (nonatomic, strong) CPTNumericData * xData; 
 @property (nonatomic, strong) NSMutableDictionary * yData;
-@property (nonatomic, strong) NSMutableDictionary * minYdataForPlot; 
-@property (nonatomic, strong) NSMutableDictionary * maxYdataForPlot;
+@property (nonatomic, strong) NSMutableDictionary * dataViews;  
+@property (nonatomic)         NSUInteger       timeStep;
 @property (assign)            double pipSize;  
-@property (nonatomic)         NSUInteger       timeStep; 
-//@property (nonatomic)         long       minXdataForPlot; 
-//@property (nonatomic)         long       maxXdataForPlot;
-@property (nonatomic)         long       minXdata; 
-@property (nonatomic)         long       maxXdata;
+ 
 
-
-- (void)reset; 
-
--(id)init;
--(id)initWithName:(NSString *)seriesName;
--(id)initWithName:(NSString *)seriesName AndDbTag:(int) dbId;
--(NSUInteger)startIndexForPlot;
--(NSUInteger)countForPlot;
-//-(void)setForPlotStartIndex:(NSUInteger)startIndex AndCount:(NSUInteger)count; 
--(void)setDataSeriesWithFieldName:(NSString *)fieldName AndLength: (NSUInteger)length AndMinDate:(long) minDate AndMaxDate:(long) maxDate AndDates:(CPTNumericData *)epochdates AndData: (CPTNumericData *)dataSeries AndMinDataValue:(double) minValue AndMaxDataValue:(double) maxValue;
--(BOOL)setPlottingSubsetFromStartIndex: (long) startIndex ToEndIndex: (long) endIndex;
-
-
-
-//
-//-(void)setDataSeriesWithFieldName:(NSString *)fieldName AndLength: (NSUInteger)length AndMinDate:(long) minDate AndMaxDate:(long) maxDate AndDates:(CPTNumericData *)epochdates AndData: (CPTNumericData *)dataSeries AndMinDataValue:(double) minValue AndMaxDataValue:(double) AndPlotRange: (NSRange *) rangeToPlot;
-
+- (id)init;
+- (id)initWithName:(NSString *)seriesName;
+- (id)initWithName:(NSString *)seriesName AndDbTag:(NSUInteger) dbId;
+- (void)setPlotViewWithName: (NSString *) description AndStartDateTime: (long) startDateTime AndEndDateTime: (long) endDateTime;
+- (void)setDataSeriesWithFieldName:(NSString *)fieldName AndDates:(CPTNumericData *)epochdates AndData: (CPTNumericData *)dataSeries;
 -(void)reduceDataSeriesToSampledSeconds: (int) numberOfSeconds;
-
+-(DataSeries *) sampleDataAtInterval: (int) numberOfSeconds;
 -(long)nearestXBelowOrEqualTo: (long) xValue;
-
+-(long)minDateTime;
+-(long)maxDateTime;
+-(NSUInteger)length;
 
 
 @end 

@@ -9,8 +9,10 @@
 #import <Foundation/Foundation.h>
 @class DataSeries;
 
+
 @interface DataController : NSObject{
     BOOL connected;
+    NSMutableDictionary *dataSeriesKeeper;
 }
 @property(readonly, assign) BOOL connected;
 
@@ -20,12 +22,32 @@
 
 -(long *)getDateRangeForSeries:(NSInteger) seriesId;
 
--(DataSeries *)getDataSeriesForId: (int) dbid AndType: (int) dataTypeId AndStartTime: (long) startTime AndEndTime: (long) endTime;
+-(DataSeries *)getDataSeriesForId: (int) dbid 
+                          AndType: (int) dataTypeId 
+                     AndStartTime: (long) startTime 
+                       AndEndTime: (long) endTime;
 
--(BOOL) addDataSeriesTo: (DataSeries *) dataSeries ForType: (int) dataTypeId;
+-(BOOL) addDataSeriesTo: (DataSeries *) dataSeries 
+                ForType: (int) dataTypeId;
 
-//-(DataSeries *)getBidAskSeriesForId: (int) dbid AndDay:(NSDate *) day;
--(DataSeries *)getBidAskSeriesForId: (int) dbid AndDay:(NSDate *) day ToSampledSeconds:(int) numberOfSeconds;
+-(DataSeries *)getBidAskAndStuffForId: (int) dbid 
+                         AndStartTime: (long) startTime 
+                           AndEndTime: (long) endTime 
+                     ToSampledSeconds:(int) numberOfSeconds;
+
+-(DataSeries *)getBidAskSeriesForId: (int) dbid 
+                         AndStartTime: (long) startTime 
+                           AndEndTime: (long) endTime 
+                     ToSampledSeconds:(int) numberOfSeconds;
+
+
+
+//-(DataSeries *)getDataSeriesForId: (int) dbid  
+//                          AndType: (int) dataTypeId 
+//                     AndStartTime: (long) startTime 
+//                       AndEndTime: (long) endTime 
+//                 ToSampledSeconds: (int) numberOfSeconds;
+
 -(void)addMidToBidAskSeries: (DataSeries *) dataSeries;
 -(void)addEWMAToSeries:(DataSeries *) dataSeries WithParam: (int) param;
 

@@ -37,7 +37,6 @@
     NSInteger second = [dateComponents second];
     epochDateZeroHour = epochDate -((hour*60*60)+(minute*60)+second);
     
-    NSLog(@"From %lu with get %lu",epochDate,epochDateZeroHour);
     return epochDateZeroHour;
 }
 

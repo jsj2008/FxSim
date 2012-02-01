@@ -6,7 +6,6 @@
 //  Copyright 2010 Jeff Buck. All rights reserved.
 //
 
-//#import "PlotController.h"
 #import "PlotItem.h"
 
 #import <tgmath.h>

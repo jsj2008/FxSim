@@ -7,10 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		5B01B0BF14BE71720032A301 /* PlotController.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B01B0BE14BE71710032A301 /* PlotController.m */; };
-		5B01B0C214BFC4FE0032A301 /* PlotItem.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B01B0C114BFC4FD0032A301 /* PlotItem.m */; };
-		5B01B0C914C026C10032A301 /* SimpleScatterPlot.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B01B0C814C026C00032A301 /* SimpleScatterPlot.m */; };
-		5B01B0D214C11E2E0032A301 /* RealTimePlot.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B01B0D114C11E2D0032A301 /* RealTimePlot.m */; };
+		5B01B0C914C026C10032A301 /* SeriesPlot.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B01B0C814C026C00032A301 /* SeriesPlot.m */; };
 		5B01B0D514C130150032A301 /* DataController.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B01B0D414C130150032A301 /* DataController.m */; };
 		5B2EDCC014CD979600EC26B8 /* OCR2.icns in Resources */ = {isa = PBXBuildFile; fileRef = 5B2EDCBF14CD979600EC26B8 /* OCR2.icns */; };
 		5B2EDCC814CE97AC00EC26B8 /* MAAnalytics.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B2EDCC714CE97AB00EC26B8 /* MAAnalytics.m */; };
@@ -31,6 +28,8 @@
 		5B904A0414B7368E008A20AA /* DataSeries.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B904A0314B7368E008A20AA /* DataSeries.m */; };
 		5B904C0614BC0F16008A20AA /* CorePlot.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5B904C0514BC0F16008A20AA /* CorePlot.framework */; };
 		5B904C0814BC104B008A20AA /* CorePlot.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 5B904C0714BC104B008A20AA /* CorePlot.framework */; };
+		5BDA503C14D225EA009842D5 /* DataView.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BDA503B14D225E9009842D5 /* DataView.m */; };
+		5BFF896114D81F7B00F68453 /* TimeSeriesLine.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BFF896014D81F7B00F68453 /* TimeSeriesLine.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -47,14 +46,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		5B01B0BD14BE71710032A301 /* PlotController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PlotController.h; sourceTree = "<group>"; };
-		5B01B0BE14BE71710032A301 /* PlotController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PlotController.m; sourceTree = "<group>"; };
-		5B01B0C014BFC4FC0032A301 /* PlotItem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PlotItem.h; sourceTree = "<group>"; };
-		5B01B0C114BFC4FD0032A301 /* PlotItem.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PlotItem.m; sourceTree = "<group>"; };
-		5B01B0C714C026C00032A301 /* SimpleScatterPlot.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SimpleScatterPlot.h; path = "Simple Sim/SimpleScatterPlot.h"; sourceTree = "<group>"; };
-		5B01B0C814C026C00032A301 /* SimpleScatterPlot.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = SimpleScatterPlot.m; path = "Simple Sim/SimpleScatterPlot.m"; sourceTree = "<group>"; };
-		5B01B0D014C11E2D0032A301 /* RealTimePlot.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RealTimePlot.h; sourceTree = "<group>"; };
-		5B01B0D114C11E2D0032A301 /* RealTimePlot.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RealTimePlot.m; sourceTree = "<group>"; };
+		5B01B0C714C026C00032A301 /* SeriesPlot.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SeriesPlot.h; sourceTree = "<group>"; };
+		5B01B0C814C026C00032A301 /* SeriesPlot.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SeriesPlot.m; sourceTree = "<group>"; };
 		5B01B0D314C130150032A301 /* DataController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DataController.h; sourceTree = "<group>"; };
 		5B01B0D414C130150032A301 /* DataController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DataController.m; sourceTree = "<group>"; };
 		5B2EDCBF14CD979600EC26B8 /* OCR2.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = OCR2.icns; path = ../OCR2.icns; sourceTree = "<group>"; };
@@ -90,6 +83,10 @@
 		5B904A0314B7368E008A20AA /* DataSeries.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DataSeries.m; sourceTree = "<group>"; };
 		5B904C0514BC0F16008A20AA /* CorePlot.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CorePlot.framework; path = "../../../../../core-plot/build/Debug/CorePlot.framework"; sourceTree = "<group>"; };
 		5B904C0714BC104B008A20AA /* CorePlot.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CorePlot.framework; path = "../../../../../core-plot/build/Debug/CorePlot.framework"; sourceTree = "<group>"; };
+		5BDA503A14D225E9009842D5 /* DataView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DataView.h; sourceTree = "<group>"; };
+		5BDA503B14D225E9009842D5 /* DataView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DataView.m; sourceTree = "<group>"; };
+		5BFF895F14D81F7B00F68453 /* TimeSeriesLine.h */ = {isa = PBXFileReference; fileEncoding = 4; path = TimeSeriesLine.h; sourceTree = "<group>"; };
+		5BFF896014D81F7B00F68453 /* TimeSeriesLine.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TimeSeriesLine.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -107,18 +104,6 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		5B01B0CA14C0273C0032A301 /* PlotTypes */ = {
-			isa = PBXGroup;
-			children = (
-				5B01B0C714C026C00032A301 /* SimpleScatterPlot.h */,
-				5B01B0C814C026C00032A301 /* SimpleScatterPlot.m */,
-				5B01B0D014C11E2D0032A301 /* RealTimePlot.h */,
-				5B01B0D114C11E2D0032A301 /* RealTimePlot.m */,
-			);
-			name = PlotTypes;
-			path = ..;
-			sourceTree = "<group>";
-		};
 		5B01B0CE14C11A5D0032A301 /* Data */ = {
 			isa = PBXGroup;
 			children = (
@@ -128,8 +113,8 @@
 				5B9049F914B43121008A20AA /* IdNamePair.m */,
 				5B904A0214B7368D008A20AA /* DataSeries.h */,
 				5B904A0314B7368E008A20AA /* DataSeries.m */,
-				5B9049FB14B6CD99008A20AA /* EpochTime.h */,
-				5B9049FC14B6CD9A008A20AA /* EpochTime.m */,
+				5BDA503A14D225E9009842D5 /* DataView.h */,
+				5BDA503B14D225E9009842D5 /* DataView.m */,
 			);
 			name = Data;
 			sourceTree = "<group>";
@@ -137,10 +122,8 @@
 		5B01B0CF14C11A930032A301 /* Plots */ = {
 			isa = PBXGroup;
 			children = (
-				5B01B0BD14BE71710032A301 /* PlotController.h */,
-				5B01B0BE14BE71710032A301 /* PlotController.m */,
-				5B01B0C114BFC4FD0032A301 /* PlotItem.m */,
-				5B01B0C014BFC4FC0032A301 /* PlotItem.h */,
+				5B01B0C714C026C00032A301 /* SeriesPlot.h */,
+				5B01B0C814C026C00032A301 /* SeriesPlot.m */,
 			);
 			name = Plots;
 			sourceTree = "<group>";
@@ -200,10 +183,12 @@
 				5B8C03EF149ECEC70071189F /* AppDelegate.m */,
 				5B8C03FC149ED0870071189F /* AppController.h */,
 				5B8C03FD149ED0870071189F /* AppController.m */,
-				5B01B0CF14C11A930032A301 /* Plots */,
-				5B01B0CA14C0273C0032A301 /* PlotTypes */,
-				5B01B0CE14C11A5D0032A301 /* Data */,
+				5BFF895F14D81F7B00F68453 /* TimeSeriesLine.h */,
+				5BFF896014D81F7B00F68453 /* TimeSeriesLine.m */,
 				5B8C03F1149ECEC70071189F /* MainMenu.xib */,
+				5B01B0CF14C11A930032A301 /* Plots */,
+				5B01B0CE14C11A5D0032A301 /* Data */,
+				5BDA503914D22446009842D5 /* Utilities */,
 				5B9049F114B2D909008A20AA /* FMDB */,
 				5B8C03E3149ECEC70071189F /* Supporting Files */,
 				5B2EDCC914CE97B300EC26B8 /* Analytics */,
@@ -235,6 +220,15 @@
 				5B9049EC14B2D8FD008A20AA /* FMResultSet.m */,
 			);
 			name = FMDB;
+			sourceTree = "<group>";
+		};
+		5BDA503914D22446009842D5 /* Utilities */ = {
+			isa = PBXGroup;
+			children = (
+				5B9049FB14B6CD99008A20AA /* EpochTime.h */,
+				5B9049FC14B6CD9A008A20AA /* EpochTime.m */,
+			);
+			name = Utilities;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -312,12 +306,11 @@
 				5B9049FA14B43122008A20AA /* IdNamePair.m in Sources */,
 				5B9049FD14B6CD9A008A20AA /* EpochTime.m in Sources */,
 				5B904A0414B7368E008A20AA /* DataSeries.m in Sources */,
-				5B01B0BF14BE71720032A301 /* PlotController.m in Sources */,
-				5B01B0C214BFC4FE0032A301 /* PlotItem.m in Sources */,
-				5B01B0C914C026C10032A301 /* SimpleScatterPlot.m in Sources */,
-				5B01B0D214C11E2E0032A301 /* RealTimePlot.m in Sources */,
+				5B01B0C914C026C10032A301 /* SeriesPlot.m in Sources */,
 				5B01B0D514C130150032A301 /* DataController.m in Sources */,
 				5B2EDCC814CE97AC00EC26B8 /* MAAnalytics.m in Sources */,
+				5BDA503C14D225EA009842D5 /* DataView.m in Sources */,
+				5BFF896114D81F7B00F68453 /* TimeSeriesLine.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
