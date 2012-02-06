@@ -20,6 +20,7 @@
 @property (nonatomic, strong) NSMutableDictionary * yData;
 @property (nonatomic, strong) NSMutableDictionary * dataViews;  
 @property (nonatomic)         NSUInteger       timeStep;
+@property (assign)            NSUInteger sampleRate;  
 @property (assign)            double pipSize;  
  
 

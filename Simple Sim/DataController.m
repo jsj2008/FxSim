@@ -14,6 +14,8 @@
 #import "EpochTime.h"
 #import "DataView.h"
 
+#define DATABASE_GRANULARITY_SECONDS 1
+
 @implementation DataController
 @synthesize connected;
 //NSString *dbPath = @"/Users/Martin/Documents/dev/db1/timeseries.db";
@@ -228,11 +230,9 @@ FMDatabase *db;
 {
     BOOL success = YES;
     NSString *seriesName; 
-    //NSString *fieldName;
     NSUInteger sampleCount;
     DataSeries *returnData;
     double pipSize;
-    
     
     @try{
         if([self connected] == YES)
@@ -251,27 +251,53 @@ FMDatabase *db;
     }
     
     if(success){
-        long dataCountMax = (endTime - startTime + 1)/numberOfSeconds;
-        long *intermediateDateData = malloc(dataCountMax * sizeof(long));
-        double *intermediateBidData = malloc(dataCountMax * sizeof(double)); 
-        double *intermediateAskData = malloc(dataCountMax * sizeof(double));
-        long currentDateTime;
-        double previousBidValue, previousAskValue, currentBidValue, currentAskValue;
-        previousBidValue = 0;
-        previousAskValue = 0;
-        
-        long anchorDateTime = [EpochTime epochTimeAtZeroHour:startTime];
-        long currentSampleDateTime;
-        currentSampleDateTime = anchorDateTime + numberOfSeconds * ((startTime-anchorDateTime)/numberOfSeconds);
-        
-        bool dataForInterval = NO;
         @try{
-            if([self connected] == YES)
-            {
-                NSString *queryString = [NSString stringWithFormat:@"SELECT DS1.TimeDate, DS1.Value, DS2.Value FROM DataSeries DS1 INNER JOIN DataSeries DS2 ON DS1.TimeDate = DS2.TimeDate AND DS1.SeriesId = DS2.SeriesId  WHERE DS1.SeriesId = %d AND DS1.DataTypeId = %d AND DS2.DataTypeId = %d AND DS1.TimeDate >= %ld AND DS1.TimeDate <= %ld ORDER BY DS1.TimeDate ASC", dbid,1,2,startTime,endTime];
+            NSString *queryString = [NSString stringWithFormat:@"SELECT DS1.TimeDate, DS1.Value, DS2.Value FROM DataSeries DS1 INNER JOIN DataSeries DS2 ON DS1.TimeDate = DS2.TimeDate AND DS1.SeriesId = DS2.SeriesId  WHERE DS1.SeriesId = %d AND DS1.DataTypeId = %d AND DS2.DataTypeId = %d AND DS1.TimeDate >= %ld AND DS1.TimeDate <= %ld ORDER BY DS1.TimeDate ASC", dbid,1,2,startTime,endTime];
                 
-                FMResultSet *rs = [db executeQuery:queryString];
-                sampleCount = 0;
+            FMResultSet *rs = [db executeQuery:queryString];
+            NSMutableData *newDateData; 
+            NSMutableData *newBidData; 
+            NSMutableData *newAskData; 
+            long *newDateLongs; 
+            double *newBidDoubles; 
+            double *newAskDoubles;
+            
+            sampleCount = 0;
+                
+            if(numberOfSeconds <= DATABASE_GRANULARITY_SECONDS){
+                sampleCount = [db intForQuery:[NSString stringWithFormat:@"SELECT COUNT(*) FROM DataSeries WHERE SeriesId = %d AND DataTypeId = %d AND TimeDate >= %ld AND TimeDate <= %ld",dbid,1,startTime,endTime]];
+                    
+                returnData = [[DataSeries alloc] initWithName:seriesName AndDbTag:dbid];
+                [returnData setPipSize:pipSize];
+                [returnData setSampleRate:numberOfSeconds];
+                newDateData = [[NSMutableData alloc] initWithLength:sampleCount * sizeof(long)]; 
+                newBidData = [[NSMutableData alloc] initWithLength:sampleCount * sizeof(double)]; 
+                newAskData = [[NSMutableData alloc] initWithLength:sampleCount * sizeof(double)];                   
+                newDateLongs = [newDateData mutableBytes]; 
+                newBidDoubles = [newBidData mutableBytes]; 
+                newAskDoubles = [newAskData mutableBytes];
+                    
+                for(int i = 0; i < sampleCount; i++){
+                    [rs next];
+                    newDateLongs[i] = [rs doubleForColumnIndex:0]; 
+                    newBidDoubles[i] = [rs doubleForColumnIndex:1];
+                    newAskDoubles[i] = [rs doubleForColumnIndex:2];
+                }
+            }
+            else
+            {
+                long dataCountMax = (endTime - startTime + 1)/numberOfSeconds;
+                long *intermediateDateData = malloc(dataCountMax * sizeof(long));
+                double *intermediateBidData = malloc(dataCountMax * sizeof(double)); 
+                double *intermediateAskData = malloc(dataCountMax * sizeof(double));
+                long currentDateTime;
+                double previousBidValue, previousAskValue, currentBidValue, currentAskValue;
+                bool dataForInterval = NO;
+                previousBidValue = 0;
+                previousAskValue = 0;
+                long anchorDateTime = [EpochTime epochTimeAtZeroHour:startTime];
+                long currentSampleDateTime;
+                currentSampleDateTime = anchorDateTime + numberOfSeconds * ((startTime-anchorDateTime)/numberOfSeconds);
                 while ([rs next ]) 
                 {
                     currentDateTime = [rs longForColumnIndex:0];
@@ -316,30 +342,23 @@ FMDatabase *db;
                             dataForInterval = YES;
                         }
                     }
-                }   
-            }else{
-                NSLog(@"Database error");
-            }   
-        }
-        @catch (NSException *exception) {
-            NSLog(@"main: Caught %@: %@", [exception name], [exception reason]);
-            success = NO;
-        }
-        if(success){
-            returnData = [[DataSeries alloc] initWithName:seriesName AndDbTag:dbid];
-            [returnData setPipSize:pipSize];
-            NSMutableData * newDateData = [NSMutableData dataWithLength:sampleCount * sizeof(long)]; 
-            NSMutableData * newBidData = [NSMutableData dataWithLength:sampleCount * sizeof(double)]; 
-            NSMutableData * newAskData = [NSMutableData dataWithLength:sampleCount * sizeof(double)]; 
+                }  
+                returnData = [[DataSeries alloc] initWithName:seriesName AndDbTag:dbid];
+                [returnData setPipSize:pipSize];
+                [returnData setSampleRate:numberOfSeconds];
+                newDateData = [[NSMutableData alloc] initWithLength:sampleCount * sizeof(long)]; 
+                newBidData = [[NSMutableData alloc] initWithLength:sampleCount * sizeof(double)]; 
+                newAskData = [[NSMutableData alloc] initWithLength:sampleCount * sizeof(double)]; 
             
-            long *newDateLongs = [newDateData mutableBytes]; 
-            double *newBidDoubles = [newBidData mutableBytes]; 
-            double *newAskDoubles = [newAskData mutableBytes];
+                newDateLongs = [newDateData mutableBytes]; 
+                newBidDoubles = [newBidData mutableBytes]; 
+                newAskDoubles = [newAskData mutableBytes];
             
-            for(int i = 0; i < sampleCount; i++){
-                newDateLongs[i] = intermediateDateData[i]; 
-                newBidDoubles[i] = intermediateBidData[i];
-                newAskDoubles[i] = intermediateAskData[i];
+                for(int i = 0; i < sampleCount; i++){
+                    newDateLongs[i] = intermediateDateData[i]; 
+                    newBidDoubles[i] = intermediateBidData[i];
+                    newAskDoubles[i] = intermediateAskData[i];
+                }
             }
             CPTNumericData * dateData = [CPTNumericData numericDataWithData:newDateData 
                                                                 dataType:CPTDataType(CPTIntegerDataType, 
@@ -361,6 +380,10 @@ FMDatabase *db;
             [[returnData yData] setObject:bidData forKey:@"BID"];
             [[returnData yData] setObject:askData forKey:@"ASK"];
             [returnData setPlotViewWithName:@"ALL" AndStartDateTime:newDateLongs[0] AndEndDateTime:newDateLongs[sampleCount-1]];
+        }
+        @catch (NSException *exception) {
+            NSLog(@"main: Caught %@: %@", [exception name], [exception reason]);
+            success = NO;
         }
     NSLog(@"Returning %lu data for %@",sampleCount,seriesName);
     }
@@ -470,7 +493,7 @@ FMDatabase *db;
 -(void)addEWMAToSeries:(DataSeries *) dataSeries WithParam: (int) param
 {
     NSString *fieldNameMid = @"MID";
-    NSString *fieldNameEWMA = @"EWMA";
+    NSString *fieldNameEWMA = [NSString stringWithFormat:@"EWMA%d",param];
     double lambda = 2.0/(1.0+param);
     double minValue, maxValue;
     
@@ -493,6 +516,8 @@ FMDatabase *db;
                                                                                CFByteOrderGetCurrent()) 
                                                             shape:nil];
     [[dataSeries yData] setObject:ewmaData forKey:newFieldName];
+    DataView *dataViewAll = [[dataSeries dataViews] objectForKey:@"ALL"];
+    [dataViewAll addMin:minValue AndMax:maxValue ForKey:fieldNameEWMA];
 }
 
 

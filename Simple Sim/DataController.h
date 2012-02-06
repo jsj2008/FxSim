@@ -40,14 +40,6 @@
                            AndEndTime: (long) endTime 
                      ToSampledSeconds:(int) numberOfSeconds;
 
-
-
-//-(DataSeries *)getDataSeriesForId: (int) dbid  
-//                          AndType: (int) dataTypeId 
-//                     AndStartTime: (long) startTime 
-//                       AndEndTime: (long) endTime 
-//                 ToSampledSeconds: (int) numberOfSeconds;
-
 -(void)addMidToBidAskSeries: (DataSeries *) dataSeries;
 -(void)addEWMAToSeries:(DataSeries *) dataSeries WithParam: (int) param;
 

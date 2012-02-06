@@ -141,8 +141,6 @@
         }
     }
     
-    
-    
 
     if(([dataView countForPlot] < 3) || ([fieldNames count]==0) ){
         if([dataView countForPlot] < 3)

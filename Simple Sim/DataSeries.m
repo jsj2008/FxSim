@@ -37,6 +37,7 @@
         self.yData = nil; 
         self.timeStep =1;
         self.dataViews = [[NSMutableDictionary alloc] init];
+        self.sampleRate = 0;
     }    
     return self;    
 }
@@ -78,7 +79,7 @@
     originalNumberOfData = [self length];
     anchorDateTime = [EpochTime epochTimeAtZeroHour:[datetime longValue]];
     
-    NSLog(@"First TimeDate:%lu",[datetime longValue]);
+    //NSLog(@"First TimeDate:%lu",[datetime longValue]);
     
     NSArray *fieldnames = [[NSArray alloc] initWithArray:[self.yData allKeys] copyItems:YES];
     NSUInteger numberOfFields = [[self yData] count];
@@ -349,15 +350,15 @@
     
     while((uBound-lBound)>1){
         iters = iters + 1;
-        NSLog(@"Iteration %d  %ld  to %ld",iters,lBound,uBound);
+        //NSLog(@"Iteration %d  %ld  to %ld",iters,lBound,uBound);
         step = (((double)xValue - valueAtLBound)/(valueAtUBound - valueAtLBound));
         newBound = lBound + (long)(step*(uBound-lBound));
         
         if(newBound == lBound){
             if([[self.xData sampleValue:(lBound+1)] longValue] > xValue)
             {
-                NSLog(@"1.UB is  %ld",[[self.xData sampleValue:uBound] longValue]);
-                NSLog(@"1.Returning with %ld",[[self.xData sampleValue:lBound] longValue]);
+                //NSLog(@"1.UB is  %ld",[[self.xData sampleValue:uBound] longValue]);
+                //NSLog(@"1.Returning with %ld",[[self.xData sampleValue:lBound] longValue]);
                 return lBound;
             }else{
                 newBound = lBound + 1;
@@ -369,8 +370,8 @@
             }
             if(newBound == uBound){
                 if([[self.xData sampleValue:(uBound-1)] longValue] <= xValue){
-                    NSLog(@"2.UB is  %ld",[[self.xData sampleValue:uBound] longValue]);
-                    NSLog(@"2.Returning with %ld",[[self.xData sampleValue:(uBound -1)] longValue]);
+                    //NSLog(@"2.UB is  %ld",[[self.xData sampleValue:uBound] longValue]);
+                    ///NSLog(@"2.Returning with %ld",[[self.xData sampleValue:(uBound -1)] longValue]);
                     return (uBound -1);
                 }else{
                     newBound = uBound -1;
@@ -383,16 +384,16 @@
         }else{
             lBound = newBound;
             if([[self.xData sampleValue:(lBound+1)] longValue] > xValue){
-                NSLog(@"3.UB is  %ld",[[self.xData sampleValue:(lBound+1)] longValue]);
-                NSLog(@"3.Returning with lb %ld",[[self.xData sampleValue:lBound] longValue]);
+                //NSLog(@"3.UB is  %ld",[[self.xData sampleValue:(lBound+1)] longValue]);
+                //NSLog(@"3.Returning with lb %ld",[[self.xData sampleValue:lBound] longValue]);
                 return lBound;
             }
             valueAtLBound = [[self.xData sampleValue:lBound] longValue];
         }
         
     }
-    NSLog(@"4.UB is  %ld",[[self.xData sampleValue:uBound] longValue]);
-    NSLog(@"4.Returning with %ld",[[self.xData sampleValue:lBound] longValue]);
+    //NSLog(@"4.UB is  %ld",[[self.xData sampleValue:uBound] longValue]);
+    //NSLog(@"4.Returning with %ld",[[self.xData sampleValue:lBound] longValue]);
     return lBound;
 }
 
@@ -448,7 +449,7 @@
 @synthesize timeStep;
 @synthesize dataViews;
 @synthesize pipSize;
-
+@synthesize sampleRate;
 
 
 @end 
