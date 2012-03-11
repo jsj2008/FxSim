@@ -56,7 +56,26 @@
 
 }
 
++(NSString *)stringDateWithDayOfWeek:(long) epochDate
+{
+    NSString *returnString;
+    returnString = [[NSDate dateWithTimeIntervalSince1970:(NSTimeInterval) epochDate] descriptionWithCalendarFormat:@"%a %Y-%m-%d" timeZone:[NSTimeZone timeZoneWithName:@"GMT"] locale:nil];
+    return returnString;
+}
 
++(NSString *)stringDateWithTime:(long) epochDate
+{
+    NSString *returnString;
+    returnString = [[NSDate dateWithTimeIntervalSince1970:(NSTimeInterval) epochDate] descriptionWithCalendarFormat:@"%Y-%m-%d %H:%M:%S" timeZone:[NSTimeZone timeZoneWithName:@"GMT"] locale:nil];
+    return returnString;    
+}
+
++(NSString *)stringDate:(long) epochDate
+{
+    NSString *returnString;
+    returnString = [[NSDate dateWithTimeIntervalSince1970:(NSTimeInterval) epochDate] descriptionWithCalendarFormat:@"%Y-%m-%d" timeZone:[NSTimeZone timeZoneWithName:@"GMT"] locale:nil];
+    return returnString;
+}
 
 @end
 

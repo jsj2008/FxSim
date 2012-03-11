@@ -26,8 +26,9 @@
 @property (copy) NSArray *allColourNames;
 @property (copy) NSArray *allColourCPTypes;
 
--(id)initWithVisibility: (BOOL) isVisible AndName: (NSString *) name AndColour:(NSString *) colour;
+- (id)initWithVisibility: (BOOL) isVisible AndName: (NSString *) name AndColour:(NSString *) colour;
 - (NSString *)description;
--(void)setColourId:(NSUInteger) newColourId;
--(NSUInteger)colourId;
+- (void)setColourId:(NSUInteger) newColourId;
+- (NSUInteger)colourId;
+
 @end

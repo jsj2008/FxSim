@@ -64,18 +64,12 @@
     CPTNumericData *dataToReturn;
     //return [dataSeries dataForPlot:plot field:field recordIndexRange: rangeOnOriginal]; 
     
-    switch (field)
+    if (field == CPTScatterPlotFieldX)
     {
-        case CPTScatterPlotFieldX: 
-        {
-            dataToReturn = [dataSeries xData]; 
-            break;
-        }
-        case CPTScatterPlotFieldY:
-        {
-            dataToReturn = [[dataSeries yData] objectForKey:plot.identifier]; 
-            break;
-        }
+        dataToReturn = [dataSeries xData]; 
+    }else
+    {
+        dataToReturn = [[dataSeries yData] objectForKey:plot.identifier]; 
     }
     if (NSEqualRanges(rangeOnOriginal, NSMakeRange(0, [dataSeries  length]-1))) 
     { 

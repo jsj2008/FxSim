@@ -12,6 +12,9 @@
 
 +(long)epochTimeAtZeroHour:(long) epochDate;
 +(long)epochTimeNextDayAtZeroHour:(long) epochDate;
++(NSString *)stringDateWithDayOfWeek:(long) epochDate;
++(NSString *)stringDateWithTime:(long) epochDate;
++(NSString *)stringDate:(long) epochDate;
 -(id)init;
 
 @end

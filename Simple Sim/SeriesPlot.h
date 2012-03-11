@@ -7,6 +7,7 @@
 //
 
 #import <CorePlot/CorePlot.h>
+#import "SimulationOutput.h"
 @class DataSeries;
 @class DataView;
 @class TimeSeriesLines;
@@ -19,8 +20,10 @@
     DataView *dataView;
 	NSString *title;
     DataSeries *plotData;
+    id<SimulationOutput> delegate;
 }
 
+-(void)setDelegate:(id)del;
 -(void)initialGraph;
 -(void)setData:(DataSeries  *) newData WithViewName: (NSString *) viewName;
 -(void)showSeries:(NSString *)seriesName;

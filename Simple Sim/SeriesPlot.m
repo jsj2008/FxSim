@@ -32,6 +32,16 @@
 	return self;
 }
 
+-(void)setDelegate:(id)del
+{
+    delegate = del;
+}
+
+-(id)delegate 
+{ 
+    return delegate;
+};
+
 //-(void)killGraph
 //{
 //	if ( [graphs count] ) {
@@ -130,6 +140,10 @@
 	[graph setPaddingTop:0];
 	[graph setPaddingRight:0];
 	[graph setPaddingBottom:0];
+    graph.plotAreaFrame.borderLineStyle = nil;
+    
+    graph.cornerRadius = 0.0; 
+    //graph.shadowRadius = 0.0; 
     
     NSMutableArray *fieldNames = [[NSMutableArray alloc] init];
     NSMutableArray *colors = [[NSMutableArray alloc] init];
@@ -160,7 +174,7 @@
         
         // Setup scatter plot space
         CPTXYPlotSpace *plotSpace = (CPTXYPlotSpace *)graph.defaultPlotSpace;
-        plotSpace.allowsUserInteraction = NO;
+        plotSpace.allowsUserInteraction = YES;
         plotSpace.delegate				= self;
     
         // Grid line styles
@@ -185,7 +199,15 @@
             maxYdataForPlot = fmax(maxYdataForPlot,[[[dataView maxYvalues] valueForKey:fieldname] doubleValue]); 
         }
     
-        double majorIntervalY = 10 * [plotData pipSize];
+        double majorIntervalY;
+        if(((maxYdataForPlot-minYdataForPlot)/[plotData pipSize])>10000)
+        {
+            // Then forget about pipsize related Y axis just go for about 10
+            //This needs to be fixed
+            majorIntervalY = ((int)(maxYdataForPlot-minYdataForPlot))/10;  
+        }else{
+            majorIntervalY = 10 * [plotData pipSize];
+        }
         while(((maxYdataForPlot-minYdataForPlot)/majorIntervalY)>10){
             majorIntervalY = majorIntervalY * 2;
         }
@@ -205,24 +227,46 @@
         BOOL dateIsSpecifiedInAxis = NO;
         minXdataForPlot = [dataView firstX];
         maxXdataForPlot = [dataView lastX];;
-    
-        if(((maxXdataForPlot - minXdataForPlot)/(3*60 * 60 * 24))>1){
-            x.majorIntervalLength		  = CPTDecimalFromInt(24 * 60 * 60);
+        
+        if(((float)(maxXdataForPlot - minXdataForPlot)/(21*60 * 60 * 24))>1){
+            x.majorIntervalLength		  = CPTDecimalFromInt(7 * 24 * 60 * 60); // 7 Day
+            x.minorTicksPerInterval		  = 6;
             //dateFormatter.dateStyle = kCFDateFormatterShortStyle;
             [dateFormatter setDateFormat:@"MM/dd"];
             dateIsSpecifiedInAxis = TRUE;
         }else{
-            x.majorIntervalLength		  = CPTDecimalFromInt(4 * 60 * 60); // 4 hours
-            dateFormatter.dateStyle = kCFDateFormatterNoStyle;
-            dateFormatter.timeStyle = kCFDateFormatterShortStyle;
-        
+            //If greater than 3 days
+            if(((float)(maxXdataForPlot - minXdataForPlot)/(3*60 * 60 * 24))>1){
+                x.majorIntervalLength		  = CPTDecimalFromInt(24 * 60 * 60); // 1 Day
+                x.minorTicksPerInterval		  = 5;
+                //dateFormatter.dateStyle = kCFDateFormatterShortStyle;
+                [dateFormatter setDateFormat:@"MM/dd"];
+                dateIsSpecifiedInAxis = TRUE;
+            }else{
+                //If greater than 12 hours
+                if(((float)(maxXdataForPlot - minXdataForPlot)/(60 * 60 * 12))>1){
+                    x.majorIntervalLength		  = CPTDecimalFromInt(4 * 60 * 60); // 4 hours
+                    x.minorTicksPerInterval		  = 3;
+                    dateFormatter.dateStyle = kCFDateFormatterNoStyle;
+                    dateFormatter.timeStyle = kCFDateFormatterShortStyle;
+                }else{
+                    //If less than 12 hours
+                    if(((float)(maxXdataForPlot - minXdataForPlot)/(60 * 60 * 12))<=1){
+                        x.majorIntervalLength = CPTDecimalFromInt(60 * 60); // 1 hours
+                        x.minorTicksPerInterval = 5;
+                        dateFormatter.dateStyle = kCFDateFormatterNoStyle;
+                        dateFormatter.timeStyle = kCFDateFormatterShortStyle;
+                    }
+                }   
+            }
+        }
             // America/New_York
             // Europe/London
             // Europe/Paris
             // Asia/Tokyo
-        }
+        
         x.orthogonalCoordinateDecimal = CPTDecimalFromDouble(xAxisYValue);
-        x.minorTicksPerInterval		  = 3;
+        //x.minorTicksPerInterval		  = 3;
         x.majorGridLineStyle		  = majorGridLineStyle;
         x.minorGridLineStyle		  = minorGridLineStyle;
         x.axisLineStyle = axisLineStyle;
@@ -327,6 +371,33 @@
         plotSpace.xRange = xRange;
         plotSpace.yRange = plotRangeForY;
         plotSpace.globalYRange = 0;
+        
+        if([timeSeriesLines count] > 5){
+            CPTXYPlotSpace *secondPlotSpace = [[CPTXYPlotSpace alloc] init];
+            [graph addPlotSpace:secondPlotSpace];
+                        
+            dataSourceLinePlot = [[CPTScatterPlot alloc] init];
+            dataSourceLinePlot.identifier = @"POSITION";
+            lineStyle = [dataSourceLinePlot.dataLineStyle mutableCopy];
+            lineStyle.lineWidth				 = 1.0;
+            lineStyle.lineColor				 = [CPTColor redColor] ;
+            dataSourceLinePlot.dataLineStyle = lineStyle;
+            dataSourceLinePlot.dataSource =  dataView;
+            [graph addPlot:dataSourceLinePlot toPlotSpace:secondPlotSpace];
+            //[secondPlotSpace scaleToFitPlots:[NSArray arrayWithObjects:dataSourceLinePlot, nil]];
+            //CPTMutablePlotRange *yRange = [secondPlotSpace.yRange mutableCopy];
+           //[yRange expandRangeByFactor:CPTDecimalFromDouble(1.2)];
+            
+            secondPlotSpace.xRange = [plotSpace.xRange copy];
+
+            long minY = [[[dataView minYvalues] objectForKey:@"POSITION"] longValue];
+            long maxY = [[[dataView maxYvalues] objectForKey:@"POSITION"] longValue];
+            long span = maxY-minY;
+            secondPlotSpace.yRange = [CPTPlotRange plotRangeWithLocation:[[NSNumber numberWithDouble:minY-10000] decimalValue] length:[[NSNumber numberWithDouble:span+(2*10000) ] decimalValue]];
+            
+                                
+                                //            CPTPlotRange *plotRangeForY  = [CPTPlotRange plotRangeWithLocation:CPTDecimalFromDouble(yAxisMin) length:CPTDecimalFromDouble(yAxisLength)];
+        }
     }
 }
 
@@ -369,5 +440,50 @@
     
 	return newRange;
 }
+
+
+
+//-(BOOL)plotSpace:(CPTXYPlotSpace *)space shouldHandlePointingDeviceUpEvent:(id)event atPoint:(CGPoint)point{
+//    NSLog(@"point.x=%lf,point.y=%lf",point.x,point.y);
+//    return YES;
+//}
+//
+//-(BOOL)plotSpace:(CPTXYPlotSpace *)space shouldHandlePointingDeviceCancelledEvent:(id)event{
+//    //NSLog(@"point.x=%lf,point.y=%lf",point.x,point.y);
+//    return YES;
+//}
+
+-(BOOL)plotSpace:(CPTXYPlotSpace *)space shouldHandlePointingDeviceDownEvent:(id)event atPoint:(CGPoint)point{
+    NSLog(@"point.x=%lf,point.y=%lf",point.x,point.y);
+    NSDecimal dataCoordinates[2];
+    
+    [space plotPoint:dataCoordinates forPlotAreaViewPoint:point];
+    
+    NSDecimalNumber *dateTimeNumber = [NSDecimalNumber decimalNumberWithDecimal:dataCoordinates[0]];
+    long dateTime = [dateTimeNumber longValue];                                     
+ 
+    NSDecimalNumber *dataNumber = [NSDecimalNumber decimalNumberWithDecimal:dataCoordinates[1]];
+    double dataValue = [dataNumber doubleValue];
+
+    NSLog(@"point.x=%ld,point.y=%5.2f",dateTime,dataValue);
+    
+    
+    if([[self delegate] respondsToSelector:@selector(sendGraphClickDateTimeValue:)])
+    {
+        [[self delegate] sendGraphClickDateTimeValue:dateTime]; 
+    }else{
+        NSLog(@"Delegate not responding to \'addSimulationDataToResultsTableView\'"); 
+    }
+
+    
+    
+    return YES;
+}
+
+
+//-(BOOL)plotSpace:(CPTXYPlotSpace *)space shouldHandlePointingDeviceDraggedEvent:(id)event atPoint:(CGPoint)point{
+//    NSLog(@"point.x=%lf,point.y=%lf",point.x,point.y);
+//    return YES;
+//}
 
 @end

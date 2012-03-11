@@ -16,26 +16,26 @@
 #pragma mark Implementation 
 @implementation DataSeries 
 
--(id)init
-{
-    return [self initWithName:@"" AndDbTag:0];
-}
+//-(id)init
+//{
+//    return [self initWithName:@"" AndDbTag:0];
+//}
+//
+//-(id)initWithName:(NSString *)seriesName
+//{
+//    return [self initWithName:seriesName AndDbTag:0];
+//}
 
--(id)initWithName:(NSString *)seriesName
-{
-    return [self initWithName:seriesName AndDbTag:0];
-}
 
-
--(id)initWithName:(NSString *)seriesName AndDbTag:(NSUInteger) dbId
+- (id)initWithName:(NSString *)seriesName AndDbTag:(NSUInteger) databaseId AndPipSize:(double) quotePipSize;
 {
     self = [super init];
     if(self){
-        self.name = seriesName;
-        self.dbId = dbId;
+        self.name = [NSString stringWithString:seriesName];
+        self.dbId = databaseId;
+        self.pipSize = quotePipSize;
         self.xData = nil; 
-        self.yData = nil; 
-        self.timeStep =1;
+        self.yData = nil; //[[NSMutableDictionary alloc] init]; 
         self.dataViews = [[NSMutableDictionary alloc] init];
         self.sampleRate = 0;
     }    
@@ -57,8 +57,11 @@
 
 -(NSUInteger)length
 {
-    return [[self xData] length]/[[self xData] sampleBytes];
-    
+    if(self.xData != nil)
+    {
+        return [[self xData] length]/[[self xData] sampleBytes];
+    }
+    return 0;
 }
 
 -(void)setDataSeriesWithFieldName:(NSString*)fieldName AndDates:(CPTNumericData *)epochdates AndData: (CPTNumericData *)dataSeries 
@@ -66,12 +69,24 @@
     self.xData = epochdates;
     self.yData =  [[NSMutableDictionary alloc] init];
     [self.yData setObject:dataSeries forKey:fieldName] ;
-    self.timeStep = 1;
+    [self setSampleRate:1];
 }
+
+-(DataSeries *) getCopyOfStaticData
+{
+    DataSeries *returnData  = [[DataSeries alloc] initWithName:[self name] 
+                                                      AndDbTag:[self dbId] 
+                                                    AndPipSize:[self pipSize]];
+    return returnData;
+}
+
+
 
 -(DataSeries *) sampleDataAtInterval: (int) numberOfSeconds
 {
-    DataSeries *returnData  = [[DataSeries alloc] initWithName:[self name] AndDbTag:[self dbId]];
+    DataSeries *returnData  = [[DataSeries alloc] initWithName:[self name] 
+                                                      AndDbTag:[self dbId] 
+                                                    AndPipSize:[self pipSize]];
     long currentSampleDateTime, currentDateTime;
     NSNumber *datetime = [NSNumber numberWithLong:[[self.xData sampleValue:0] longValue]];
     long anchorDateTime;
@@ -86,7 +101,7 @@
     double *intermediateValues;
     long *intermediateDateTimes;
     intermediateDateTimes = malloc(originalNumberOfData *sizeof(long));
-    intermediateValues = malloc(originalNumberOfData * numberOfFields);
+    intermediateValues = malloc(originalNumberOfData * numberOfFields *sizeof(double));
     
     CPTNumericData *yDataFields[numberOfFields];
     int fieldIndex;
@@ -166,7 +181,6 @@
                 maxYvalues[fieldIndex] = fmax(maxYvalues[fieldIndex],intermediateValues[(index * numberOfFields) + fieldIndex]);
             }
         }
-        [returnData setPipSize:[self pipSize]];
         [returnData setXData:[CPTNumericData numericDataWithData:newXData 
                                                         dataType:CPTDataType(CPTIntegerDataType, 
                                                                              sizeof(long), 
@@ -193,7 +207,7 @@
         [[returnData dataViews] removeAllObjects];
         [returnData setPlotViewWithName:@"ALL" AndStartDateTime:sampledDateTimes[0] AndEndDateTime:sampledDateTimes[sampleCount-1]];
         
-        [returnData setTimeStep:numberOfSeconds];
+        [returnData setSampleRate:numberOfSeconds];
     }
     return returnData;
 }
@@ -321,29 +335,59 @@
             [self.yData setObject:newYData forKey:[fieldnames objectAtIndex:i]];
         }        
         
-        //self.count = sampleCount;
-        self.timeStep = numberOfSeconds;
+        [self setSampleRate:numberOfSeconds];
     }
 }
 
+
+-(NSDictionary *)getValues:(NSArray *) fieldNames AtDateTime: (long) dateTime
+{
+    NSMutableDictionary *returnValues = [[NSMutableDictionary alloc] init];
+    long dateTimeIndex;
+    
+    if((dateTime >= [self minDateTime]) & (dateTime <= [self maxDateTime]))
+    {
+        //First find the index value
+        dateTimeIndex = [self latestDateTimeBeforeOrEqualTo:dateTime];
+    
+        NSNumber *newDateTime = [NSNumber numberWithLong:[[[self xData] sampleValue:dateTimeIndex] longValue]];
+        [returnValues setObject:newDateTime forKey:@"DATETIME"];
+    
+        for(int i=0; i < [fieldNames count]; i++)
+        {
+            CPTNumericData *data = [[self yData] objectForKey:[fieldNames objectAtIndex:i]];
+            NSNumber *newDataValue = [NSNumber numberWithDouble:[[data sampleValue:dateTimeIndex] doubleValue]];
+            [returnValues setObject:newDataValue forKey:[fieldNames objectAtIndex:i]];
+        }
+        [returnValues setObject:[NSNumber numberWithBool:YES] forKey:@"SUCCESS"];
+    }else{
+        [returnValues setObject:[NSNumber numberWithBool:NO] forKey:@"SUCCESS"];
+    }
+    return returnValues;    
+}
+
+
+
 //Return -1 on out of bounds error
--(long)nearestXBelowOrEqualTo: (long) xValue;
+-(long)latestDateTimeBeforeOrEqualTo: (long) dateTime;
 {
     long newBound;
     double step;
     long lBound, uBound;
     long valueAtLBound, valueAtUBound;
     int iters = 0;
+    long *xDataLongs;
     lBound = 0;
     uBound = [self length]-1;
-    valueAtLBound = [[self.xData sampleValue:lBound] longValue];
-    valueAtUBound = [[self.xData sampleValue:uBound] longValue];
+    xDataLongs = (long *)[self.xData bytes];
+    valueAtLBound = xDataLongs[lBound];
+    valueAtUBound = xDataLongs[uBound];
     
-    if(xValue <= valueAtLBound)
+    if(dateTime <= valueAtLBound)
     {
         return 0;
     }
-    if(xValue >= valueAtUBound)
+    if(dateTime >= valueAtUBound)
     {
         return uBound;
     }
@@ -351,11 +395,11 @@
     while((uBound-lBound)>1){
         iters = iters + 1;
         //NSLog(@"Iteration %d  %ld  to %ld",iters,lBound,uBound);
-        step = (((double)xValue - valueAtLBound)/(valueAtUBound - valueAtLBound));
+        step = (((double)dateTime - valueAtLBound)/(valueAtUBound - valueAtLBound));
         newBound = lBound + (long)(step*(uBound-lBound));
         
         if(newBound == lBound){
-            if([[self.xData sampleValue:(lBound+1)] longValue] > xValue)
+            if(xDataLongs[lBound+1] > dateTime)
             {
                 //NSLog(@"1.UB is  %ld",[[self.xData sampleValue:uBound] longValue]);
                 //NSLog(@"1.Returning with %ld",[[self.xData sampleValue:lBound] longValue]);
@@ -369,7 +413,9 @@
                 newBound = uBound; 
             }
             if(newBound == uBound){
-                if([[self.xData sampleValue:(uBound-1)] longValue] <= xValue){
+                //We know that xValue is less than value at the upper bound
+                //so if it above the datum below it, that is our answer 
+                if(dateTime >= xDataLongs[uBound-1]){
                     //NSLog(@"2.UB is  %ld",[[self.xData sampleValue:uBound] longValue]);
                     ///NSLog(@"2.Returning with %ld",[[self.xData sampleValue:(uBound -1)] longValue]);
                     return (uBound -1);
@@ -378,17 +424,17 @@
                 }
             }
         }
-        if([[self.xData sampleValue:newBound] longValue]>xValue){
+        if(dateTime < xDataLongs[newBound]){
             uBound = newBound;
-            valueAtUBound = [[self.xData sampleValue:uBound] longValue];
+            valueAtUBound = xDataLongs[uBound];
         }else{
             lBound = newBound;
-            if([[self.xData sampleValue:(lBound+1)] longValue] > xValue){
+            if(xDataLongs[lBound+1]> dateTime){
                 //NSLog(@"3.UB is  %ld",[[self.xData sampleValue:(lBound+1)] longValue]);
                 //NSLog(@"3.Returning with lb %ld",[[self.xData sampleValue:lBound] longValue]);
                 return lBound;
             }
-            valueAtLBound = [[self.xData sampleValue:lBound] longValue];
+            valueAtLBound = xDataLongs[lBound];
         }
         
     }
@@ -398,46 +444,72 @@
 }
 
 
--(void)setPlotViewWithName: (NSString *) description AndStartDateTime: (long) startDateTime AndEndDateTime: (long) endDateTime
+-(void)setPlotViewWithName: (NSString *) plotViewName AndStartDateTime: (long) startDateTime AndEndDateTime: (long) endDateTime
 {
     long startIndex, endIndex;
-    NSNumber *minY, *maxY;
+    double minY, maxY;
     NSArray *fieldnames;
     DataView *dataView; 
     NSMutableDictionary *mins = [[NSMutableDictionary alloc] init];
     NSMutableDictionary *maxs = [[NSMutableDictionary alloc] init];
     
     
-    startIndex = [self nearestXBelowOrEqualTo: startDateTime];
-    endIndex = [self nearestXBelowOrEqualTo:endDateTime];
+    startIndex = [self latestDateTimeBeforeOrEqualTo: startDateTime];
+    endIndex = [self latestDateTimeBeforeOrEqualTo:endDateTime];
     
     //Figure out the minimums and maximums
     fieldnames = [self.yData allKeys];
     CPTNumericData *dataSeries;
+    double *yDataArray;
     for (NSString *fieldname in fieldnames) {
         dataSeries = [self.yData objectForKey:fieldname];
-        minY = [dataSeries sampleValue:startIndex];
-        maxY = [dataSeries sampleValue:startIndex];        
+//        minY = [dataSeries sampleValue:startIndex];
+//        maxY = [dataSeries sampleValue:startIndex];  
+        
+        yDataArray = (double *)[dataSeries bytes];
+        minY = yDataArray[startIndex];
+        maxY = yDataArray[startIndex];
         for(long i = (startIndex+1); i <= endIndex; i++){
-            if([[dataSeries sampleValue:i] isLessThan:minY])
+            if(yDataArray[i] < minY)
             {
-                minY = [NSNumber numberWithDouble:[[dataSeries sampleValue:i] doubleValue]];
+                minY = yDataArray[i];
             }
-            if([[dataSeries sampleValue:i] isGreaterThan:maxY])
+            if(yDataArray[i] > maxY)
             {
-                maxY = [NSNumber numberWithDouble:[[dataSeries sampleValue:i] doubleValue]];
+                maxY = yDataArray[i];
             }
         }
-        [mins setValue:minY forKey:fieldname];
-        [maxs setValue:maxY forKey:fieldname];
+        
+//        for(long i = (startIndex+1); i <= endIndex; i++){
+//            if([[dataSeries sampleValue:i] isLessThan:minY])
+//            {
+//                minY = [NSNumber numberWithDouble:[[dataSeries sampleValue:i] doubleValue]];
+//            }
+//            if([[dataSeries sampleValue:i] isGreaterThan:maxY])
+//            {
+//                maxY = [NSNumber numberWithDouble:[[dataSeries sampleValue:i] doubleValue]];
+//            }
+//        }
+        [mins setValue:[NSNumber numberWithDouble:minY] forKey:fieldname];
+        [maxs setValue:[NSNumber numberWithDouble:maxY] forKey:fieldname];
     }
     dataView = [[DataView alloc] initWithDataSeries:self 
-                                            AndName:description
+                                            AndName:plotViewName
                                       AndStartIndex: startIndex 
                                         AndEndIndex: endIndex 
                                             AndMins: mins 
                                             AndMaxs: maxs];
-    [[self dataViews] setObject:dataView forKey: description];
+    [[self dataViews] setObject:dataView forKey: plotViewName];
+}
+
+-(NSArray *)getFieldNames
+{
+    NSArray *fieldNames;
+    if(self.yData != nil)
+    {
+        fieldNames = [self.yData allKeys]; 
+    }
+    return fieldNames;
 }
 
 #pragma mark - 
@@ -446,7 +518,6 @@
 @synthesize yData; 
 @synthesize dbId;
 @synthesize name;
-@synthesize timeStep;
 @synthesize dataViews;
 @synthesize pipSize;
 @synthesize sampleRate;

@@ -8,39 +8,47 @@
 
 #import <Foundation/Foundation.h>
 @class DataSeries;
-
+@class DataSeriesValue;
 
 @interface DataController : NSObject{
     BOOL connected;
-    NSMutableDictionary *dataSeriesKeeper;
+    DataSeries *currentData;
 }
 @property(readonly, assign) BOOL connected;
+@property(readonly) DataSeries *currentData;
+@property(readonly, retain)   NSDictionary *fxPairs;
+@property(readonly, retain)   NSDictionary *dataFields;
+@property(readonly, retain)   NSDictionary *minDateTimes;
+@property(readonly, retain)   NSDictionary *maxDateTimes;
+
+
 
 -(id)init;
--(NSArray *)getListofPairs;
--(NSArray *)getListofDataTypes;
+//
+-(bool)setupDataSeriesForName: (NSString *) dataSeriesName;
+-(long)getMinDateTimeForLoadedData;
+-(long)getMaxDateTimeForLoadedData;
 
--(long *)getDateRangeForSeries:(NSInteger) seriesId;
+-(bool)setBidAskMidForStartDateTime: (long) newStart 
+                     AndEndDateTime: (long) newEnd;
+//
+-(void)addEWMAWithParameter: (int) param;
+-(int)dataGranularity;
+//
+//
+-(long)getMinDataDateTimeForPair:(NSString *) fxPairName;
+//
+-(long)getMaxDataDateTimeForPair:(NSString *) fxPairName;
+//
+-(NSDictionary *)getValuesForFields:(NSArray *) fieldNames AtDateTime: (long) dateTime;
+-(DataSeriesValue *) valueFromDataBaseForFxPair: (NSString *) name 
+                                    AndDateTime: (long) dateTime 
+                                       AndField: (NSString *) field;
 
--(DataSeries *)getDataSeriesForId: (int) dbid 
-                          AndType: (int) dataTypeId 
-                     AndStartTime: (long) startTime 
-                       AndEndTime: (long) endTime;
+-(NSArray *) getAllInterestRatesForCurrency: (NSString *) currencyCode 
+                                   AndField: (NSString *) bidOrAsk;
 
--(BOOL) addDataSeriesTo: (DataSeries *) dataSeries 
-                ForType: (int) dataTypeId;
-
--(DataSeries *)getBidAskAndStuffForId: (int) dbid 
-                         AndStartTime: (long) startTime 
-                           AndEndTime: (long) endTime 
-                     ToSampledSeconds:(int) numberOfSeconds;
-
--(DataSeries *)getBidAskSeriesForId: (int) dbid 
-                         AndStartTime: (long) startTime 
-                           AndEndTime: (long) endTime 
-                     ToSampledSeconds:(int) numberOfSeconds;
-
--(void)addMidToBidAskSeries: (DataSeries *) dataSeries;
--(void)addEWMAToSeries:(DataSeries *) dataSeries WithParam: (int) param;
-
+-(DataSeries *)newDataSeriesWithXData:(NSMutableData *) dateTimes 
+                             AndYData:(NSDictionary *) dataValues 
+                        AndSampleRate:(int)newSampleRate;
 @end

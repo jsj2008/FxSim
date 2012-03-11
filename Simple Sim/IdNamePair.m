@@ -11,24 +11,33 @@
 @implementation IdNamePair
 
 @synthesize dbid;
-@synthesize description;
+@synthesize name;
+@synthesize minDateTime;
+@synthesize maxDateTime;
 
 
--(id)init
-{
-    return [self initWithId: 0 AndName:[NSString stringWithString:@""]];
-}
-
-
--(id)initWithId:(NSInteger) idNum AndName: (NSString *) name;
+-(id)initWithId:(NSInteger) idNum 
+        AndName: (NSString *) nameString 
+ AndMinDateTime: (long) minDateTimeData 
+ AndMaxDateTime: (long) maxDateTimeData
 {
     self = [super init];
     if(self){
         dbid = idNum;
-        description = name;
+        name = nameString;
+        minDateTime = minDateTimeData;
+        maxDateTime = maxDateTimeData;
     }
     return self;
 }
 
+-(id)initWithId:(NSInteger) idNum 
+        AndName: (NSString *) nameString
+{
+    return [self initWithId:idNum 
+                    AndName:nameString 
+             AndMinDateTime:0 
+             AndMaxDateTime:0];
+}
 
 @end
