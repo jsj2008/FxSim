@@ -50,11 +50,7 @@
     __weak NSButton *test;
     __weak NSTableView *simAnalysisDataTable;
     
-    __weak NSMatrix *simZoomOnOffButtons;
-    __weak NSButton *simZoomButton;
-    __weak NSButton *simZoomResetButton;
-    __weak NSDatePicker *simZoomFromDatePicker;
-    __weak NSDatePicker *simZoomToDatePicker;
+    
     
     
     
@@ -86,9 +82,7 @@
 - (IBAction)dataRangeMoveForward:(id)sender;
 - (IBAction)setupViaMenu:(id)sender;
 - (IBAction)plotPositions:(id)sender;
-- (IBAction)simZoomRadioChange:(id)sender;
-- (IBAction)simZoomButtonDown:(id)sender;
-- (IBAction)simZoomResetButtonDown:(id)sender;
+- (IBAction)toggleLongShortIndicator:(id)sender;
 
 
 
@@ -166,10 +160,8 @@
 @property (weak) IBOutlet NSButton *test;
 @property (weak) IBOutlet NSButton *plotPositionsButton;
 
+
 @property (weak) IBOutlet NSTableView *simAnalysisDataTable;
-@property (weak) IBOutlet NSMatrix *simZoomOnOffButtons;
-@property (weak) IBOutlet NSButton *simZoomButton;
-@property (weak) IBOutlet NSButton *simZoomResetButton;
-@property (weak) IBOutlet NSDatePicker *simZoomFromDatePicker;
-@property (weak) IBOutlet NSDatePicker *simZoomToDatePicker;
+
+
 @end

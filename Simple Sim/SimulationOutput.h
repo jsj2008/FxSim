@@ -13,5 +13,4 @@
 - (void) outputSimulationMessage:(NSString *) message;
 - (void) gettingDataIndicatorSwitchOn;
 - (void) gettingDataIndicatorSwitchOff;
--(void) sendGraphClickDateTimeValue: (long) dateTime;
 @end

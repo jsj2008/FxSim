@@ -12,21 +12,41 @@
 @class DataView;
 @class TimeSeriesLines;
 
-@interface SeriesPlot : NSObject<CPTPlotSpaceDelegate>//: PlotItem<CPTPlotSpaceDelegate>
+@interface SeriesPlot : NSObject<CPTPlotSpaceDelegate>
 {
 	CPTGraphHostingView *hostingView;
+    CPTXYGraph *graph;
     CPTPlotSpaceAnnotation *symbolTextAnnotation;
-	NSMutableArray *graphs;
+	//NSMutableArray *graphs;
     DataView *dataView;
 	NSString *title;
     DataSeries *plotData;
-    id<SimulationOutput> delegate;
+    NSArray *timeSeriesLines;
+    //id<SimulationOutput> delegate;
+
+    long minXrangeForPlot, maxXrangeForPlot;
+    double minYrangeForPlot, maxYrangeForPlot;
+    
+    //long minXdataForPlot, maxXdataForPlot;
+    int majorIntervalForX; 
+    //double minYdataForPlot, maxYdataForPlot;
+    double majorIntervalForY;
+    
+    BOOL zoomedOut;
+    
+    CPTPlotSpaceAnnotation *zoomAnnotation;
+	CGPoint dragStart, dragEnd;
 }
 
--(void)setDelegate:(id)del;
+-(IBAction)zoomIn;
+-(IBAction)zoomOut;
+
+//-(void)setDelegate:(id)del;
 -(void)initialGraph;
 -(void)setData:(DataSeries  *) newData WithViewName: (NSString *) viewName;
 -(void)showSeries:(NSString *)seriesName;
+-(void)visibilityOfLineUpdated;
+-(void)togglePositionIndicator;
 
 @property (nonatomic, retain) CPTGraphHostingView *hostingView;
 @property (nonatomic, retain) NSMutableArray *graphs;

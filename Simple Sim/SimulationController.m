@@ -494,6 +494,10 @@
     double **simulationData;
     NSMutableData *newPositionData;
     double *positionData;
+    NSMutableData *newShortIndicatorData;
+    double *shortIndicatorData;
+    NSMutableData *newLongIndicatorData;
+    double *longIndicatorData;
     NSMutableData *newMtmPositionalPnl;
     double *mtmPositionalPnl;
     NSMutableData *newMtmPositionalPnlInBase;
@@ -565,6 +569,13 @@
         
     newPositionData = [[NSMutableData alloc] initWithLength:dateCount * sizeof(double)]; 
     positionData = [newPositionData mutableBytes];
+    
+    newShortIndicatorData = [[NSMutableData alloc] initWithLength:dateCount * sizeof(double)]; 
+    shortIndicatorData = [newShortIndicatorData mutableBytes];
+
+    newLongIndicatorData = [[NSMutableData alloc] initWithLength:dateCount * sizeof(double)]; 
+    longIndicatorData = [newLongIndicatorData mutableBytes];
+    
     
     newMtmPositionalPnl = [[NSMutableData alloc] initWithLength:dateCount * sizeof(double)]; 
     mtmPositionalPnl = [newMtmPositionalPnl mutableBytes];
@@ -639,12 +650,7 @@
         
         do{
             tradeAtThisTime = NO;
-            
-            if(dateTime >= 1077098400)
-            {
-                NSLog(@"Stop here");
-            }
-            
+                      
             if(!noMoreTrades){
                 currentDateAsString = [EpochTime stringDateWithTime:dateTime];
                 
@@ -750,7 +756,7 @@
                             }else{
                                 negativeTime = negativeTime + (nextTradeDateTime - previousDateTime);
                             }
-                    }
+                        }
                         if(currentPosition < 0){
                             cumulativeMtmPositionalPnl = cumulativeMtmPositionalPnl + currentPosition *(currentAsk - previousAsk);
                             if((currentAsk - previousAsk)<0){
@@ -765,7 +771,21 @@
                            
                         currentPosition = currentPosition + nextTradeAmount;   
                         simDateTimes[dateCount] = nextTradeDateTime;
-                        positionData[dateCount] = (double)currentPosition;   
+                        positionData[dateCount] = (double)currentPosition; 
+                        
+                        if(currentPosition < 0){
+                            shortIndicatorData[dateCount] = -positionData[dateCount];
+                            longIndicatorData[dateCount] = 0.0;
+                        }
+                        if(currentPosition > 0){
+                            shortIndicatorData[dateCount] = 0.0;
+                            longIndicatorData[dateCount] = positionData[dateCount];
+                        }
+                        if(currentPosition == 0){
+                            shortIndicatorData[dateCount] = 0.0;
+                            longIndicatorData[dateCount] = 0.0;
+                        }
+                        
                         mtmPositionalPnl[dateCount] = cumulativeMtmPositionalPnl;   
                         tradeCashFlow[dateCount] = cummulativeTradeCashFlow;
                         
@@ -865,9 +885,22 @@
                 currentPosition = currentPosition + nextTradeAmount;
             }
             
-            //NSLog(@"Position: %d",currentPosition);
             simDateTimes[dateCount] = dateTime;
             positionData[dateCount] = (double)currentPosition;
+            
+            if(currentPosition < 0){
+                shortIndicatorData[dateCount] = -positionData[dateCount];
+                longIndicatorData[dateCount] = 0.0;
+            }
+            if(currentPosition > 0){
+                shortIndicatorData[dateCount] = 0.0;
+                longIndicatorData[dateCount] = positionData[dateCount];
+            }
+            if(currentPosition == 0){
+                shortIndicatorData[dateCount] = 0.0;
+                longIndicatorData[dateCount] = 0.0;
+            }
+            
             mtmPositionalPnl[dateCount] = cumulativeMtmPositionalPnl; 
             tradeCashFlow[dateCount] = cummulativeTradeCashFlow;
             
@@ -940,6 +973,48 @@
         NSLog(@"Database Problem; quitting"); 
     }
     
+    //Get arrays of the long and short periods
+    
+    NSMutableArray *shortPeriods = [[NSMutableArray alloc] init];
+    NSMutableArray *longPeriods = [[NSMutableArray alloc] init];
+    
+    currentPosition = 0;
+    long positionStartTime = 0;
+    for(int tradeIndex = 0; tradeIndex < [accountToPlot numberOfTrades]; tradeIndex++){
+        if(currentPosition == 0){
+            positionStartTime = [accountToPlot getDateTimeForTradeAtIndex:tradeIndex];
+        }else{
+            if(currentPosition > 0){
+                if(currentPosition + [accountToPlot getAmountForTradeAtIndex:tradeIndex] <=0){
+                    [longPeriods addObject:[NSNumber numberWithLong:positionStartTime]];
+                    [longPeriods addObject:[NSNumber numberWithLong:[accountToPlot getDateTimeForTradeAtIndex:tradeIndex]]];
+                }
+                if(currentPosition + [accountToPlot getAmountForTradeAtIndex:tradeIndex] <0){
+                    positionStartTime = [accountToPlot getDateTimeForTradeAtIndex:tradeIndex];
+                }else{
+                    positionStartTime = 0;
+                }
+            }
+            if(currentPosition < 0){
+                if(currentPosition + [accountToPlot getAmountForTradeAtIndex:tradeIndex] >=0){
+                    [shortPeriods addObject:[NSNumber numberWithLong:positionStartTime]];
+                    [shortPeriods addObject:[NSNumber numberWithLong:[accountToPlot getDateTimeForTradeAtIndex:tradeIndex]]];
+                }
+                if(currentPosition + [accountToPlot getAmountForTradeAtIndex:tradeIndex] >0){
+                    positionStartTime = [accountToPlot getDateTimeForTradeAtIndex:tradeIndex];
+                }else{
+                    positionStartTime = 0;
+                }
+            }
+        }
+        currentPosition = currentPosition + [accountToPlot getAmountForTradeAtIndex:tradeIndex];
+    }
+
+    [accountToPlot setShortPeriods:shortPeriods];
+    [accountToPlot setLongPeriods:longPeriods];
+    //Get arrays of the long and short periods DONE
+
+    
     if(allOk)
     {
         [newYData setObject:newPositionData forKey:@"POSITION"];
@@ -947,6 +1022,8 @@
         [newYData setObject:newTradeCashFlow forKey:@"TRADE_PNL"];
         [newYData setObject:newAccountBalance forKey:@"BALANCE"]; 
         [newYData setObject:newNAV forKey:@"NAV"];
+        [newYData setObject:newShortIndicatorData forKey:@"SHORT"];
+        [newYData setObject:newLongIndicatorData forKey:@"LONG"];
         positionDataSeries = [marketData newDataSeriesWithXData: newXData
                                                        AndYData: newYData 
                                                   AndSampleRate: timeStep];

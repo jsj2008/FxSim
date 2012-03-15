@@ -16,6 +16,7 @@
     int currentOpenPositionAmount;
     NSMutableArray *incidentalCosts;
     double spreadCrossingCostInBaseCurrency;
+
     //DataSeries *simulationDataSeries;
     //DataSeries *analysisDataSeries;
     //int leverage;
@@ -29,6 +30,9 @@
 @property (readonly) float maxLeverage;
 @property (retain) DataSeries *simulationDataSeries;
 @property (retain) DataSeries *analysisDataSeries;
+@property (retain) NSArray *longPeriods;
+@property (retain) NSArray *shortPeriods;
+
 //@property (readonly) double accountBalance;
 
 @property long startDate;

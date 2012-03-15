@@ -39,6 +39,8 @@
 @synthesize maxLeverage;
 @synthesize simulationDataSeries;
 @synthesize analysisDataSeries;
+@synthesize longPeriods;
+@synthesize shortPeriods;
 //@synthesize accountBalance;
 
 struct balanceAdjustment{

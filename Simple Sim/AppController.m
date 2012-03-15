@@ -43,7 +43,7 @@
 -(void)endSetupSheet;
 -(void)shiftData;
 -(void)endDataShift;
--(void)simulationPlotZoom;
+//-(void)simulationPlotZoom;
 //-(NSString *)getNameForID:(NSInteger)dbid;
 //-(long)getMinDateTimeForID:(NSInteger)dbid;
 //-(long)getMaxDateTimeForID:(NSInteger)dbid;
@@ -51,11 +51,6 @@
 
 
 @implementation AppController
-@synthesize simZoomToDatePicker;
-@synthesize simZoomFromDatePicker;
-@synthesize simZoomResetButton;
-@synthesize simZoomButton;
-@synthesize simZoomOnOffButtons;
 @synthesize simAnalysisDataTable;
 @synthesize test;
 @synthesize plotPositionsButton;
@@ -650,10 +645,34 @@ BOOL simDataZoomSelectFrom = YES;
 {
     BOOL added;
     TimeSeriesLine *tsl;
-    NSArray *fieldNames; 
+    NSMutableArray *fieldNames;
+    NSMutableArray *isAvailable;
+    NSArray *fieldNamesFromData;
     NSString *fieldName;
     
-    fieldNames = [[dataToPlot yData] allKeys];
+    fieldNames = [NSMutableArray arrayWithObjects:@"MID",@"EWMA6765",@"EWMA46368",@"NAV",@"BALANCE",@"TRADE_PNL",@"POS_PNL",@"POSITION",@"SHORT",@"LONG", nil];
+    isAvailable = [NSMutableArray arrayWithObjects:[NSNumber numberWithBool:NO],[NSNumber numberWithBool:NO],[NSNumber numberWithBool:NO],[NSNumber numberWithBool:NO],[NSNumber numberWithBool:NO],[NSNumber numberWithBool:NO],[NSNumber numberWithBool:NO],[NSNumber numberWithBool:NO],[NSNumber numberWithBool:NO],[NSNumber numberWithBool:NO],nil];
+                   
+    
+    fieldNamesFromData = [[dataToPlot yData] allKeys];
+    for(int i = 0; i < [fieldNames count]; i ++){
+        BOOL found = NO;
+        for(int j = 0; j < [fieldNamesFromData count]; j++){
+            if([[fieldNames objectAtIndex:i] isEqualToString:[fieldNamesFromData objectAtIndex:j]])
+            {
+                found = YES;
+                break;
+            }
+        }
+        if(found){
+            [isAvailable replaceObjectAtIndex:i   withObject:[NSNumber numberWithBool:YES]];
+        }
+    }
+    for(int i = [fieldNames count] - 1; i >= 0; i--){
+        if(![[isAvailable objectAtIndex:i] boolValue]){
+            [fieldNames removeObjectAtIndex:i];
+        }
+    }
     
     [self clearTSTableView:simulationTimeSeriesTableView];
     
@@ -678,6 +697,7 @@ BOOL simDataZoomSelectFrom = YES;
             [self addToTableView:simulationTimeSeriesTableView   TimeSeriesLine:tsl];
             added = YES;
         }
+       
         if(added == NO){
             tsl = [[TimeSeriesLine alloc] initWithVisibility:NO AndName:fieldName AndColour:[colorsForPlots objectAtIndex:i%[colorsForPlots count]]];
             [self addToTableView:simulationTimeSeriesTableView   TimeSeriesLine:tsl];
@@ -685,17 +705,16 @@ BOOL simDataZoomSelectFrom = YES;
     }    
     
     //Zoom stuff
-    [simZoomOnOffButtons selectCellAtRow:0 column:0];
-    [simZoomFromDatePicker setMinDate:[NSDate dateWithTimeIntervalSince1970:(NSTimeInterval) [dataToPlot minDateTime]]]; 
-    [simZoomFromDatePicker setMaxDate:[NSDate dateWithTimeIntervalSince1970:(NSTimeInterval) [dataToPlot maxDateTime]]]; 
-    [simZoomFromDatePicker setDateValue:[NSDate dateWithTimeIntervalSince1970:(NSTimeInterval) [dataToPlot minDateTime]]];
-    
-    [simZoomToDatePicker setMinDate:[NSDate dateWithTimeIntervalSince1970:(NSTimeInterval) [dataToPlot minDateTime]]]; 
-    [simZoomToDatePicker setMaxDate:[NSDate dateWithTimeIntervalSince1970:(NSTimeInterval) [dataToPlot maxDateTime]]]; 
-    [simZoomToDatePicker setDateValue:[NSDate dateWithTimeIntervalSince1970:(NSTimeInterval) [dataToPlot maxDateTime]]];
+//    [simZoomFromDatePicker setMinDate:[NSDate dateWithTimeIntervalSince1970:(NSTimeInterval) [dataToPlot minDateTime]]]; 
+//    [simZoomFromDatePicker setMaxDate:[NSDate dateWithTimeIntervalSince1970:(NSTimeInterval) [dataToPlot maxDateTime]]]; 
+//    [simZoomFromDatePicker setDateValue:[NSDate dateWithTimeIntervalSince1970:(NSTimeInterval) [dataToPlot minDateTime]]];
+//    
+//    [simZoomToDatePicker setMinDate:[NSDate dateWithTimeIntervalSince1970:(NSTimeInterval) [dataToPlot minDateTime]]]; 
+//    [simZoomToDatePicker setMaxDate:[NSDate dateWithTimeIntervalSince1970:(NSTimeInterval) [dataToPlot maxDateTime]]]; 
+//    [simZoomToDatePicker setDateValue:[NSDate dateWithTimeIntervalSince1970:(NSTimeInterval) [dataToPlot maxDateTime]]];
      
     plot4 = [[SeriesPlot alloc] init];
-    [plot4 setDelegate:self];
+    //[plot4 setDelegate:self];
     [plot4 setHostingView:hostingView4];
     [plot4 setData:dataToPlot WithViewName:@"ALL"];
     [plot4 renderPlotWithFields:simulationTimeSeries];
@@ -743,23 +762,23 @@ BOOL simDataZoomSelectFrom = YES;
     [simAnalysisDataTable reloadData];
 }
 
--(void)simulationPlotZoom
-{
-    long fromDateTime, toDateTime;
-    fromDateTime = [[simZoomFromDatePicker dateValue] timeIntervalSince1970];
-    toDateTime = [[simZoomToDatePicker dateValue] timeIntervalSince1970];
-    if(fromDateTime < toDateTime){
-        if(fromDateTime == [simData minDateTime] && toDateTime == [simData maxDateTime]){
-            [plot4 setData:simData WithViewName:@"ALL"];
-            [plot4 renderPlotWithFields:simulationTimeSeries];
-        }else{
-            [simData setPlotViewWithName:@"ZOOM" AndStartDateTime:fromDateTime AndEndDateTime:toDateTime];
-            [plot4 setData:simData WithViewName:@"ZOOM"];
-            [plot4 renderPlotWithFields:simulationTimeSeries];
-        }
-    }
-    [simZoomOnOffButtons selectCellAtRow:0 column:0];
-}
+//-(void)simulationPlotZoom
+//{
+//    long fromDateTime, toDateTime;
+//    fromDateTime = [[simZoomFromDatePicker dateValue] timeIntervalSince1970];
+//    toDateTime = [[simZoomToDatePicker dateValue] timeIntervalSince1970];
+//    if(fromDateTime < toDateTime){
+//        if(fromDateTime == [simData minDateTime] && toDateTime == [simData maxDateTime]){
+//            [plot4 setData:simData WithViewName:@"ALL"];
+//            [plot4 renderPlotWithFields:simulationTimeSeries];
+//        }else{
+//            [simData setPlotViewWithName:@"ZOOM" AndStartDateTime:fromDateTime AndEndDateTime:toDateTime];
+//            [plot4 setData:simData WithViewName:@"ZOOM"];
+//            [plot4 renderPlotWithFields:simulationTimeSeries];
+//        }
+//    }
+//    [simZoomOnOffButtons selectCellAtRow:0 column:0];
+//}
 
 
 
@@ -891,48 +910,11 @@ BOOL simDataZoomSelectFrom = YES;
     [plotPositionsButton setEnabled:YES];
 }
 
-- (IBAction)simZoomRadioChange:(id)sender {
-    if([sender selectedColumn] == 0)
-    {
-        [simZoomButton setEnabled:NO];
-    }else{
-        [simZoomButton setEnabled:YES];
-        simDataZoomSelectFrom = YES;
-    }
+- (IBAction)toggleLongShortIndicator:(id)sender {
+    [plot4 togglePositionIndicator];
 }
 
-- (IBAction)simZoomButtonDown:(id)sender {
-    long fromDateTime, toDateTime;
-    fromDateTime = [[simZoomFromDatePicker dateValue] timeIntervalSince1970];
-    toDateTime = [[simZoomToDatePicker dateValue] timeIntervalSince1970];
-    if(fromDateTime < toDateTime){
-        if(fromDateTime == [simData minDateTime] && toDateTime == [simData maxDateTime]){
-            [plot4 setData:simData WithViewName:@"ALL"];
-            [plot4 renderPlotWithFields:simulationTimeSeries];
-        }else{
-            [simData setPlotViewWithName:@"ZOOM" AndStartDateTime:fromDateTime AndEndDateTime:toDateTime];
-            [plot4 setData:simData WithViewName:@"ZOOM"];
-            [plot4 renderPlotWithFields:simulationTimeSeries];
-        }
-    }
-    [simZoomOnOffButtons selectCellAtRow:0 column:0];
-}
 
-- (IBAction)simZoomResetButtonDown:(id)sender {
-    if(simData != nil){
-        [simZoomOnOffButtons selectCellAtRow:0 column:0];
-        [simZoomButton setEnabled:NO];
-        [simZoomFromDatePicker setMinDate:[NSDate dateWithTimeIntervalSince1970:(NSTimeInterval) [simData minDateTime]]]; 
-        [simZoomFromDatePicker setMaxDate:[NSDate dateWithTimeIntervalSince1970:(NSTimeInterval) [simData maxDateTime]]]; 
-        [simZoomFromDatePicker setDateValue:[NSDate dateWithTimeIntervalSince1970:(NSTimeInterval) [simData minDateTime]]];
-    
-        [simZoomToDatePicker setMinDate:[NSDate dateWithTimeIntervalSince1970:(NSTimeInterval) [simData minDateTime]]]; 
-        [simZoomToDatePicker setMaxDate:[NSDate dateWithTimeIntervalSince1970:(NSTimeInterval) [simData maxDateTime]]]; 
-        [simZoomToDatePicker setDateValue:[NSDate dateWithTimeIntervalSince1970:(NSTimeInterval) [simData maxDateTime]]];
-        
-        [self simulationPlotZoom];
-    }
-}
 
 
 #pragma mark -
@@ -955,23 +937,6 @@ BOOL simDataZoomSelectFrom = YES;
     [leftPanelStatusLabel setHidden:YES];
 }
 
--(void) sendGraphClickDateTimeValue: (long) dateTime
-{
-    if([simZoomOnOffButtons selectedColumn]==1){
-        if(simDataZoomSelectFrom){
-            if((double)dateTime < [[simZoomToDatePicker dateValue] timeIntervalSince1970]){
-                [simZoomFromDatePicker setDateValue:[NSDate dateWithTimeIntervalSince1970:(NSTimeInterval) dateTime]];
-                simDataZoomSelectFrom = NO;
-            }
-        }else{
-            if((double)dateTime > [[simZoomFromDatePicker dateValue] timeIntervalSince1970])
-            {
-                [simZoomToDatePicker setDateValue:[NSDate dateWithTimeIntervalSince1970:(NSTimeInterval) dateTime]];
-                simDataZoomSelectFrom = YES;
-            }
-        }
-    }
-}
 
 
 //This function is redundant
@@ -1073,7 +1038,7 @@ BOOL simDataZoomSelectFrom = YES;
 - (void)tableView:(NSTableView *)tableView didClickTableColumn:(NSTableColumn *)tableColumn
 {
     SeriesPlot *plot;
-    NSMutableArray *timeSeries;
+    //NSMutableArray *timeSeries;
     if([[tableColumn identifier] isEqualToString:@"visible"]){
         if([[tableView identifier] isEqualToString:@"LTTSTV"]){
             TimeSeriesLine *tsl;
@@ -1081,7 +1046,7 @@ BOOL simDataZoomSelectFrom = YES;
             {
                 [tsl setVisible:NO];
             }
-            timeSeries = longTermTimeSeries;
+            //timeSeries = longTermTimeSeries;
             plot = plot3;
         }
         if([[tableView identifier] isEqualToString:@"STTSTV"]){
@@ -1090,7 +1055,7 @@ BOOL simDataZoomSelectFrom = YES;
             {
                 [tsl setVisible:NO];
             }
-            timeSeries = shortTermTimeSeries;
+            //timeSeries = shortTermTimeSeries;
             plot = plot2;
         }
         if([[tableView identifier] isEqualToString:@"IDTSTV"]){
@@ -1099,10 +1064,10 @@ BOOL simDataZoomSelectFrom = YES;
             {
                 [tsl setVisible:NO];
             }
-            timeSeries = intraDayTimeSeries;
+            //timeSeries = intraDayTimeSeries;
             plot = plot1;
         }
-        [plot renderPlotWithFields:timeSeries];
+        [plot visibilityOfLineUpdated];
         [tableView deselectColumn:[tableView selectedColumn]];
     }
 }
@@ -1148,30 +1113,26 @@ BOOL simDataZoomSelectFrom = YES;
 {
     TimeSeriesLine *tsl;
     SeriesPlot *plot;
-    NSMutableArray *timeSeries;
     if([[tableView identifier] isEqualToString:@"LTTSTV"]){
         tsl = [longTermTimeSeries objectAtIndex:row];
         plot = plot3;
-        timeSeries = longTermTimeSeries;
     }
     if([[tableView identifier] isEqualToString:@"STTSTV"]){
         tsl = [shortTermTimeSeries objectAtIndex:row];
         plot = plot2;
-        timeSeries = shortTermTimeSeries;
     }
     if([[tableView identifier] isEqualToString:@"IDTSTV"]){
         tsl = [intraDayTimeSeries objectAtIndex:row];
         plot = plot1;
-        timeSeries = intraDayTimeSeries;
     }
     if([[tableView identifier] isEqualToString:@"SIMTV"]){
         tsl = [simulationTimeSeries objectAtIndex:row];
         plot = plot4;
-        timeSeries = simulationTimeSeries;
+        //timeSeries = simulationTimeSeries;
     }
     NSString *column = [tableColumn identifier];
     [tsl setValue:obj forKey:column]; 
-    [plot renderPlotWithFields:timeSeries];
+    [plot visibilityOfLineUpdated];
 }
 
 -(void)clearTSTableView:(NSTableView *)tableView

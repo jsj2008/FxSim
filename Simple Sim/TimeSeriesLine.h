@@ -10,16 +10,18 @@
 @class CPTColor;
 
 @interface TimeSeriesLine : NSObject{
-    NSString *name;
-    BOOL visible;
-    NSUInteger colourId;
-    NSString *colour;
-    CPTColor *cpColour;
-    NSArray *allColourNames;
-    NSArray *allColourCPTypes;
+    //NSString *name;
+    //BOOL visible;
+    
+    //NSUInteger colourId;
+    //NSString *colour;
+    //CPTColor *cpColour;
+    //NSArray *allColourNames;
+    //NSArray *allColourCPTypes;
 }
 @property (copy) NSString *name;
 @property BOOL visible;
+@property BOOL overlay;
 @property NSUInteger colourId;
 @property (copy) NSString *colour;
 @property (copy) CPTColor *cpColour;
