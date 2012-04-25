@@ -3,7 +3,7 @@
 //  Simple Sim
 //
 //  Created by Martin O'Connor on 22/02/2012.
-//  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
+//  Copyright (c) 2012 OCONNOR RESEARCH. All rights reserved.
 //
 
 #import <Foundation/Foundation.h>
@@ -13,4 +13,23 @@
 - (void) outputSimulationMessage:(NSString *) message;
 - (void) gettingDataIndicatorSwitchOn;
 - (void) gettingDataIndicatorSwitchOff;
+
+- (void) setProgressMinAndMax: (NSArray *) minAndMax; 
+- (void) incrementProgressBarBy:(NSNumber *) increment;
+- (void) progressBarOn;
+- (void) progressBarOff;
+- (void)  initialiseSignalTableView;
+-(void)setupResultsReport;
+-(void)addSimInfoToAboutPanelWithName:(NSString *) simName
+                            AndFxPair:(NSString *) fxPair
+                   AndAccountCurrency:(NSString *) accCurrency
+                      AndSimStartTime: (NSString *) simStartTime
+                        AndSimEndTime: (NSString *) simEndTime
+                      AndSamplingRate: (NSString *) samplingRate
+                        AndTradingLag: (NSString *) tradingLag
+                AndTradingWindowStart:(NSString *) tradingStartTime
+                  AndTradingWindowEnd:(NSString *) tradingEndTime
+                     AndSimParameters:(NSString *) parameters;
+
+
 @end

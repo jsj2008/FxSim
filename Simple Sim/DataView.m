@@ -3,7 +3,7 @@
 //  Simple Sim
 //
 //  Created by Martin O'Connor on 27/01/2012.
-//  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
+//  Copyright (c) 2012 OCONNOR RESEARCH. All rights reserved.
 //
 
 #import "DataView.h"
@@ -71,7 +71,7 @@
     {
         dataToReturn = [[dataSeries yData] objectForKey:plot.identifier]; 
     }
-    if (NSEqualRanges(rangeOnOriginal, NSMakeRange(0, [dataSeries  length]-1))) 
+    if (NSEqualRanges(rangeOnOriginal, NSMakeRange(0, [dataSeries  length]))) 
     { 
         return dataToReturn; 
     } 

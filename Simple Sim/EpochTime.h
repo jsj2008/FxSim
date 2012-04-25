@@ -3,7 +3,7 @@
 //  Simple Sim
 //
 //  Created by Martin O'Connor on 06/01/2012.
-//  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
+//  Copyright (c) 2012 OCONNOR RESEARCH. All rights reserved.
 //
 
 #import <Foundation/Foundation.h>
@@ -14,7 +14,10 @@
 +(long)epochTimeNextDayAtZeroHour:(long) epochDate;
 +(NSString *)stringDateWithDayOfWeek:(long) epochDate;
 +(NSString *)stringDateWithTime:(long) epochDate;
++(NSString *)stringHoursMinutesSeconds:(long) epochDate;
++(NSString *)stringOfDateTimeForTime:(long) epochDate WithFormat:(NSString *)formatString;
+
 +(NSString *)stringDate:(long) epochDate;
--(id)init;
+//-(id)init;
 
 @end

@@ -3,24 +3,20 @@
 //  Simple Sim
 //
 //  Created by Martin O'Connor on 09/02/2012.
-//  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
+//  Copyright (c) 2012 OCONNOR RESEARCH. All rights reserved.
 //
 
 #import <Foundation/Foundation.h>
 @class DataSeries;
 
 @interface Simulation : NSObject{
-    NSMutableArray *accBalance;
-    NSMutableArray *trades;
-    NSMutableArray *openPositions;
+    NSMutableArray *accBalanceArray;
+    NSMutableArray *tradesArray;
+    
+    NSMutableArray *signalInfoArray;
+    NSMutableDictionary *simulationResults;
     int currentOpenPositionAmount;
-    NSMutableArray *incidentalCosts;
-    double spreadCrossingCostInBaseCurrency;
-
-    //DataSeries *simulationDataSeries;
-    //DataSeries *analysisDataSeries;
-    //int leverage;
-    //double marginUsed;
+    int tradingDayStartHour;
 }
 
 @property (readonly, retain) NSString *name;
@@ -28,13 +24,17 @@
 @property (readonly, retain) NSString *baseCode;
 @property (readonly, retain) NSString *quoteCode;
 @property (readonly) float maxLeverage;
+@property int samplingRate;
+@property int tradingLag;
+@property int tradingDayStart;
+@property int tradingDayEnd;
+@property (retain) NSString *signalParameters;
 @property (retain) DataSeries *simulationDataSeries;
 @property (retain) DataSeries *analysisDataSeries;
 @property (retain) NSArray *longPeriods;
 @property (retain) NSArray *shortPeriods;
-
-//@property (readonly) double accountBalance;
-
+@property long dataStartDateTime;
+@property (retain) NSMutableArray* reportDataFieldsArray;
 @property long startDate;
 @property long endDate;
 
@@ -44,8 +44,6 @@ typedef enum {
     INTEREST = 3
 } BalAdjType;
 
-
-
 -(id)initWithName: (NSString *) accountName 
           AndDate:(long) accStartDate 
        AndBalance:(double) startingBalance 
@@ -53,8 +51,6 @@ typedef enum {
    AndTradingPair: (NSString *) codeForTradingPair
       AndMaxLeverage: (float) maxLeverage;
 
-
-////-(struct balanceAdjustment) getBalanceAdjustmentAtIndex: (NSUInteger) index;
 
 -(int)    currentExposure;
 -(double) costOfCurrentExposure;
@@ -69,57 +65,71 @@ typedef enum {
 -(void)addCashTransferWithAmount: (double) amount
                      AndDateTime: (long) dateTime;
 
--(BOOL) addTradeWithAmount:(int) tradeAmount 
-                    AtTime: (long) tradeDateTime 
-                 WithPrice:(double) tradePrice
-       AndAccQuoteBidPrice:(double) accQuoteBidPrice
-       AndAccQuoteAskPrice:(double) accQuoteAskPrice
-      AndBaseQuoteBidPrice:(double) baseQuoteBidPrice
-      AndBaseQuoteAskPrice:(double) baseQuoteAskPrice
-         AndSignalDateTime:(long) signalDateTime;
+-(float) addTradeWithAmount:(int) tradeAmount 
+                     AtTime:(long) tradeDateTime 
+                  WithPrice:(double) tradePrice
+        AndAccQuoteBidPrice:(double) accQuoteBidPrice
+        AndAccQuoteAskPrice:(double) accQuoteAskPrice
+       AndBaseQuoteBidPrice:(double) baseQuoteBidPrice
+       AndBaseQuoteAskPrice:(double) baseQuoteAskPrice
+             AndSignalIndex:(int) signalIndex;
 
 -(void) addInterestToPosition:(int) positionIndex
                    WithAmount:(int) interestAmount 
                        AtTime:(long) interestDateTime;
 
 
+-(int)addSignalStatisticsWithSignal:(int) signal
+                       AndEntryTime:(long) entryTime
+                        AndExitTime:(long) exitTime
+                      AndEntryPrice:(float)entryPrice
+                       AndExitPrice:(float) exitPrice
+                    AndTimeInProfit:(float) timeInProfit
+              AndMaxPotentialProfit:(float) potentialProfit
+                AndMaxPotentialLoss:(float) potentialLoss;
 
-////-(bool) closeExposureAtTimeDate:(long) timeDate;
-
--(double) getNAVWithBaseQuoteBidPrice: (float) baseQuoteBidPrice  
-      AndBaseQuoteAskPrice: (float) baseQuoteAskPrice 
-       AndAccQuoteBidPrice: (float) accQuoteBidPrice
-       AndAccQuoteAskPrice: (float) accQuoteAskPrice;
-
--(double)getMarginAvailableWithBaseQuoteBidPrice: (float) baseQuoteBidPrice  
-                            AndBaseQuoteAskPrice: (float) baseQuoteAskPrice 
-                             AndAccQuoteBidPrice: (float) accQuoteBidPrice
-                             AndAccQuoteAskPrice: (float) accQuoteAskPrice;
-
--(double)getMarginUsedWithAccBaseBidPrice: (float) accBaseBidPrice
-                       AndAccBaseAskPrice: (float) accBaseAskPrice;
-
-
--(double)getMarginRequiredForExposure: (long) exposure
-                  WithAccBaseBidPrice: (float) accBaseBidPrice
-                   AndAccBaseAskPrice: (float) accBaseAskPrice;
+-(int)getNewSignalForChangeAtIndex:(int) signalChangeIndex;
+-(long)getDateTimeStartForSignalChangeAtIndex:(int) signalChangeIndex;
+-(long)getDateTimeEndForSignalChangeAtIndex:(int) signalChangeIndex;
 
 -(int)numberOfPositions;
 -(long)timeDateOfEarliestPosition;
--(int)numberOfTrades;
--(NSString *)getTradeDetailToPrint:(int) tradeIndex;
--(int)numberOfBalanceAdjustments;
+-(float)wgtAverageCostOfPosition;
+
+
 -(NSString *)getBalanceDetailToPrint:(int) balAdjIndex;
 -(NSDictionary *)getPerformanceAttribution;
--(double)getSpreadCrossingCostInBaseCurrency;
+//-(double)getSpreadCrossingCostInBaseCurrency;
 
+-(int)numberOfTrades;
+-(NSDictionary *)detailsOfTradeAtIndex:(int)tradeIndex;
+-(NSString *)getTradeDetailToPrint:(int) tradeIndex;
 -(int)getAmountForTradeAtIndex:(int) tradeIndex;
 -(long)getDateTimeForTradeAtIndex:(int) tradeIndex;
 -(float)getPriceForTradeAtIndex:(int) tradeIndex;
+-(int)getResultingMarketExposureForTradeAtIndex:(int) tradeIndex;
+-(float)getTotalSpreadCostForTradeAtIndex:(int) tradeIndex;
+-(BOOL)writeTradesToFile:(NSURL *) urlOfFile;
 
--(double)getAmountForBalanceAdjustmentAtIndex:(int) balAdjIndex;
+
+-(int)numberOfBalanceAdjustments;
+-(NSDictionary *)detailsOfBalanceAdjustmentIndex:(int)tradeIndex;
+-(float)getAmountForBalanceAdjustmentAtIndex:(int) balAdjIndex;
 -(long)getDateTimeForBalanceAdjustmentAtIndex:(int) balAdjIndex;
+-(NSString *)getReasonForBalanceAdjustmentAtIndex:(int) balAdjIndex;
+-(float)getResultingBalanceForBalanceAdjustmentAtIndex:(int) balAdjIndex;
+-(BOOL)writeBalanceAdjustmentsToFile:(NSURL *) urlOfFile;
 
+-(int)numberOfSignals;
+-(NSDictionary *)detailsOfSignalAtIndex:(int)signalInfoIndex;
+-(BOOL)isTransferBalanceAdjustmentAtIndex:(int) balAdjIndex;
+
+-(void) clearSimulationResults;
+-(void) addObjectToSimulationResults:(id) datum ForKey:(NSString *) key;
+
+-(int) getNumberOfReportDataFields;
+-(NSString *)getReportNameFieldAtIndex:(int) nameFieldIndex;
+-(NSString *)getReportDataFieldAtIndex:(int) dataFieldIndex;
 
 //-(void) printAccDetails: (long) dateTime;
 //-(long) currentDateTime;

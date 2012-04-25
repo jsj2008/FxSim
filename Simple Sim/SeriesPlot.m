@@ -13,7 +13,8 @@
 #import "TimeSeriesLine.h"
 
 @interface SeriesPlot() 
--(void)fixUpAxes:(CPTXYAxisSet *) axisSet;
+-(BOOL)fixUpXAxis:(CPTXYAxisSet *) axisSet AndPlotSpace:(CPTXYPlotSpace *)plotSpace;
+-(void)fixUpYAxis:(CPTXYAxisSet *) axisSet AndPlotSpace:(CPTXYPlotSpace *)plotSpace;
 @end
 
 @implementation SeriesPlot
@@ -87,49 +88,112 @@
 }
 
 
--(void)initialGraph
+-(void)initialGraphAndAddAnnotation: (BOOL) doAnnotation
 {
    	CGRect bounds = NSRectToCGRect(hostingView.bounds);
     graph = [[CPTXYGraph alloc] initWithFrame:bounds];
 	hostingView.hostedGraph = graph;
     [graph applyTheme:[CPTTheme themeNamed:kCPTDarkGradientTheme]];
-    [graph setPaddingLeft:0];
-	[graph setPaddingTop:0];
-	[graph setPaddingRight:0];
-	[graph setPaddingBottom:0];
+//    [graph setPaddingLeft:0];
+//	[graph setPaddingTop:0];
+//	[graph setPaddingRight:0];
+//	[graph setPaddingBottom:0];
     
-    // Determine point of symbol in plot coordinates
-    NSArray *anchorPoint = [NSArray arrayWithObjects:[NSDecimalNumber numberWithFloat:0.5],[NSDecimalNumber numberWithFloat:0.4], nil];
+    graph.paddingLeft	= 0.0;
+	graph.paddingTop	= 0.0;
+	graph.paddingRight	= 0.0;
+    graph.paddingBottom = 0.0;
     
-    // Add annotation
-    NSString *mainString = [NSString stringWithString:@"OCR"];
-    CPTMutableTextStyle *mainStringStyle = [CPTMutableTextStyle textStyle];
-    mainStringStyle.color	= [CPTColor grayColor];
-    mainStringStyle.fontSize = round(bounds.size.height / (CGFloat)5.0);
-    mainStringStyle.fontName = @"Courier";
+//	graph.plotAreaFrame.paddingLeft	  = 60.0;
+//	graph.plotAreaFrame.paddingTop	  = 40.0;
+//	graph.plotAreaFrame.paddingRight  = 40.0;
+//	graph.plotAreaFrame.paddingBottom = 60.0;
+//    
+	graph.plotAreaFrame.plotArea.fill = graph.plotAreaFrame.fill;
+	graph.plotAreaFrame.fill		  = nil;
     
-    CPTTextLayer *textLayer = [[CPTTextLayer alloc] initWithText:mainString style:mainStringStyle];
-    CPTPlotSpaceAnnotation *mainTitleAnnotation = [[CPTPlotSpaceAnnotation alloc] initWithPlotSpace:graph.defaultPlotSpace anchorPlotPoint:anchorPoint];
-    mainTitleAnnotation.contentLayer = textLayer;
-    mainTitleAnnotation.displacement =  CGPointMake( 0.0f, round(bounds.size.height / (CGFloat)5.0) ); //CGPointMake(0.0f, 20.0f);
-    [graph.plotAreaFrame.plotArea addAnnotation:mainTitleAnnotation];
+	graph.plotAreaFrame.borderLineStyle = nil;
+	graph.plotAreaFrame.cornerRadius	= 0.0;
+
+    
+    CPTMutableLineStyle *majorGridLineStyle = [CPTMutableLineStyle lineStyle];
+    majorGridLineStyle.lineWidth = 0.75;
+    majorGridLineStyle.lineColor = [[CPTColor colorWithGenericGray:0.2] colorWithAlphaComponent:0.75];
+    
+    CPTMutableLineStyle *minorGridLineStyle = [CPTMutableLineStyle lineStyle];
+    minorGridLineStyle.lineWidth = 0.25;
+    minorGridLineStyle.lineColor = [[CPTColor whiteColor] colorWithAlphaComponent:0.1];
+
+    CPTXYAxisSet *axisSet = (CPTXYAxisSet *)graph.axisSet;
+    axisSet.xAxis.hidden = YES; 
+    axisSet.yAxis.hidden = YES; 
     
     
-    NSString *subString = [NSString stringWithString:@"2012, O'Connor Research"];
-    CPTMutableTextStyle *subStringStyle = [CPTMutableTextStyle textStyle];
-    subStringStyle.color	= [CPTColor grayColor];
-    subStringStyle.fontSize = 12.0f;
-    subStringStyle.fontName = @"Courier";
     
-    textLayer = [[CPTTextLayer alloc] initWithText:subString style:subStringStyle];
-    CPTPlotSpaceAnnotation *subTitleAnnotation = [[CPTPlotSpaceAnnotation alloc] initWithPlotSpace:graph.defaultPlotSpace anchorPlotPoint:anchorPoint];
-    subTitleAnnotation.contentLayer = textLayer;
-    [graph.plotAreaFrame.plotArea addAnnotation:subTitleAnnotation];
+    if(doAnnotation){
+        // Determine point of symbol in plot coordinates
+        NSArray *anchorPoint = [NSArray arrayWithObjects:[NSDecimalNumber numberWithFloat:0.5],[NSDecimalNumber numberWithFloat:0.45], nil];
+    
+        // Add annotation
+        NSString *mainString = [NSString stringWithString:@"OCR"];
+        CPTMutableTextStyle *mainStringStyle = [CPTMutableTextStyle textStyle];
+        mainStringStyle.color	= [CPTColor grayColor];
+        mainStringStyle.fontSize = round(bounds.size.height / (CGFloat)5.0);
+        mainStringStyle.fontName = @"Courier";
+    
+        CPTTextLayer *textLayer = [[CPTTextLayer alloc] initWithText:mainString style:mainStringStyle];
+        CPTPlotSpaceAnnotation *mainTitleAnnotation = [[CPTPlotSpaceAnnotation alloc] initWithPlotSpace:graph.defaultPlotSpace anchorPlotPoint:anchorPoint];
+        mainTitleAnnotation.contentLayer = textLayer;
+        mainTitleAnnotation.displacement =  CGPointMake( 0.0f, round(bounds.size.height / (CGFloat)8.0) ); //CGPointMake(0.0f, 20.0f);
+        [graph.plotAreaFrame.plotArea addAnnotation:mainTitleAnnotation];
+    
+    
+        NSString *subString = [NSString stringWithString:@"2012, O'Connor Research"];
+        CPTMutableTextStyle *subStringStyle = [CPTMutableTextStyle textStyle];
+        subStringStyle.color	= [CPTColor grayColor];
+        subStringStyle.fontSize = 12.0f;
+        subStringStyle.fontName = @"Courier";
+    
+        textLayer = [[CPTTextLayer alloc] initWithText:subString style:subStringStyle];
+        CPTPlotSpaceAnnotation *subTitleAnnotation = [[CPTPlotSpaceAnnotation alloc] initWithPlotSpace:graph.defaultPlotSpace anchorPlotPoint:anchorPoint];
+        subTitleAnnotation.contentLayer = textLayer;
+        [graph.plotAreaFrame.plotArea addAnnotation:subTitleAnnotation];
+    }else{
+        axisSet.xAxis.majorGridLineStyle = majorGridLineStyle;
+        axisSet.yAxis.majorGridLineStyle = majorGridLineStyle;
+        axisSet.xAxis.minorGridLineStyle = minorGridLineStyle;
+        axisSet.yAxis.minorGridLineStyle = minorGridLineStyle;
+    }
 }
+
+
+-(void)leftSideExpand
+{
+    graph.plotAreaFrame.paddingLeft = graph.plotAreaFrame.paddingLeft + 5;
+
+}
+
+-(void)leftSideContract
+{
+    graph.plotAreaFrame.paddingLeft = graph.plotAreaFrame.paddingLeft - 5;
+    
+}
+
+-(void)bottomExpand
+{
+    graph.plotAreaFrame.paddingBottom = graph.plotAreaFrame.paddingBottom + 5;
+}
+
+-(void)bottomContract
+{
+    graph.plotAreaFrame.paddingBottom = graph.plotAreaFrame.paddingBottom - 5;
+}
+
+
 
 -(void)renderPlotWithFields: (NSArray *) linesToPlot 
 {
-    
+    BOOL dateAnnotateRequired;
     timeSeriesLines = linesToPlot; 
     CGRect bounds = NSRectToCGRect(hostingView.bounds);
     graph = [[CPTXYGraph alloc] initWithFrame:bounds];
@@ -175,26 +239,72 @@
     }
       
     CPTXYAxisSet *axisSet = (CPTXYAxisSet *)graph.axisSet;
-    [self fixUpAxes:axisSet];
+    CPTXYPlotSpace *plotSpace = (CPTXYPlotSpace *)graph.defaultPlotSpace;
     
+    dateAnnotateRequired = [self fixUpXAxis:axisSet AndPlotSpace:plotSpace];
     
-    // Setup plot space
-	CPTXYPlotSpace *plotSpace = (CPTXYPlotSpace *)graph.defaultPlotSpace;
+    [self fixUpYAxis:axisSet AndPlotSpace:plotSpace];
     
     // Extend the ranges for neatness
+//    double niceXrange = (ceil( (double)(maxXrangeForPlot - minXrangeForPlot) / majorIntervalForX ) * majorIntervalForX);
+//    
+//    CPTMutablePlotRange *xRange;
+//    if((niceXrange/(maxXrangeForPlot - minXrangeForPlot))>1.1){
+//        xRange = [CPTMutablePlotRange plotRangeWithLocation:CPTDecimalFromDouble(minXrangeForPlot)
+//                                                     length:CPTDecimalFromDouble(maxXrangeForPlot - minXrangeForPlot)];
+//    }else{
+//        xRange = [CPTMutablePlotRange plotRangeWithLocation:CPTDecimalFromDouble(minXrangeForPlot)
+//                                                     length:CPTDecimalFromDouble(niceXrange)];
+//
+//    }
     
-    CPTMutablePlotRange *xRange = [CPTMutablePlotRange plotRangeWithLocation:CPTDecimalFromDouble(minXrangeForPlot)
-                                                               length:CPTDecimalFromDouble(ceil( (maxXrangeForPlot - minXrangeForPlot) / majorIntervalForX ) * majorIntervalForX)];
-    CPTMutablePlotRange *yRange = [CPTMutablePlotRange plotRangeWithLocation:CPTDecimalFromDouble(minYrangeForPlot)
-                                                              length:CPTDecimalFromDouble(ceil( (maxYrangeForPlot - minYrangeForPlot) / majorIntervalForY ) * majorIntervalForY)];
+//    CPTMutablePlotRange *yRange = [CPTMutablePlotRange plotRangeWithLocation:CPTDecimalFromDouble(minYrangeForPlot)
+//                                                              length:CPTDecimalFromDouble(ceil( (maxYrangeForPlot - minYrangeForPlot) / majorIntervalForY ) * majorIntervalForY)];
+    //[xRange expandRangeByFactor:CPTDecimalFromDouble(1.1)];
+//    [yRange expandRangeByFactor:CPTDecimalFromDouble(1.2)];
+   
     
-    
-    
-    [xRange expandRangeByFactor:CPTDecimalFromDouble(1.1)];
-    [yRange expandRangeByFactor:CPTDecimalFromDouble(1.2)];
-    
-    plotSpace.xRange = xRange;
-	plotSpace.yRange = yRange;
+    //Annotation of dates ///////////////////////////////////////////
+    //if(!dateIsSpecifiedInAxis)
+    if(dateAnnotateRequired)
+    {
+        long firstMidnight = [EpochTime epochTimeAtZeroHour:minXrangeForPlot];
+        long lastMidnight = [EpochTime epochTimeNextDayAtZeroHour:maxXrangeForPlot];
+        
+        CPTPlotRange *yRange = plotSpace.yRange;
+        
+        NSString *stringFromDate;
+        CPTMutableTextStyle *dateStringStyle;
+        NSArray *dateAnnotationPoint;
+        CPTTextLayer *textLayer;
+        CPTPlotSpaceAnnotation *dateAnnotation;
+        NSDateFormatter *labelFormatter = [[NSDateFormatter alloc] init] ;
+        [labelFormatter setDateFormat:@"MM/dd"];
+        labelFormatter.timeZone = [NSTimeZone timeZoneWithName:@"GMT"];
+        for(long labelDate = firstMidnight; labelDate <= lastMidnight; labelDate = labelDate + (60*60*24))
+        {
+            stringFromDate = [labelFormatter stringFromDate:[NSDate dateWithTimeIntervalSince1970:labelDate]];
+            dateStringStyle = [CPTMutableTextStyle textStyle];
+            dateStringStyle.color	= [CPTColor redColor];
+            dateStringStyle.fontSize = round(bounds.size.height / (CGFloat)30.0);
+            dateStringStyle.fontName = @"Courier";
+            
+            // Determine point of symbol in plot coordinates
+            dateAnnotationPoint = [NSArray arrayWithObjects:[NSDecimalNumber numberWithLong:labelDate],[NSDecimalNumber decimalNumberWithDecimal: yRange.location], nil];
+            
+            textLayer = [[CPTTextLayer alloc] initWithText:stringFromDate style:dateStringStyle];
+            dateAnnotation = [[CPTPlotSpaceAnnotation alloc] initWithPlotSpace:graph.defaultPlotSpace   anchorPlotPoint:dateAnnotationPoint];
+            dateAnnotation.contentLayer = textLayer;
+            dateAnnotation.displacement =  CGPointMake( 0.0f,(CGFloat)10.0 );     
+            [graph.plotAreaFrame.plotArea addAnnotation:dateAnnotation];
+        }
+    }
+    //////////////////////////////////////////////////////////////////
+   
+    // Setup plot space
+	//CPTXYPlotSpace *plotSpace = (CPTXYPlotSpace *)graph.defaultPlotSpace;
+    //plotSpace.xRange = xRange;
+	//plotSpace.yRange = yRange;
     
     
 	// this allows the plot to respond to mouse events
@@ -360,7 +470,7 @@
 }
 
 
--(void)fixUpAxes:(CPTXYAxisSet *) axisSet
+-(BOOL)fixUpXAxis:(CPTXYAxisSet *) axisSet AndPlotSpace:(CPTXYPlotSpace *)plotSpace
 {
     // Grid line styles
     CPTMutableLineStyle *majorGridLineStyle = [CPTMutableLineStyle lineStyle];
@@ -370,11 +480,12 @@
     CPTMutableLineStyle *minorGridLineStyle = [CPTMutableLineStyle lineStyle];
     minorGridLineStyle.lineWidth = 0.25;
     minorGridLineStyle.lineColor = [[CPTColor whiteColor] colorWithAlphaComponent:0.1];
-
+    
     
     CPTMutableLineStyle *axisLineStyle =  [CPTMutableLineStyle lineStyle];
     axisLineStyle.lineWidth = 0.5;
     axisLineStyle.lineColor = [[CPTColor whiteColor] colorWithAlphaComponent:0.5];
+
     
     CPTXYAxis *x		  = axisSet.xAxis;
     //    
@@ -439,7 +550,45 @@
 	x.axisConstraints		= [CPTConstraints constraintWithLowerOffset:0.0];
     
     
-    // Y axis stuff 
+    double niceXrange = (ceil( (double)(maxXrangeForPlot - minXrangeForPlot) / majorIntervalForX ) * majorIntervalForX);
+    
+    CPTMutablePlotRange *xRange;
+    if((niceXrange/(maxXrangeForPlot - minXrangeForPlot))>1.1){
+        xRange = [CPTMutablePlotRange plotRangeWithLocation:CPTDecimalFromDouble(minXrangeForPlot)
+                                                     length:CPTDecimalFromDouble(maxXrangeForPlot - minXrangeForPlot)];
+    }else{
+        xRange = [CPTMutablePlotRange plotRangeWithLocation:CPTDecimalFromDouble(minXrangeForPlot)
+                                                     length:CPTDecimalFromDouble(niceXrange)];
+        
+    }
+    
+    [xRange expandRangeByFactor:CPTDecimalFromDouble(1.1)];
+    
+    plotSpace.xRange = xRange;
+    
+    xRangeZoomOut = xRange;
+    
+    return !dateIsSpecifiedInAxis;
+}
+
+
+
+-(void)fixUpYAxis:(CPTXYAxisSet *) axisSet AndPlotSpace:(CPTXYPlotSpace *)plotSpace 
+{
+    // Grid line styles
+    CPTMutableLineStyle *majorGridLineStyle = [CPTMutableLineStyle lineStyle];
+    majorGridLineStyle.lineWidth = 0.75;
+    majorGridLineStyle.lineColor = [[CPTColor colorWithGenericGray:0.2] colorWithAlphaComponent:0.75];
+    
+    CPTMutableLineStyle *minorGridLineStyle = [CPTMutableLineStyle lineStyle];
+    minorGridLineStyle.lineWidth = 0.25;
+    minorGridLineStyle.lineColor = [[CPTColor whiteColor] colorWithAlphaComponent:0.1];
+
+    
+    CPTMutableLineStyle *axisLineStyle =  [CPTMutableLineStyle lineStyle];
+    axisLineStyle.lineWidth = 0.5;
+    axisLineStyle.lineColor = [[CPTColor whiteColor] colorWithAlphaComponent:0.5];
+
     
     CPTXYAxis *y = axisSet.yAxis;
     
@@ -448,7 +597,14 @@
         // If the range of the data is not related to pipsize then forget about pipsize 
         // just go for about 10 intervals
         //This needs to be fixed
-        majorIntervalForY = ((int)(maxYrangeForPlot-minYrangeForPlot))/10;  
+        int yRangeAsInt = (int)(maxYrangeForPlot-minYrangeForPlot);
+        int factor = 1;
+        while(yRangeAsInt < 10){
+            yRangeAsInt = yRangeAsInt * 10;
+            factor++;
+        }
+        majorIntervalForY = (yRangeAsInt)/pow(10,factor);
+        
     }else{
         majorIntervalForY = 10 * [plotData pipSize];
     }
@@ -461,7 +617,7 @@
     
     
     y.majorIntervalLength		  = CPTDecimalFromDouble(majorIntervalForY);
-    y.orthogonalCoordinateDecimal = CPTDecimalFromDouble((double)minXrangeForPlot);
+    //y.orthogonalCoordinateDecimal = CPTDecimalFromDouble((double)minXrangeForPlot);
     y.minorTicksPerInterval		  = 1;
     y.majorGridLineStyle		  = majorGridLineStyle;
     y.minorGridLineStyle		  = minorGridLineStyle;
@@ -476,16 +632,12 @@
     }
     y.labelFormatter = numberFormatter;
     
-    // X and Y axes stuff
-    double xAxisYValue = majorIntervalForY*floor(minYrangeForPlot/majorIntervalForY);
-    //double yAxisLength = (maxYrangeForPlot - xAxisYValue) * 1.4;
-    //double yAxisMin = xAxisYValue - ((maxYrangeForPlot - xAxisYValue) * 0.2);
+    CPTMutablePlotRange *yRange = [CPTMutablePlotRange plotRangeWithLocation:CPTDecimalFromDouble(minYrangeForPlot)
+                                                                      length:CPTDecimalFromDouble(ceil( (maxYrangeForPlot - minYrangeForPlot) / majorIntervalForY ) * majorIntervalForY)];
+    [yRange expandRangeByFactor:CPTDecimalFromDouble(1.2)];
     
-    x.orthogonalCoordinateDecimal = CPTDecimalFromDouble(xAxisYValue);
-
-   
-
-
+    plotSpace.yRange = yRange;
+    yRangeZoomOut = yRange;
 }
 
 -(void) visibilityOfLineUpdated
@@ -515,7 +667,9 @@
     }
     //Fix the axes
     CPTXYAxisSet *axisSet = (CPTXYAxisSet *)graph.axisSet;
-    [self fixUpAxes:axisSet];
+    [self fixUpYAxis:axisSet 
+        AndPlotSpace: (CPTXYPlotSpace *)graph.defaultPlotSpace];
+    
     if(zoomedOut){
         //Get to the fully zoomed out position after a change in content of graph
         [self zoomOut];
@@ -1007,21 +1161,21 @@
 	// now adjust the plot range
 	CPTXYPlotSpace *plotSpace = (CPTXYPlotSpace *)graph.defaultPlotSpace;
     
-    CPTMutablePlotRange *xRange = [CPTMutablePlotRange plotRangeWithLocation:CPTDecimalFromDouble(minXrangeForPlot)
-                                                                      length:CPTDecimalFromDouble(ceil( (maxXrangeForPlot - minXrangeForPlot) / majorIntervalForX ) * majorIntervalForX)];
-    CPTMutablePlotRange *yRange = [CPTMutablePlotRange plotRangeWithLocation:CPTDecimalFromDouble(minYrangeForPlot)
-                                                                      length:CPTDecimalFromDouble(ceil( (maxYrangeForPlot - minYrangeForPlot) / majorIntervalForY ) * majorIntervalForY)];
+//    CPTMutablePlotRange *xRange = [CPTMutablePlotRange plotRangeWithLocation:CPTDecimalFromDouble(minXrangeForPlot)
+//                                                                      length:CPTDecimalFromDouble(ceil( (maxXrangeForPlot - minXrangeForPlot) / majorIntervalForX ) * majorIntervalForX)];
+//    CPTMutablePlotRange *yRange = [CPTMutablePlotRange plotRangeWithLocation:CPTDecimalFromDouble(minYrangeForPlot)
+//                                                                      length:CPTDecimalFromDouble(ceil( (maxYrangeForPlot - minYrangeForPlot) / majorIntervalForY ) * majorIntervalForY)];
+//    
+//    
+//    
+//    [xRange expandRangeByFactor:CPTDecimalFromDouble(1.1)];
+//    [yRange expandRangeByFactor:CPTDecimalFromDouble(1.2)];
     
-    
-    
-    [xRange expandRangeByFactor:CPTDecimalFromDouble(1.1)];
-    [yRange expandRangeByFactor:CPTDecimalFromDouble(1.2)];
-    
-    plotSpace.xRange = xRange;
-	plotSpace.yRange = yRange;
+    plotSpace.xRange = xRangeZoomOut;
+	plotSpace.yRange = yRangeZoomOut;
 
     CPTXYPlotSpace *secondPlotSpace = (CPTXYPlotSpace *)[graph plotSpaceWithIdentifier:@"SHORTLONG"];
-    secondPlotSpace.xRange = [xRange copy];
+    secondPlotSpace.xRange = [xRangeZoomOut copy];
 
         
     zoomedOut = YES;

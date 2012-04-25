@@ -32,6 +32,9 @@
     //double minYdataForPlot, maxYdataForPlot;
     double majorIntervalForY;
     
+    CPTMutablePlotRange *xRangeZoomOut;
+    CPTMutablePlotRange *yRangeZoomOut;
+    
     BOOL zoomedOut;
     
     CPTPlotSpaceAnnotation *zoomAnnotation;
@@ -41,12 +44,17 @@
 -(IBAction)zoomIn;
 -(IBAction)zoomOut;
 
+
 //-(void)setDelegate:(id)del;
--(void)initialGraph;
+-(void)initialGraphAndAddAnnotation: (BOOL) doAnnotation;
 -(void)setData:(DataSeries  *) newData WithViewName: (NSString *) viewName;
 -(void)showSeries:(NSString *)seriesName;
 -(void)visibilityOfLineUpdated;
 -(void)togglePositionIndicator;
+-(void)leftSideExpand;
+-(void)leftSideContract;
+-(void)bottomExpand;
+-(void)bottomContract;
 
 @property (nonatomic, retain) CPTGraphHostingView *hostingView;
 @property (nonatomic, retain) NSMutableArray *graphs;

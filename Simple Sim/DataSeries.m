@@ -3,7 +3,7 @@
 //  Simple Sim
 //
 //  Created by Martin O'Connor on 06/01/2012.
-//  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
+//  Copyright (c) 2012 OCONNOR RESEARCH. All rights reserved.
 //
 
 #import "DataSeries.h"
@@ -80,6 +80,50 @@
     return returnData;
 }
 
+-(BOOL)writeDataSeriesToFile: (NSURL *) fileNameAndPath
+{
+    BOOL allOk = YES;
+    NSArray *fieldNames = [yData allKeys]; 
+    NSFileHandle *outFile;
+    
+    // Create the output file first if necessary
+    // Need to remove file: //localhost for some reason
+    NSString *filePathString = [fileNameAndPath path];//[[fileNameAndPath absoluteString] substringFromIndex:16];
+    allOk = [[NSFileManager defaultManager] createFileAtPath: filePathString
+                                                    contents: nil 
+                                                  attributes: nil];
+    //[fileNameAndPath absoluteString]
+    if(allOk){
+        outFile = [NSFileHandle fileHandleForWritingAtPath:filePathString];
+        [outFile truncateFileAtOffset:0];
+        NSString *lineOfDataAsString;
+        long *xDataArray = (long *)[xData bytes];
+        double **yDataArray = malloc([yData count] * sizeof(double*));
+     
+        lineOfDataAsString = @"EPOCHTIME, DATETIME"; 
+        for(int i = 0;i < [fieldNames count] ; i++)
+        {
+            lineOfDataAsString = [lineOfDataAsString stringByAppendingFormat:@", %@",[fieldNames objectAtIndex:i]];
+        }
+        lineOfDataAsString = [lineOfDataAsString stringByAppendingFormat:@"\r\n"];
+        [outFile writeData:[lineOfDataAsString dataUsingEncoding:NSUTF8StringEncoding]];
+        
+        for(int i = 0; i < [yData count]; i++){
+            yDataArray[i] = (double *)[[yData objectForKey:[fieldNames objectAtIndex:i]] bytes];
+        }
+        
+        for(int i = 0; i < [self length]; i ++){
+            lineOfDataAsString = [NSString stringWithFormat:@"%d,%@",xDataArray[i],[EpochTime stringDateWithTime:xDataArray[i]]];
+            for(int j=0; j <[fieldNames count];j++){
+                lineOfDataAsString = [lineOfDataAsString stringByAppendingFormat:@", %f",yDataArray[j][i]];  
+            }
+            lineOfDataAsString = [lineOfDataAsString stringByAppendingFormat:@"\r\n"];
+            [outFile writeData:[lineOfDataAsString dataUsingEncoding:NSUTF8StringEncoding]];
+        }
+        [outFile closeFile];
+    }
+    return allOk;
+}
 
 
 -(DataSeries *) sampleDataAtInterval: (int) numberOfSeconds
@@ -362,6 +406,7 @@
         [returnValues setObject:[NSNumber numberWithBool:YES] forKey:@"SUCCESS"];
     }else{
         [returnValues setObject:[NSNumber numberWithBool:NO] forKey:@"SUCCESS"];
+        [NSException raise:@"Returning no data from dataseries" format:@"datetime %l is not between %l and %l",dateTime,[self minDateTime],[self maxDateTime]];
     }
     return returnValues;    
 }

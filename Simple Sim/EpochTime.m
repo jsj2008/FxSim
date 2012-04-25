@@ -3,21 +3,21 @@
 //  Simple Sim
 //
 //  Created by Martin O'Connor on 06/01/2012.
-//  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
+//  Copyright (c) 2012 OCONNOR RESEARCH. All rights reserved.
 //
 
 #import "EpochTime.h"
 
 @implementation EpochTime
 
--(id)init
-{
-    self = [super init];
-    if(self){
-        
-    }
-    return self;
-}
+//-(id)init
+//{
+//    self = [super init];
+//    if(self){
+//        
+//    }
+//    return self;
+//}
 
 +(long)epochTimeAtZeroHour:(long) epochDate
 {
@@ -70,6 +70,13 @@
     return returnString;    
 }
 
++(NSString *)stringHoursMinutesSeconds:(long) epochDate
+{
+    NSString *returnString;
+    returnString = [[NSDate dateWithTimeIntervalSince1970:(NSTimeInterval) epochDate] descriptionWithCalendarFormat:@"%H:%M:%S" timeZone:[NSTimeZone timeZoneWithName:@"GMT"] locale:nil];
+    return returnString;    
+}
+
 +(NSString *)stringDate:(long) epochDate
 {
     NSString *returnString;
@@ -77,6 +84,12 @@
     return returnString;
 }
 
++(NSString *)stringOfDateTimeForTime:(long) epochDate WithFormat:(NSString *)formatString
+{
+    NSString *returnString;
+    returnString = [[NSDate dateWithTimeIntervalSince1970:(NSTimeInterval) epochDate] descriptionWithCalendarFormat:formatString timeZone:[NSTimeZone timeZoneWithName:@"GMT"] locale:nil];
+    return returnString;
+    }
 @end
 
 

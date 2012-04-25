@@ -3,7 +3,7 @@
 //  Simple Sim
 //
 //  Created by Martin O'Connor on 14/01/2012.
-//  Copyright (c) 2012 OCR. All rights reserved.
+//  Copyright (c) 2012 OCONNOR RESEARCH. All rights reserved.
 //
 
 #import <Foundation/Foundation.h>
@@ -12,10 +12,10 @@
 
 @interface DataController : NSObject{
     BOOL connected;
-    DataSeries *currentData;
+    DataSeries *dataSeries;
 }
 @property(readonly, assign) BOOL connected;
-@property(readonly) DataSeries *currentData;
+@property(readonly) DataSeries *dataSeries;
 @property(readonly, retain)   NSDictionary *fxPairs;
 @property(readonly, retain)   NSDictionary *dataFields;
 @property(readonly, retain)   NSDictionary *minDateTimes;
@@ -25,14 +25,20 @@
 
 -(id)init;
 //
--(bool)setupDataSeriesForName: (NSString *) dataSeriesName;
+-(BOOL)setupDataSeriesForName: (NSString *) dataSeriesName;
 -(long)getMinDateTimeForLoadedData;
 -(long)getMaxDateTimeForLoadedData;
+-(long)getMinDateTimeForFullData;
+-(long)getMaxDateTimeForFullData;
 
--(bool)setBidAskMidForStartDateTime: (long) newStart 
+-(BOOL)getDataSeriesForStartDateTime: (long) newStart 
                      AndEndDateTime: (long) newEnd;
+
+-(BOOL)moveDataToStartDateTime: (long) newStart 
+                AndEndDateTime: (long) newEnd;
 //
 -(void)addEWMAWithParameter: (int) param;
+-(void)addEWMAByIndex: (int) indexNumber;
 -(int)dataGranularity;
 //
 //
@@ -51,4 +57,6 @@
 -(DataSeries *)newDataSeriesWithXData:(NSMutableData *) dateTimes 
                              AndYData:(NSDictionary *) dataValues 
                         AndSampleRate:(int)newSampleRate;
+
+-(long)getDataSeriesLength;
 @end

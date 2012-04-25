@@ -3,7 +3,7 @@
 //  Simple Sim
 //
 //  Created by Martin O'Connor on 09/02/2012.
-//  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
+//  Copyright (c) 2012 OCONNOR RESEARCH. All rights reserved.
 //
 
 #import <Foundation/Foundation.h>
@@ -17,41 +17,58 @@ typedef enum {
     ASK = 1
 } PriceType;
     
-@interface SimulationController : NSObject <NSTableViewDataSource>{
+@interface SimulationController : NSObject {
     DataController *marketData;
     NSMutableDictionary *interestRates;
-    NSMutableDictionary *accounts;
+    NSMutableDictionary *allSimulations;
     BOOL simulationDone;
-    long controllerDateTime;
+
+    //long controllerDateTime;
     id<SimulationOutput> delegate;
 }
 
-@property (retain) NSString* currentSimulation;
+@property BOOL doThreads;
+@property BOOL cancelProcedure;
+@property (retain) Simulation* currentSimulation;
+
+
 
 -(id)init;
 -(void)setDelegate:(id)del;
 
--(void)addAndTestAcc;
--(Simulation *)getAccountForName: (NSString *) name;
+-(void)tradingSimulation:(NSDictionary *) parameters;
+-(Simulation *)getSimulationForName: (NSString *) name;
 
 
 -(double)getPrice:(PriceType) priceType 
            AtTime:(long) dateTime 
       WithSuccess:(BOOL *) success;
--(BOOL) setExposureToUnits:(int) exposureAmount 
+
+-(float) setExposureToUnits:(int) exposureAmount 
                 AtTimeDate:(long) currentDateTime
-                ForAccount: (Simulation *) account
-             AndSignalTime: (long) signalDateTime;
--(void)calculateInterestForAccount: (Simulation *) account 
+            ForSimulation: (Simulation *) simulation
+             AndSignalIndex: (int) signalIndex;
+
+-(float)calculateInterestForSimulation: (Simulation *) simulation 
                         ToDateTime: (long) endDateTime;
--(double) getMarginUsedForAccount: (Simulation *) account;
--(double) getNAVForAccount: (Simulation *) account;
--(double) getBalanceForAccount: (Simulation *) account;
--(int) getExposureForAccount: (Simulation *) account;
+//-(double) getMarginUsedForSimulation: (Simulation *) simulation 
+//                              AtTime: (long) currentTime;
+//-(double) getNAVForSimulation: (Simulation *) simulation AtTime: (long) currentTime;
+-(void) askSimulationToCancel;
+-(BOOL)exportData: (NSURL *) urlOfFile;
+-(BOOL)exportTrades: (NSURL *) urlOfFile;
+-(BOOL)exportBalAdjmts: (NSURL *) urlOfFile;
+-(BOOL)writeReportToCsvFile:(NSURL *) urlOfFile;
 
-
+-(void) populateAboutPane: (Simulation *) simulation;
+-(void) initialiseSignalTableView;
+-(void) setupResultsReport;
+//-(double) getBalanceForSimulation: (Simulation *) simulation;
+//-(int) getExposureForSimulation: (Simulation *) simulation;
 -(void) clearUserInterfaceMessages;
 -(void) sendMessageToUserInterface:(NSString *) message;
--(void) createDataSeriesWithAccountInformation:(NSString *) accountName;
+-(void)analyseSimulation: (Simulation *) simulation;
+
+
 
 @end

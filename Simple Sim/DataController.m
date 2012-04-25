@@ -3,7 +3,7 @@
 //  Simple Sim
 //
 //  Created by Martin O'Connor on 14/01/2012.
-//  Copyright (c) 2012 __MyCompanyName__. All rights reserved.
+//  Copyright (c) 2012 OCONNOR RESEARCH. All rights reserved.
 //
 
 #import "DataController.h"
@@ -14,8 +14,10 @@
 #import "EpochTime.h"
 #import "DataView.h"
 #import "DataSeriesValue.h"
+#import "UtilityFunctions.h"
 
 #define DATABASE_GRANULARITY_SECONDS 1
+#define MAX_DATA_CHUNK 30*24*60*60
 #define DAY_SECONDS 24*60*60
 
 @interface DataController()
@@ -25,7 +27,7 @@
 
 @implementation DataController
 @synthesize connected;
-@synthesize currentData;
+@synthesize dataSeries;
 @synthesize fxPairs;
 @synthesize dataFields;
 @synthesize minDateTimes;
@@ -72,12 +74,16 @@ FMDatabase *db;
     return DATABASE_GRANULARITY_SECONDS;
 }
 
+-(long)getDataSeriesLength
+{
+    return [dataSeries length];
+}
 -(long)getMinDateTimeForLoadedData
 {
     long minDateTime = 0;
-    if(currentData != nil)
+    if(dataSeries != nil)
     {
-        minDateTime = [currentData minDateTime];
+        minDateTime = [dataSeries minDateTime];
     }
     return minDateTime; 
 }
@@ -85,9 +91,9 @@ FMDatabase *db;
 -(long)getMaxDateTimeForLoadedData
 {
     long maxDateTime = 0;
-    if(currentData != nil)
+    if(dataSeries != nil)
     {
-        maxDateTime = [currentData maxDateTime];
+        maxDateTime = [dataSeries maxDateTime];
     }
     return maxDateTime; 
 }
@@ -118,7 +124,7 @@ FMDatabase *db;
 
 -(NSDictionary *)getValuesForFields:(NSArray *) fieldNames AtDateTime: (long) dateTime
 {
-    return [currentData getValues:fieldNames 
+    return [dataSeries getValues:fieldNames 
                        AtDateTime:dateTime];
 }
 
@@ -270,7 +276,7 @@ FMDatabase *db;
 
 
 
--(bool)setupDataSeriesForName: (NSString *) dataSeriesName
+-(BOOL)setupDataSeriesForName: (NSString *) dataSeriesName
 {
     BOOL success = YES;
     double pipSize;
@@ -292,15 +298,27 @@ FMDatabase *db;
         success = NO;
     }
     if(success){
-        currentData = [[DataSeries alloc] initWithName:seriesName AndDbTag:dbid AndPipSize:pipSize];
+        dataSeries = [[DataSeries alloc] initWithName:seriesName AndDbTag:dbid AndPipSize:pipSize];
     }
     return success;
 }
 
--(bool)setBidAskMidForStartDateTime: (long) newStart 
-                     AndEndDateTime: (long) newEnd
+-(BOOL)moveDataToStartDateTime: (long) requestedStartDate 
+          AndEndDateTime: (long) requestedEndDate;
 {
-    
+    BOOL isOk;
+    //NSArray *currentFieldNames = [[currentData yData] allKeys];
+    isOk = [self getDataSeriesForStartDateTime: requestedStartDate 
+                                AndEndDateTime: requestedEndDate];
+    return isOk; 
+}
+
+
+-(BOOL)getDataSeriesForStartDateTime: (long) requestedStartDate 
+                     AndEndDateTime: (long) requestedEndDate
+{
+    //We always get the BID and ASK and calculate a mid, other options can be coded in
+    // EWMA is coded in already
     bool dbSuccess = YES;
     bool allNewData;
     int newStartSampleCount, newEndSampleCount;
@@ -309,14 +327,24 @@ FMDatabase *db;
     long *newStartDateLongs, *newEndDateLongs;
     double *newStartBidDoubles, *newStartAskDoubles;
     double *newEndBidDoubles, *newEndAskDoubles;
+    
     NSMutableArray *extraFields;
-    NSMutableArray *ewmaFields = [[NSMutableArray alloc] init];;
+    NSMutableArray *ewmaFields = [[NSMutableArray alloc] init];
     //NSArray *ewmaParams;
+    
+    //If the amount of data requested is more than 20% longer than our rule of thumb max data
+    //then lessen the amount of data the function will return
+    
+    if(((requestedEndDate-requestedStartDate)/MAX_DATA_CHUNK) > 1.2){
+        requestedEndDate = requestedStartDate + MAX_DATA_CHUNK;
+    }
+    
+    
     bool doEwma;
     float *ewmaParams;
     FMResultSet *rs;
     
-    oldLength = [currentData length]; 
+    oldLength = [dataSeries length]; 
     if(oldLength == 0)
     {
         allNewData = YES;
@@ -325,7 +353,7 @@ FMDatabase *db;
         
     }else{
         //Check for other data which we can calculate
-        extraFields = [[[currentData yData] allKeys] mutableCopy];
+        extraFields = [[[dataSeries yData] allKeys] mutableCopy];
         [extraFields removeObject:[NSString stringWithString:@"BID"]];
         [extraFields removeObject:[NSString stringWithString:@"ASK"]];
         [extraFields removeObject:[NSString stringWithString:@"MID"]];
@@ -340,29 +368,29 @@ FMDatabase *db;
          }else{
             doEwma = NO;
         }
-        oldStart = [currentData minDateTime];
-        oldEnd = [currentData maxDateTime];
+        oldStart = [dataSeries minDateTime];
+        oldEnd = [dataSeries maxDateTime];
         
         //If the day is nearly overlapping make it overlap
-        if(newStart > oldEnd && (newStart - oldEnd) <= (7 * DAY_SECONDS)){
-            newStart = oldEnd;
+        if(requestedStartDate > oldEnd && (requestedStartDate - oldEnd) <= (7 * DAY_SECONDS)){
+            requestedStartDate = oldEnd;
         }
         
         
-        if((newEnd < oldStart) || (newStart > oldEnd) ){
+        if((requestedEndDate < oldStart) || (requestedStartDate > oldEnd) ){
             allNewData = YES;
             startAdjSecs = 0;
             endAdjSecs = 0;
         }else{
             allNewData = NO;
-            startAdjSecs = newStart - oldStart;
-            endAdjSecs = newEnd - oldEnd;
+            startAdjSecs = requestedStartDate - oldStart;
+            endAdjSecs = requestedEndDate - oldEnd;
         }
         
     }
         
     
-    //newStart = oldStart + startAdjSecs;
+    //requestedStartDate = oldStart + startAdjSecs;
     //newEnd = oldEnd + endAdjSecs;
     
     newStartSampleCount = 0;
@@ -385,8 +413,8 @@ FMDatabase *db;
         ewmaParams = malloc([ewmaFields count]*sizeof(int));
         for(int i =0;i<[ewmaFields count];i++)
         {
-            oldEwmaDoubles[i] = (double *)[[[currentData yData] objectForKey:[ewmaFields objectAtIndex:i]] bytes];
-            ewmaParams[i] = 2.0/(1.0+[[[ewmaFields objectAtIndex:i] substringFromIndex:4] intValue]);
+            oldEwmaDoubles[i] = (double *)[[[dataSeries yData] objectForKey:[ewmaFields objectAtIndex:i]] bytes];
+            ewmaParams[i] = 2.0/(1.0+[UtilityFunctions fib:[[[ewmaFields objectAtIndex:i] substringFromIndex:4] intValue]]);
         }
     }
 
@@ -394,10 +422,10 @@ FMDatabase *db;
     
     if(!allNewData){
         //Get a handle on the original data
-        dateData = [currentData xData];
-        bidData = [[currentData yData] objectForKey:@"BID"];
-        askData = [[currentData yData] objectForKey:@"ASK"];
-        midData = [[currentData yData] objectForKey:@"MID"];
+        dateData = [dataSeries xData];
+        bidData = [[dataSeries yData] objectForKey:@"BID"];
+        askData = [[dataSeries yData] objectForKey:@"ASK"];
+        midData = [[dataSeries yData] objectForKey:@"MID"];
         oldDateLongs = (long *)[dateData bytes];
         oldBidDoubles = (double *)[bidData bytes];
         oldAskDoubles = (double *)[askData bytes];
@@ -413,7 +441,11 @@ FMDatabase *db;
             do
             { 
                 oldDataStartIndex++;
-            }while(newStart > oldDateLongs[oldDataStartIndex] && oldDataStartIndex < [currentData length]);
+            }while(requestedStartDate > oldDateLongs[oldDataStartIndex] && oldDataStartIndex < [dataSeries length]);
+            if(oldDataStartIndex>1){
+                //Go back one to make sure we overlap the first time
+                oldDataStartIndex--;
+            }
         }
     }
    
@@ -424,18 +456,18 @@ FMDatabase *db;
         @try{
             long queryStart, queryEnd;
             if(allNewData){
-                queryStart = newStart;
-                queryEnd = newEnd;
+                queryStart = requestedStartDate;
+                queryEnd = requestedEndDate;
             }else{
-                queryStart = newStart;
+                queryStart = requestedStartDate;
                 queryEnd = oldStart;
             }
-            resultCount = [db intForQuery:[NSString stringWithFormat:@"SELECT COUNT(*) FROM DataSeries WHERE SeriesId = %d AND DataTypeId = %d AND TimeDate >= %ld AND TimeDate < %ld",[currentData dbId],1,queryStart,queryEnd]];
+            resultCount = [db intForQuery:[NSString stringWithFormat:@"SELECT COUNT(*) FROM DataSeries WHERE SeriesId = %d AND DataTypeId = %d AND TimeDate >= %ld AND TimeDate < %ld",[dataSeries dbId],1,queryStart,queryEnd]];
             newStartDateLongs = malloc(resultCount * sizeof(long));
             newStartBidDoubles = malloc(resultCount * sizeof(double)); 
             newStartAskDoubles = malloc(resultCount * sizeof(double));
             
-            NSString *queryString = [NSString stringWithFormat:@"SELECT DS1.TimeDate, DS1.Value, DS2.Value FROM DataSeries DS1 INNER JOIN DataSeries DS2 ON DS1.TimeDate = DS2.TimeDate AND DS1.SeriesId = DS2.SeriesId  WHERE DS1.SeriesId = %d AND DS1.DataTypeId = %d AND DS2.DataTypeId = %d AND DS1.TimeDate >= %ld AND DS1.TimeDate < %ld ORDER BY DS1.TimeDate ASC", [currentData dbId],1,2,queryStart,queryEnd];
+            NSString *queryString = [NSString stringWithFormat:@"SELECT DS1.TimeDate, DS1.Value, DS2.Value FROM DataSeries DS1 INNER JOIN DataSeries DS2 ON DS1.TimeDate = DS2.TimeDate AND DS1.SeriesId = DS2.SeriesId  WHERE DS1.SeriesId = %d AND DS1.DataTypeId = %d AND DS2.DataTypeId = %d AND DS1.TimeDate >= %ld AND DS1.TimeDate < %ld ORDER BY DS1.TimeDate ASC", [dataSeries dbId],1,2,queryStart,queryEnd];
             rs = [db executeQuery:queryString];
         }
         @catch (NSException *exception) {
@@ -458,13 +490,13 @@ FMDatabase *db;
     //if we are asked to move the end of the data backwards
     int oldDataEndIndex = 0;
     if(!allNewData){
-        oldDataEndIndex = (int)[currentData length]-1;
+        oldDataEndIndex = (int)[dataSeries length]-1;
         if(endAdjSecs < 0){
             oldDataEndIndex++;
             do
             { 
                 oldDataEndIndex--;
-            }while(newEnd < oldDateLongs[oldDataEndIndex] && oldDataEndIndex > 0);
+            }while(requestedEndDate < oldDateLongs[oldDataEndIndex] && oldDataEndIndex > 0);
         }
     }
     
@@ -473,18 +505,18 @@ FMDatabase *db;
         @try{
             long queryStart, queryEnd;
             if(allNewData){
-                queryStart = newStart;
-                queryEnd = newEnd;
+                queryStart = requestedStartDate;
+                queryEnd = requestedEndDate;
             }else{
                 queryStart = oldEnd;
-                queryEnd = newEnd;
+                queryEnd = requestedEndDate;
             }
-            resultCount = [db intForQuery:[NSString stringWithFormat:@"SELECT COUNT(*) FROM DataSeries WHERE SeriesId = %d AND DataTypeId = %d AND TimeDate >= %ld AND TimeDate <= %ld",[currentData dbId],1,queryStart,queryEnd]];
+            resultCount = [db intForQuery:[NSString stringWithFormat:@"SELECT COUNT(*) FROM DataSeries WHERE SeriesId = %d AND DataTypeId = %d AND TimeDate >= %ld AND TimeDate <= %ld",[dataSeries dbId],1,queryStart,queryEnd]];
             newEndDateLongs = malloc(resultCount * sizeof(long));
             newEndBidDoubles = malloc(resultCount * sizeof(double)); 
             newEndAskDoubles = malloc(resultCount * sizeof(double));
             
-            NSString *queryString = [NSString stringWithFormat:@"SELECT DS1.TimeDate, DS1.Value, DS2.Value FROM DataSeries DS1 INNER JOIN DataSeries DS2 ON DS1.TimeDate = DS2.TimeDate AND DS1.SeriesId = DS2.SeriesId  WHERE DS1.SeriesId = %d AND DS1.DataTypeId = %d AND DS2.DataTypeId = %d AND DS1.TimeDate >= %ld AND DS1.TimeDate <= %ld ORDER BY DS1.TimeDate ASC", [currentData dbId],1,2,queryStart,queryEnd];
+            NSString *queryString = [NSString stringWithFormat:@"SELECT DS1.TimeDate, DS1.Value, DS2.Value FROM DataSeries DS1 INNER JOIN DataSeries DS2 ON DS1.TimeDate = DS2.TimeDate AND DS1.SeriesId = DS2.SeriesId  WHERE DS1.SeriesId = %d AND DS1.DataTypeId = %d AND DS2.DataTypeId = %d AND DS1.TimeDate >= %ld AND DS1.TimeDate <= %ld ORDER BY DS1.TimeDate ASC", [dataSeries dbId],1,2,queryStart,queryEnd];
             rs = [db executeQuery:queryString];
         }
         @catch (NSException *exception) {
@@ -633,11 +665,11 @@ FMDatabase *db;
                                                 shape:nil]; 
         
         
-        [currentData setXData:dateData];
-        [currentData setYData:[[NSMutableDictionary alloc] init]];
-        [[currentData yData] setObject:bidData forKey:@"BID"];
-        [[currentData yData] setObject:askData forKey:@"ASK"];
-        [[currentData yData] setObject:midData forKey:@"MID"];
+        [dataSeries setXData:dateData];
+        [dataSeries setYData:[[NSMutableDictionary alloc] init]];
+        [[dataSeries yData] setObject:bidData forKey:@"BID"];
+        [[dataSeries yData] setObject:askData forKey:@"ASK"];
+        [[dataSeries yData] setObject:midData forKey:@"MID"];
         if(doEwma){
             for(int j = 0; j < [ewmaFields count]; j++)
             {
@@ -646,13 +678,13 @@ FMDatabase *db;
                                                                            sizeof(double), 
                                                                            CFByteOrderGetCurrent()) 
                                                          shape:nil];
-                [[currentData yData] setObject:ewmaData forKey:[ewmaFields objectAtIndex:j]];
+                [[dataSeries yData] setObject:ewmaData forKey:[ewmaFields objectAtIndex:j]];
                 
             }
         }
         
-        [[currentData dataViews] removeAllObjects];
-        [currentData setPlotViewWithName:@"ALL" AndStartDateTime:newDateLongs[0] AndEndDateTime:newDateLongs[indexOnNew-1]];
+        [[dataSeries dataViews] removeAllObjects];
+        [dataSeries setPlotViewWithName:@"ALL" AndStartDateTime:newDateLongs[0] AndEndDateTime:newDateLongs[indexOnNew-1]];
     }
     return dbSuccess;
 }
@@ -666,6 +698,35 @@ FMDatabase *db;
 {
     return [[maxDateTimes objectForKey:fxPairName] longValue];
 }
+
+-(long)getMinDateTimeForFullData
+{
+    NSArray *arrayOfFxPairs = [minDateTimes allKeys];
+    if([fxPairs count] == 0){
+        return 0;
+    }else{
+        long minDateTime = [[minDateTimes objectForKey:[arrayOfFxPairs objectAtIndex:0]] longValue];
+        for(int i = 1; i < [fxPairs count]; i++){
+            minDateTime = MAX(minDateTime, [[minDateTimes objectForKey:[arrayOfFxPairs objectAtIndex:i]] longValue]);
+        }
+        return minDateTime;
+    } 
+}
+
+-(long)getMaxDateTimeForFullData
+{
+    NSArray *arrayOfFxPairs = [maxDateTimes allKeys];
+    if([fxPairs count] == 0){
+        return 0;
+    }else{
+        long minDateTime = [[maxDateTimes objectForKey:[arrayOfFxPairs objectAtIndex:0]] longValue];
+        for(int i = 1; i < [fxPairs count]; i++){
+            minDateTime = MIN(minDateTime, [[maxDateTimes objectForKey:[arrayOfFxPairs objectAtIndex:i]] longValue]);
+        }
+        return minDateTime;
+    } 
+}
+
 
 //-(DataSeries *)getDataSeriesForId: (int) dbid  AndType: (int) dataTypeId AndStartTime: (long) startTime AndEndTime: (long) endTime 
 //{
@@ -752,16 +813,16 @@ FMDatabase *db;
     double minValue, maxValue;
     double *midDoubleArray;
     
-    NSMutableData *newData = [NSMutableData dataWithLength:([currentData length] * sizeof(double))];
+    NSMutableData *newData = [NSMutableData dataWithLength:([dataSeries length] * sizeof(double))];
     
     double *ewma = [newData mutableBytes]; 
-    CPTNumericData *mid =  [[currentData yData] objectForKey:fieldNameMid];
+    CPTNumericData *mid =  [[dataSeries yData] objectForKey:fieldNameMid];
     midDoubleArray = (double *)[mid bytes];
     
     ewma[0] = midDoubleArray[0];
     minValue = ewma[0];
     maxValue = ewma[0];
-    for(long i = 1; i < [currentData length]; i++){
+    for(long i = 1; i < [dataSeries length]; i++){
         ewma[i] = (lambda * midDoubleArray[i]) + ((1-lambda) * ewma[i-1]);
         minValue = fmin(minValue,ewma[i]);
         maxValue = fmax(maxValue,ewma[i]);
@@ -772,15 +833,51 @@ FMDatabase *db;
                                                                                 sizeof(double), 
                                                                                 CFByteOrderGetCurrent()) 
                                                               shape:nil];
-    [[currentData yData] setObject:ewmaData forKey:newFieldName];
-    DataView *dataViewAll = [[currentData dataViews] objectForKey:@"ALL"];
+    [[dataSeries yData] setObject:ewmaData forKey:newFieldName];
+    DataView *dataViewAll = [[dataSeries dataViews] objectForKey:@"ALL"];
+    [dataViewAll addMin:minValue AndMax:maxValue ForKey:fieldNameEWMA];
+}
+
+
+-(void)addEWMAByIndex: (int) indexNumber
+{
+    NSString *fieldNameMid = @"MID";
+    
+    NSString *fieldNameEWMA = [NSString stringWithFormat:@"EWMA%d",indexNumber];
+    double param = [UtilityFunctions fib:indexNumber];
+    double lambda = 2.0/(1.0+param);
+    double minValue, maxValue;
+    double *midDoubleArray;
+    
+    NSMutableData *newData = [NSMutableData dataWithLength:([dataSeries length] * sizeof(double))];
+    
+    double *ewma = [newData mutableBytes]; 
+    CPTNumericData *mid =  [[dataSeries yData] objectForKey:fieldNameMid];
+    midDoubleArray = (double *)[mid bytes];
+    
+    ewma[0] = midDoubleArray[0];
+    minValue = ewma[0];
+    maxValue = ewma[0];
+    for(long i = 1; i < [dataSeries length]; i++){
+        ewma[i] = (lambda * midDoubleArray[i]) + ((1-lambda) * ewma[i-1]);
+        minValue = fmin(minValue,ewma[i]);
+        maxValue = fmax(maxValue,ewma[i]);
+    }
+    NSString *newFieldName = [NSString stringWithString:fieldNameEWMA];
+    CPTNumericData * ewmaData = [CPTNumericData numericDataWithData:newData 
+                                                           dataType:CPTDataType(CPTFloatingPointDataType, 
+                                                                                sizeof(double), 
+                                                                                CFByteOrderGetCurrent()) 
+                                                              shape:nil];
+    [[dataSeries yData] setObject:ewmaData forKey:newFieldName];
+    DataView *dataViewAll = [[dataSeries dataViews] objectForKey:@"ALL"];
     [dataViewAll addMin:minValue AndMax:maxValue ForKey:fieldNameEWMA];
 }
 
 -(DataSeries *)newDataSeriesWithXData:(NSMutableData *) dateTimes AndYData:(NSDictionary *) dataValues AndSampleRate:(int)newSampleRate
 {
     DataSeries *newDataSeries;
-    newDataSeries = [currentData getCopyOfStaticData];
+    newDataSeries = [dataSeries getCopyOfStaticData];
     NSArray *fieldNames = [dataValues allKeys];
     
     CPTNumericData *dateTimeData; 
