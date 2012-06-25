@@ -18,7 +18,8 @@ typedef enum {
 } PriceType;
     
 @interface SimulationController : NSObject {
-    DataController *marketData;
+    BOOL doThreads;
+    DataController *simData;
     NSMutableDictionary *interestRates;
     NSMutableDictionary *allSimulations;
     BOOL simulationDone;
@@ -27,48 +28,44 @@ typedef enum {
     id<SimulationOutput> delegate;
 }
 
-@property BOOL doThreads;
+
 @property BOOL cancelProcedure;
 @property (retain) Simulation* currentSimulation;
 
++ (BOOL) positioningUnderstood:(NSString *) positioningString;
 
+- (id) init;
+- (void) setDelegate:(id)del;
+- (BOOL) doThreads;
+- (void) setDoThreads:(BOOL)doThreadedProcedures;
+- (void) tradingSimulation:(NSDictionary *) parameters;
+- (Simulation *)getSimulationForName: (NSString *) name;
+- (double) getPrice:(PriceType) priceType 
+             AtTime:(long) dateTime 
+        WithSuccess:(BOOL *) success;
 
--(id)init;
--(void)setDelegate:(id)del;
+-(double) setExposureToUnits:(int) exposureAmount 
+                  AtTimeDate:(long) currentDateTime
+               ForSimulation: (Simulation *) simulation
+              AndSignalIndex: (int) signalIndex;
 
--(void)tradingSimulation:(NSDictionary *) parameters;
--(Simulation *)getSimulationForName: (NSString *) name;
+-(double) calculateInterestForSimulation: (Simulation *) simulation 
+                              ToDateTime: (long) endDateTime;
 
+- (void) askSimulationToCancel;
+- (BOOL) exportData: (NSURL *) urlOfFile;
+- (BOOL) exportTrades: (NSURL *) urlOfFile;
+- (BOOL) exportBalAdjmts: (NSURL *) urlOfFile;
+- (BOOL) writeReportToCsvFile:(NSURL *) urlOfFile;
 
--(double)getPrice:(PriceType) priceType 
-           AtTime:(long) dateTime 
-      WithSuccess:(BOOL *) success;
-
--(float) setExposureToUnits:(int) exposureAmount 
-                AtTimeDate:(long) currentDateTime
-            ForSimulation: (Simulation *) simulation
-             AndSignalIndex: (int) signalIndex;
-
--(float)calculateInterestForSimulation: (Simulation *) simulation 
-                        ToDateTime: (long) endDateTime;
-//-(double) getMarginUsedForSimulation: (Simulation *) simulation 
-//                              AtTime: (long) currentTime;
-//-(double) getNAVForSimulation: (Simulation *) simulation AtTime: (long) currentTime;
--(void) askSimulationToCancel;
--(BOOL)exportData: (NSURL *) urlOfFile;
--(BOOL)exportTrades: (NSURL *) urlOfFile;
--(BOOL)exportBalAdjmts: (NSURL *) urlOfFile;
--(BOOL)writeReportToCsvFile:(NSURL *) urlOfFile;
-
--(void) populateAboutPane: (Simulation *) simulation;
--(void) initialiseSignalTableView;
--(void) setupResultsReport;
-//-(double) getBalanceForSimulation: (Simulation *) simulation;
-//-(int) getExposureForSimulation: (Simulation *) simulation;
--(void) clearUserInterfaceMessages;
--(void) sendMessageToUserInterface:(NSString *) message;
--(void)analyseSimulation: (Simulation *) simulation;
-
-
-
+- (void) populateAboutPane: (Simulation *) simulation;
+- (void) initialiseSignalTableView;
+- (void) setupResultsReport;
+- (void) clearUserInterfaceMessages;
+- (void) sendMessageToUserInterface:(NSString *) message;
+- (void) analyseSimulation: (Simulation *) simulation;
+- (void) progressBarOn;
+- (void) progressBarOff;
+- (void) progressAsFraction:(NSNumber *) progressValue;
+- (void) readingRecordSetsProgress: (NSNumber *) progressFraction;
 @end

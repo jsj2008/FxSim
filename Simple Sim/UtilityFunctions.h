@@ -9,11 +9,13 @@
 #import <Foundation/Foundation.h>
 
 @interface UtilityFunctions : NSObject
+
 +(int)fib:(int)n;
 
-+(int) signum: (int) n;
++(int) signOfDouble: (double) n;
 
-//+(void) sortDoubleArray:(double *) arrayToSort WithStartIndex:(int) startIndex AndEndIndex:(int) endIndex;
++(int) signOfInt: (int) n;
+
 +(void) calcSortIndexForDoubleArray:(double *) arrayToSort 
                      WithStartIndex:(int) startIndex 
                         AndEndIndex:(int) endIndex

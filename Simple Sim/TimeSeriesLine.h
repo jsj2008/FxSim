@@ -10,25 +10,26 @@
 @class CPTColor;
 
 @interface TimeSeriesLine : NSObject{
-    //NSString *name;
-    //BOOL visible;
-    
-    //NSUInteger colourId;
-    //NSString *colour;
-    //CPTColor *cpColour;
-    //NSArray *allColourNames;
-    //NSArray *allColourCPTypes;
+    NSString *_name;
+    int _layerIndex;
+    NSUInteger _colourId;
+    NSString *_colour;
+    CPTColor *_cpColour;
+    NSArray *_allColourNames;
+    NSArray *_allColourCPTypes;
 }
-@property (copy) NSString *name;
-@property BOOL visible;
-@property BOOL overlay;
-@property NSUInteger colourId;
-@property (copy) NSString *colour;
-@property (copy) CPTColor *cpColour;
-@property (copy) NSArray *allColourNames;
-@property (copy) NSArray *allColourCPTypes;
 
-- (id)initWithVisibility: (BOOL) isVisible AndName: (NSString *) name AndColour:(NSString *) colour;
+@property (retain) NSString *name;
+@property int layerIndex;
+@property NSUInteger colourId;
+@property (retain) NSString *colour;
+@property (retain) CPTColor *cpColour;
+@property (retain) NSArray *allColourNames;
+@property (retain) NSArray *allColourCPTypes;
+
+- (id)initWithLayerIndex: (int)        layerIndex 
+                 AndName: (NSString *)  name 
+               AndColour: (NSString *)  colour;
 - (NSString *)description;
 - (void)setColourId:(NSUInteger) newColourId;
 - (NSUInteger)colourId;

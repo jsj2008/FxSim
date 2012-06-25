@@ -2,9 +2,7 @@
 //  SimpleScatterPlot.h
 //  CorePlotGallery
 //
-//  Created by Jeff Buck on 7/31/10.
-//  Copyright 2010 Jeff Buck. All rights reserved.
-//
+
 
 #import <CorePlot/CorePlot.h>
 #import "SimulationOutput.h"
@@ -14,53 +12,73 @@
 
 @interface SeriesPlot : NSObject<CPTPlotSpaceDelegate>
 {
-	CPTGraphHostingView *hostingView;
+	CPTGraphHostingView *_hostingView;
     CPTXYGraph *graph;
-    CPTPlotSpaceAnnotation *symbolTextAnnotation;
-	//NSMutableArray *graphs;
-    DataView *dataView;
-	NSString *title;
-    DataSeries *plotData;
-    NSArray *timeSeriesLines;
-    //id<SimulationOutput> delegate;
-
-    long minXrangeForPlot, maxXrangeForPlot;
-    double minYrangeForPlot, maxYrangeForPlot;
     
-    //long minXdataForPlot, maxXdataForPlot;
+    DataView *dataView;
+	NSString *identifier;
+    NSArray *timeSeriesLines;
+   
+    BOOL plot1AxisVisible;
+    BOOL plot2AxisVisible;
+    
+    long minXrangeForPlot, maxXrangeForPlot;
+    double minYrangeForPlot0, maxYrangeForPlot0;
+    double minYrangeForPlot1, maxYrangeForPlot1;
+    double minYrangeForPlot2, maxYrangeForPlot2;
+    
     int majorIntervalForX; 
-    //double minYdataForPlot, maxYdataForPlot;
-    double majorIntervalForY;
+    //double majorIntervalForY;
     
     CPTMutablePlotRange *xRangeZoomOut;
-    CPTMutablePlotRange *yRangeZoomOut;
+    CPTMutablePlotRange *yRange0ZoomOut;
+    CPTMutablePlotRange *yRange1ZoomOut;
+    CPTMutablePlotRange *yRange2ZoomOut;
     
     BOOL zoomedOut;
+    CPTXYPlotSpace *plotSpace0;
+    CPTXYPlotSpace *plotSpace1;
+    CPTXYPlotSpace *plotSpace2;
+    CPTXYPlotSpace *overlayPlotSpace;
     
+    CPTXYAxis *xAxis0;
+    CPTXYAxis *yAxis0;
+    CPTXYAxis *yAxis1;
+    CPTXYAxis *yAxis2;
+    CPTPlotSpaceAnnotation *clickDateAnnotation;
+    CPTPlotSpaceAnnotation *dragDateAnnotation;
     CPTPlotSpaceAnnotation *zoomAnnotation;
+    CPTPlotSpaceAnnotation *lineAnnotation;
+    NSMutableArray *lineAnnotationArray;
+    
+    NSMutableArray *dateAnnotationArray;
 	CGPoint dragStart, dragEnd;
 }
 
--(IBAction)zoomIn;
--(IBAction)zoomOut;
+- (id)   initWithIdentifier:(NSString*) identifierString;
+- (void) initialGraphAndAddAnnotation: (BOOL) doAnnotation;
+- (void) setData:(DataSeries  *) newData WithViewName: (NSString *) viewName;
+//- (void) showSeries:(NSString *)seriesName;
+- (void) plotLineUpdated;
+- (void) togglePositionIndicator;
+- (void) leftSideExpand;
+- (void) leftSideContract;
+- (void) rightSideExpand;
+- (void) rightSideContract;
+- (void) bottomExpand;
+- (void) bottomContract;
+- (void) topExpand;
+- (void) topContract;
+- (void) setZoomDataViewFrom:(long)startDateTime To:(long) endDateTime;
+- (void) renderPlotWithFields: (NSArray *) linesToPlot; 
+- (void) toggleAxisLabelsForLayer: (int) layerIndex;
 
+@property (retain) CPTGraphHostingView *hostingView;
+//@property (readonly, retain) NSMutableArray *graphs;
+@property (readonly, retain) NSString *identifier;
+@property (readonly, retain) DataView *dataView;
+@property (readonly, retain) DataSeries *plotData;
 
-//-(void)setDelegate:(id)del;
--(void)initialGraphAndAddAnnotation: (BOOL) doAnnotation;
--(void)setData:(DataSeries  *) newData WithViewName: (NSString *) viewName;
--(void)showSeries:(NSString *)seriesName;
--(void)visibilityOfLineUpdated;
--(void)togglePositionIndicator;
--(void)leftSideExpand;
--(void)leftSideContract;
--(void)bottomExpand;
--(void)bottomContract;
-
-@property (nonatomic, retain) CPTGraphHostingView *hostingView;
-@property (nonatomic, retain) NSMutableArray *graphs;
-@property (nonatomic, retain) NSString *title;
-
--(void)renderPlotWithFields: (NSArray *) timeSeriesLines;
 
 @end
 

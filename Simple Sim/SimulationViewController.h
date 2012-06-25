@@ -12,42 +12,46 @@
 @class DataController;
 @class SimulationController;
 
-@interface SimulationViewController : NSViewController<SimulationOutput,NSTableViewDataSource,NSTableViewDelegate>{
-    id delegate;
-    //NSArray *coloursForPlots;
-    //NSArray *fieldNameOrdering;
-    
-    
+@interface SimulationViewController : NSViewController<SimulationOutput,NSTableViewDataSource,NSTableViewDelegate,NSTabViewDelegate>{
+    __weak id delegate;
     NSMutableArray *simulationTimeSeries;
     NSMutableArray *simulationSignalTimeSeries;
+    NSArray *importDataArray;
+    NSString *importDataFilename;
     DataSeries *simulationDataSeries;
     SeriesPlot *simulationResultsPlot;
     SeriesPlot *signalAnalysisPlot;
     SimulationController *simulationController;
+    NSArray *hideObjectsOnStartup;
+    NSTabViewItem *setupTab;
+    NSTabViewItem *plotTab;
+    NSTabViewItem *dataTab;
+    NSTabViewItem *reportTab;
+    NSTabViewItem *signalsTab;
+    BOOL doingSetup;
+    BOOL cancelProcedure;
+    BOOL initialSetupComplete;
+    BOOL doThreads;
+    NSMutableArray *signalTableViewOrdering;
+    BOOL signalTableViewSortedAscending;
+    NSString *signalTableViewSortColumn;
     
+    __weak NSScrollView *simulationRunScrollView;
     __weak NSButton *performSimulationButton;
     __weak NSTableView *simulationTimeSeriesTableView;
     __weak NSTextField *performSimulationStatusLabel;
-    
     __weak NSProgressIndicator *performSimulationProgressBar;
-    
+    __weak NSProgressIndicator *currentProgressIndicator;
+
     __weak NSTableView *simulationNumbersTableView;
-    
     __weak NSTableView *simulationTradesTableView;
     __weak NSTableView *simulationCashFlowsTableView;
-    
     __weak NSTableView *simulationSignalTableView;
-    
     __weak NSTableView *simulationSignalTimeSeriesTableView;
-    
-
     __weak CPTGraphHostingView *simulationSignalGraphHostingView;
-    
     __weak CPTGraphHostingView *simulationResultGraphHostingView;
-    
     __weak NSTabView *centreTabView;
     __weak NSTabView *rightSideTabView;
-    
     
     //Relating to setup sheet
     IBOutlet NSWindow *setupSheet;
@@ -55,9 +59,13 @@
     __weak NSPopUpButton *setupTradingPairPopup;
     __weak NSPopUpButton *setupAccountCurrencyPopup;
     __weak NSTextField *setupAccountBalanceTextField;
+    __weak NSTextField *setupAccountCurrencyLabel;
+    
     __weak NSDatePicker *setupStartTimePicker;
     __weak NSDatePicker *setupEndTimePicker;
     __weak NSTextField *setupParameterTextField;
+    __weak NSTextField *setupPositioningTextField;
+    
     __weak NSTextField *setupMaxLeverageTextField;
     __weak NSDatePicker *setupTradingStartTimePicker;
     __weak NSDatePicker *setupTradingEndTimePicker;
@@ -70,8 +78,13 @@
     __weak NSTextField *startDateDoWLabel;
     __weak NSTextField *endDateDoWLabel;
     __weak NSButton *setUpSheetCancelButton;
+    __weak NSButton *setupSheetShowButton;
+   
+    __weak NSScrollView *setupSheetImportDataScrollView;
+    __weak NSTableView *setupSheetImportDataTableView;
     
-    // Relating to simulaiton description panel 
+    __weak NSButton *setupSheetImportDataButton;
+    // Relating to simulation description panel 
     
     __weak NSTextField *aboutSimNameLabel;
     __weak NSTextField *aboutTradingPairLabel;
@@ -83,23 +96,29 @@
     __weak NSTextField *aboutSimTradingWindowStartLabel;
     __weak NSTextField *aboutSimTradingWindowEndLabel;
     __weak NSTextField *aboutSimParametersLabel;
-    
-
    
-    // Signal Analysis Sheet
+    __weak NSTextField *tradingPairLabel;
+    __weak NSTextField *accountCurrencyLabel;
+    __weak NSTextField *startLabel;
+    __weak NSTextField *endLabel;
+    __weak NSTextField *samplingRateLabel;
+    __weak NSTextField *tradingLagLabel;
+    __weak NSTextField *tradingDayStartLabel;
+    __weak NSTextField *tradingDayEndLabel;
+    __weak NSTextField *descriptionLabel;
     
+    __weak NSDatePicker *zoomFromDatePicker;
+    __weak NSDatePicker *zoomToDatePicker;
+    
+    // Signal Analysis Sheet
     __weak NSTextField *signalAnalysisPlotLeadHours;
     
-    BOOL doingSetup;
-    BOOL cancelProcedure;
-    BOOL initialSetupComplete;    
+
 }
-@property BOOL doThreads;
+
 @property (retain) NSArray *coloursForPlots;
-@property (retain) NSArray *fieldNameOrdering;
 @property (retain) NSDictionary *fxPairsAndDbIds;
 @property (retain) DataController *dataControllerForUI;
-
 
 @property (weak) IBOutlet NSButton *performSimulationButton;
 @property (weak) IBOutlet NSTableView *simulationTimeSeriesTableView;
@@ -128,45 +147,51 @@
 @property (weak) IBOutlet NSTableView *reportTableView;
 
 - (IBAction)changeSelectedTradingPair:(id)sender;
-
 - (IBAction)showSetupSheet:(id)sender;
 - (IBAction)cancelSimulation:(id)sender;
 - (IBAction)cancelSetupSheet:(id)sender;
 - (IBAction)performSimulation:(id)sender;
 - (IBAction)toggleLongShortIndicator:(id)sender;
-
+- (IBAction)sigPlotLongShortIndicatorToggle:(id)sender;
 - (IBAction)plotLeftSideExpand:(id)sender;
 - (IBAction)plotLeftSideContract:(id)sender;
 - (IBAction)plotBottomExpand:(id)sender;
 - (IBAction)plotBottomContract:(id)sender;
-
 - (IBAction)exportData:(id)sender;
 - (IBAction)exportTrades:(id)sender;
 - (IBAction)exportBalanceAdjustments:(id)sender;
-
-
-
-
+- (IBAction)setupStartTimeChange:(id)sender;
+- (IBAction)setupEndTimeChange:(id)sender;
 - (IBAction)makeSimulationReport:(id)sender;
+- (IBAction)zoomButtonPress:(id)sender;
+- (IBAction)accountCurrencyChange:(id)sender;
+- (IBAction)importCsvData:(id)sender;
+- (IBAction)signalAnalysisPlotReload:(id)sender;
 
--(void)setDelegate:(id)del;
--(void) setProgressMinAndMax: (NSArray *) minAndMax;
--(void) incrementProgressBarBy:(NSNumber *) increment;
--(void) progressBarOn;
--(void) progressBarOff;
--(void)addSimInfoToAboutPanelWithName:(NSString *) simName
-                            AndFxPair:(NSString *) fxPair
-                   AndAccountCurrency:(NSString *) accCurrency
-                      AndSimStartTime: (NSString *) simStartTime
-                        AndSimEndTime: (NSString *) simEndTime
-                      AndSamplingRate: (NSString *) samplingRate
-                        AndTradingLag: (NSString *) tradingLag
-                AndTradingWindowStart:(NSString *) tradingStartTime
-                  AndTradingWindowEnd:(NSString *) tradingEndTime
-                     AndSimParameters:(NSString *) parameters;
--(void)simulationEnded;
--(void)initialiseSignalTableView;
--(void)setupResultsReport;
+
+- (void) setDelegate:(id)del;
+- (void) addSimInfoToAboutPanelWithName:(NSString *) simName
+                             AndFxPair:(NSString *) fxPair
+                    AndAccountCurrency:(NSString *) accCurrency
+                       AndSimStartTime: (NSString *) simStartTime
+                         AndSimEndTime: (NSString *) simEndTime
+                       AndSamplingRate: (NSString *) samplingRate
+                         AndTradingLag: (NSString *) tradingLag
+                 AndTradingWindowStart:(NSString *) tradingStartTime
+                   AndTradingWindowEnd:(NSString *) tradingEndTime
+                      AndSimParameters:(NSString *) parameters;
+- (void) addSimulationDataToResultsTableView: (DataSeries *) analysisDataSeries;
+- (void) simulationEnded;
+- (void) initialiseSignalTableView;
+- (void) prepareForSimulationReport;
+- (void) setupResultsReport;
+- (BOOL) doThreads;
+- (void) setDoThreads:(BOOL)doThreadedProcedures;
+- (void) readingRecordSetsProgress: (NSNumber *) progressFraction;
+- (void) progressAsFraction:(NSNumber *) progressValue;
+- (void) progressBarOn;
+- (void) progressBarOff;
+-(void)viewChosenFromMainMenu;
 
 @property (weak) IBOutlet NSProgressIndicator *performSimulationProgressBar;
 @property (weak) IBOutlet NSTextField *aboutSimNameLabel;
@@ -182,11 +207,27 @@
 @property (weak) IBOutlet NSButton *setUpSheetCancelButton;
 @property (weak) IBOutlet NSTableView *simulationTradesTableView;
 @property (weak) IBOutlet NSTableView *simulationCashFlowsTableView;
-
 @property (weak) IBOutlet NSTableView *simulationSignalTableView;
-
 @property (weak) IBOutlet CPTGraphHostingView *simulationSignalGraphHostingView;
 @property (weak) IBOutlet NSTextField *signalAnalysisPlotLeadHours;
 @property (weak) IBOutlet NSTableView *simulationSignalTimeSeriesTableView;
 @property (weak) IBOutlet NSButton *setupTradingWeekendYesNo;
+@property (weak) IBOutlet NSTextField *tradingPairLabel;
+@property (weak) IBOutlet NSTextField *startLabel;
+@property (weak) IBOutlet NSTextField *endLabel;
+@property (weak) IBOutlet NSTextField *tradingLagLabel;
+@property (weak) IBOutlet NSTextField *tradingDayStartLabel;
+@property (weak) IBOutlet NSTextField *tradingDayEndLabel;
+@property (weak) IBOutlet NSTextField *descriptionLabel;
+@property (weak) IBOutlet NSTextField *samplingRateLabel;
+@property (weak) IBOutlet NSTextField *accountCurrencyLabel;
+@property (weak) IBOutlet NSScrollView *simulationRunScrollView;
+@property (weak) IBOutlet NSDatePicker *zoomFromDatePicker;
+@property (weak) IBOutlet NSDatePicker *zoomToDatePicker;
+@property (weak) IBOutlet NSTextField *setupAccountCurrencyLabel;
+@property (weak) IBOutlet NSScrollView *setupSheetImportDataScrollView;
+@property (weak) IBOutlet NSTableView *setupSheetImportDataTableView;
+@property (weak) IBOutlet NSButton *setupSheetImportDataButton;
+@property (weak) IBOutlet NSButton *setupSheetShowButton;
+@property (weak) IBOutlet NSTextField *setupPositioningTextField;
 @end

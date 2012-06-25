@@ -35,16 +35,11 @@
 @implementation AppController
 @synthesize InteractiveViewButton;
 @synthesize SimulationViewButton;
-@synthesize shiftDataDaysLabel;
-@synthesize shiftDataRangeForward;
-@synthesize shiftDataRangeBack;
-@synthesize dataRangeMoveValue;
-@synthesize intraDayLeftSideTab;
 @synthesize leftPanelStatusLabel;
-@synthesize sideTitle;
 @synthesize minAvailableDate;
 @synthesize maxAvailableDate;
 @synthesize leftSideProgressBar;
+@synthesize leftSideProgressBar2;
 @synthesize colorsForPlots;
 @synthesize currentDay;
 @synthesize box;
@@ -85,13 +80,9 @@
                              @"SIGNAL",
                              @"POSITION",
                              @"SHORT",@"LONG",
+                             @"POSAVEPRICE",
                              @"BID",
                              @"ASK",
-                             @"EWMA18",
-                             @"EWMA20", 
-                             @"EWMA22", 
-                             @"EWMA24", 
-                             @"EWMA26", 
                              nil];
 
         
@@ -124,15 +115,16 @@
     [viewControllers setObject:itvc forKey:@"INTERVIEW"];
     
     [svc setColoursForPlots:coloursForPlots];
-    [svc setFieldNameOrdering:fieldNameOrdering];
+    //[svc setFieldNameOrdering:fieldNameOrdering];
     [svc setFxPairsAndDbIds:listOfFxPairs];
     [svc setDataControllerForUI:dataControllerForUI];
     [itvc setColoursForPlots:coloursForPlots];
-    [itvc setFieldNameOrdering:fieldNameOrdering];
+    //[itvc setFieldNameOrdering:fieldNameOrdering];
     [itvc setFxPairsAndDbIds:listOfFxPairs];
     
     [svc setDelegate:self];
     [itvc setDelegate:self];
+    
     
     NSWindow *w = [box window];
     
@@ -160,35 +152,6 @@
 -(void)setStatusLabel:(NSTextField *) statusLabel WithMessage:(NSString *) newMessage 
 {
     [statusLabel setStringValue:newMessage];
-}
-
--(NSArray *)getFieldNamesInCorrectOrdering:(NSArray *) fieldNamesFromData
-{      
-    
-    NSMutableArray *fieldNames = [fieldNameOrdering mutableCopy];
-    NSMutableArray *isAvailable = [[NSMutableArray alloc] init];
-   
-    for(int i = 0; i < [fieldNames count]; i ++){
-        BOOL found = NO;
-        for(int j = 0; j < [fieldNamesFromData count]; j++){
-            if([[fieldNames objectAtIndex:i] isEqualToString:[fieldNamesFromData objectAtIndex:j]])
-            {
-                found = YES;
-                break;
-            }
-        }
-        if(found){
-            [isAvailable addObject:[NSNumber numberWithBool:YES]];
-        }else{
-            [isAvailable addObject:[NSNumber numberWithBool:NO]];
-        }
-    }
-    for(int i = [fieldNames count] - 1; i >= 0; i--){
-        if(![[isAvailable objectAtIndex:i] boolValue]){
-            [fieldNames removeObjectAtIndex:i];
-        }
-    }
-    return fieldNames;
 }
 
 - (IBAction)changeToSimulationView:(id)sender {
@@ -225,9 +188,15 @@
     [box setContentView:nil];
     [w setFrame:windowFrame display:YES animate:YES];
     [box setContentView:v];
+    
+    if([SimulationViewButton state] == 1){
+        SimulationViewController *controllerOfView = (SimulationViewController *)[viewControllers objectForKey:@"SIMVIEW"];
+        [controllerOfView viewChosenFromMainMenu];
+    }
+    
 }
     
-- (IBAction)changeToInteractiveView:(id)sender {
+-  (IBAction) changeToInteractiveView:(id)sender {
     [SimulationViewButton setState:0];
     // Try to end editing
     NSWindow *w = [box window];
@@ -260,29 +229,105 @@
     [box setContentView:nil];
     [w setFrame:windowFrame display:YES animate:YES];
     [box setContentView:v];
+    
+    if([InteractiveViewButton state] == 1){
+        InteractiveTradeViewController *controllerOfView = (InteractiveTradeViewController *)[viewControllers objectForKey:@"INTERVIEW"];
+        [controllerOfView viewChosenFromMainMenu];
+    }
 }
 
 #pragma mark -
 #pragma mark Simulation Output Methods
 
 
--(void)gettingDataIndicatorSwitchOn
+- (void) gettingDataIndicatorSwitchOn
 {
     [leftPanelStatusLabel setHidden:NO];
-    [leftPanelStatusLabel setStringValue:@"Retrieving from database"];
+    [leftPanelStatusLabel setStringValue:@"Reading Recordset"];
     [leftSideProgressBar setHidden:NO];
     [leftSideProgressBar startAnimation:nil];
+    [leftSideProgressBar2 setHidden:NO];
+    [leftSideProgressBar2 startAnimation:nil];
+    [leftSideProgressBar2 setMinValue:0.0];
+    [leftSideProgressBar2 setMaxValue:1.0];
+    [leftSideProgressBar2 setDoubleValue:0.0];
 }
 
--(void)gettingDataIndicatorSwitchOff
+- (void) gettingDataIndicatorSwitchOff
 {
-    [leftSideProgressBar stopAnimation:nil];
     [leftPanelStatusLabel setStringValue:@""];
-    [leftSideProgressBar setHidden:YES];
     [leftPanelStatusLabel setHidden:YES];
+    [leftSideProgressBar stopAnimation:nil];
+    [leftSideProgressBar2 stopAnimation:nil];
+    [leftSideProgressBar setHidden:YES];
+    [leftSideProgressBar2 setHidden:YES];
+    
 }
 
+- (void) readingRecordSetsProgress: (NSNumber *) progressFraction;
+{
+    [leftSideProgressBar2 setDoubleValue:[progressFraction doubleValue]];
+}
 
+- (void) showAlertPanelWithInfo: (NSDictionary *) alertInfo
+{
+    NSString *title  = [alertInfo objectForKey:@"TITLE"];
+    NSString *msgFormat = [alertInfo objectForKey:@"MSGFORMAT"];
+    NSString *defaultButton = [alertInfo objectForKey:@"DEFAULTBUTTON"]; 
+    NSString * altButton =  [alertInfo objectForKey:@"ALTBUTTON"]; 
+    NSString *otherButton =  [alertInfo objectForKey:@"OTHERBUTTON"]; 
+    NSRunAlertPanel(title, msgFormat, defaultButton, altButton, otherButton);
+}
+ 
+- (void) putFieldNamesInCorrectOrdering:(NSMutableArray *) fieldNamesFromData
+{      
+    
+    NSMutableArray *fieldNames = [fieldNameOrdering mutableCopy];
+    NSMutableArray *isAvailable = [[NSMutableArray alloc] init];
+    NSMutableArray *isFound = [[NSMutableArray alloc] init];
+    NSMutableArray *newFields =  [[NSMutableArray alloc] init];
+    int i, j;
+    for(i = 0; i < [fieldNamesFromData count]; i ++){
+        [isFound addObject:[NSNumber numberWithBool:NO]];   
+    }
+    
+    for(i = 0; i < [fieldNames count]; i ++){
+        BOOL found = NO;
+        for(j = 0; j < [fieldNamesFromData count]; j++){
+            if([[fieldNames objectAtIndex:i] isEqualToString:[fieldNamesFromData objectAtIndex:j]])
+            {
+                found = YES;
+                [isFound replaceObjectAtIndex:j withObject:[NSNumber numberWithBool:YES]];
+                break;
+            }
+        }
+        if(found){
+            [isAvailable addObject:[NSNumber numberWithBool:YES]];
+        }else{
+            [isAvailable addObject:[NSNumber numberWithBool:NO]];
+        }
+    }
+    for(i = [fieldNames count] - 1; i >= 0; i--){
+        if(![[isAvailable objectAtIndex:i] boolValue]){
+            [fieldNames removeObjectAtIndex:i];
+        }
+    }
+    for(i = 0; i < [isFound count]; i++){
+        if(![[isFound objectAtIndex:i] boolValue]){
+            [newFields addObject:[fieldNamesFromData objectAtIndex:i]];
+        }
+    }
+    NSArray *newFieldsSorted = [newFields sortedArrayUsingSelector:@selector(caseInsensitiveCompare:)];
+    for(i = 0; i < [newFieldsSorted count]; i++){
+        [fieldNames addObject:[newFieldsSorted objectAtIndex:i]];
+    }
+    while([fieldNamesFromData count]>0){
+        [fieldNamesFromData removeObjectAtIndex:0];
+    }
+    for(i = 0; i < [fieldNames count]; i++){
+        [fieldNamesFromData addObject:[fieldNames objectAtIndex:i]];
+    }
+}
 
 
 

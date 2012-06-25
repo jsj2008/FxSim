@@ -9,96 +9,27 @@
 #import "Simulation.h"
 #import "EpochTime.h"
 #import "UtilityFunctions.h"
+#import "PositionRecord.h"
+#import "TransactionRecord.h"
+#import "CashFlowRecord.h"
+#import "SignalRecord.h"
 
 @interface Simulation()
-//-(void)addBalanceAdjustmentWithAmount: (double) amount
-//                              AndDateTime: (long) dateTime;
--(long) dateTimeForBalAdjAtIndex: (NSUInteger) index;
--(long) dateTimeForTradeAtIndex: (NSUInteger) index;
 -(int) resultingExposureForTradeAtIndex: (NSUInteger) index;
-//
--(double) accBalanceAtDateTime:(long) dateTime;
--(void)addBalanceAdjustmentWithAmount: (double) amount
+-(void) addBalanceAdjustmentWithAmount: (double) amount
                           AndDateTime: (long) dateTime
                             AndReason:(BalAdjType) reasonCode;
-//-(double)calcInterestForAmount:(int) amount 
-//                        From:(long)fromDateTime 
-//                          To:(long) tradeDateTime;
-//-(int) currentBaseBalance:(long) dateTime;
-//-(double) currentQuoteBalance:(long) dateTime;
-//-(struct marketTransaction *) getMarketTransactionAtIndex: (NSUInteger) index;
 @end
 
 @implementation Simulation
 
-@synthesize name;
-@synthesize startDate;
-@synthesize endDate;
-@synthesize accCode;
-@synthesize baseCode;
-@synthesize quoteCode;
-@synthesize maxLeverage;
-@synthesize signalParameters;
-@synthesize simulationDataSeries;
-@synthesize analysisDataSeries;
-@synthesize longPeriods;
-@synthesize shortPeriods;
-@synthesize dataStartDateTime;
-@synthesize samplingRate;
-@synthesize tradingLag;
-@synthesize tradingDayStart;
-@synthesize tradingDayEnd;
-@synthesize reportDataFieldsArray;
-
-NSMutableArray *openPositionsArray;
-
-struct balanceAdjustment{
-    float amount;
-    float resultingBalance;
-    long  dateTime;
-    int reason;
-};
-
-struct marketTransaction{
-    int amount;        
-    long   dateTime;
-    float price;
-    int resultingMarketExposure;
-    float spread;
-    float spreadInAccCurrency;
-    long signalDateTime;
-    int signalIndex; 
-};
-
-struct position{
-    int amount;        
-    long   dateTime;
-    float price;
-    long   interestAccruedDateTime;
-    double interestAccrued;
-};
-
-//This just marks whether the signal is biased long or short
-// the amount of time in profit and the max profit
-struct signalInfo{
-    int signal;
-    long startTime;
-    long endTime;
-    float entryPrice;
-    float exitPrice;
-    float timeInProfit;
-    float maxPotentialProfit;
-    float maxPotentialLoss;
-};
-
-
 
 -(id)initWithName: (NSString *) accountName 
-          AndDate:(long) startDateTime 
-       AndBalance:(double) startingBalance 
+          AndDate: (long) startDateTime 
+       AndBalance: (double) startingBalance 
       AndCurrency: (NSString *) ISOcode
    AndTradingPair: (NSString *) codeForTradingPair
-      AndMaxLeverage: (float) leverage
+   AndMaxLeverage: (double) leverage
 {
     self = [super init];
     if(self){
@@ -118,14 +49,18 @@ struct signalInfo{
         accCode = ISOcode;
         baseCode = [codeForTradingPair substringToIndex:3];
         quoteCode = [codeForTradingPair substringFromIndex:3];
+        userAddedData = @"None";
+        
         if(startingBalance > 0){
             [self addBalanceAdjustmentWithAmount:startingBalance AndDateTime:startDateTime AndReason:TRANSFER];
         }
-        reportDataFieldsArray = [NSArray arrayWithObjects:@"NAME", @"TRADINGPAIR",@"ACCOUNTCURRENCY",@"BLANK",@"--RESULTS--", @"CASHTRANSFERS", @"FINALNAV", @"TRADE PNL", @"INTEREST",  @"BIGGESTDRAWDOWN",@"DRAWDOWNTIME",  @"NUMBEROFTRADES", @"SPREADCOST", @"BLANK", @"--PARAMETERS--",@"STARTTIME", @"ENDTIME", @"STRATEGY",@"MAXLEVERAGE", @"TIMESTEP", @"TRADINGLAG",@"TRADINGDAYSTART",@"TRADINGDAYEND", nil]; 
+        reportDataFieldsArray = [NSArray arrayWithObjects:@"NAME", @"TRADINGPAIR",@"ACCOUNTCURRENCY",@"BLANK",@"--RESULTS--", @"CASHTRANSFERS", @"FINALNAV", @"TRADE PNL", @"INTEREST",  @"BIGGESTDRAWDOWN",@"DRAWDOWNTIME",  @"NUMBEROFTRADES", @"SPREADCOST", @"BLANK", @"--PARAMETERS--",@"STARTTIME", @"ENDTIME", @"STRATEGY",@"POSITIONING",@"MAXLEVERAGE", @"TIMESTEP", @"TRADINGLAG",@"TRADINGDAYSTART",@"TRADINGDAYEND",@"USERADDEDDATA", nil]; 
     }
     
     return self;
 }
+
+
 
 -(void) printAccDetails: (long) dateTime
 {
@@ -133,7 +68,6 @@ struct signalInfo{
     NSLog(@"This account started on %@",[[NSDate dateWithTimeIntervalSince1970:[self startDate]]descriptionWithCalendarFormat:@"%a %Y-%m-%d" timeZone:[NSTimeZone timeZoneWithName:@"GMT"] locale:nil]);
     NSLog(@"This account trades %@%@",[self baseCode],[self quoteCode]);
 }
-
 
 -(int) getNumberOfReportDataFields
 {
@@ -182,6 +116,9 @@ struct signalInfo{
     if([dataFieldIdentifier isEqualToString:@"STRATEGY"]){
         return signalParameters;
     }
+    if([dataFieldIdentifier isEqualToString:@"POSITIONING"]){
+        return positioningType;
+    } 
     if([dataFieldIdentifier isEqualToString:@"MAXLEVERAGE"]){
         return [NSString stringWithFormat:@"%5.1",maxLeverage];    
     } 
@@ -197,6 +134,10 @@ struct signalInfo{
     if([dataFieldIdentifier isEqualToString:@"TRADINGLAG"]){
         return [NSString stringWithFormat:@"%d seconds",tradingLag];    
     }
+    if([dataFieldIdentifier isEqualToString:@"USERADDEDDATA"]){
+        return userAddedData;
+    }
+    
     
     id returnData = [simulationResults objectForKey:dataFieldIdentifier];
     if(returnData != nil){
@@ -224,12 +165,6 @@ struct signalInfo{
     [simulationResults setObject:datum forKey:key];
 }
 
-
-//-(long) currentDateTime
-//{
-//    return 10000;
-//}
-
 -(void)addCashTransferWithAmount: (double) amount
                      AndDateTime: (long) dateTime
 {
@@ -242,58 +177,52 @@ struct signalInfo{
                           AndDateTime: (long) dateTime
                             AndReason:(BalAdjType) reasonCode
 {
-    struct balanceAdjustment *newBalAdj = malloc(sizeof(struct balanceAdjustment));
-    struct balanceAdjustment *oldBalance;
-    newBalAdj->amount = amount;
-    newBalAdj->dateTime = dateTime;
-    newBalAdj->reason = reasonCode;
+    CashFlowRecord *cashFlowRecord;
+    double newAccountBalance;
+    
     if([accBalanceArray count]>0){
-        oldBalance = malloc(sizeof(struct balanceAdjustment));
-        [[accBalanceArray objectAtIndex:([accBalanceArray count]-1)] getValue:oldBalance];
-        newBalAdj->resultingBalance = oldBalance->resultingBalance + amount;
+        CashFlowRecord *lastCashFlowRecord = [accBalanceArray objectAtIndex:[accBalanceArray count]-1];
+        newAccountBalance = [lastCashFlowRecord resultingBalance] + amount;
     }else{
-        newBalAdj->resultingBalance = amount;
+        newAccountBalance = amount; 
     }
-    NSValue *wrappedAsObject = [NSValue valueWithBytes:newBalAdj objCType:@encode(struct balanceAdjustment)];
-    [accBalanceArray addObject:wrappedAsObject];
+    
+    cashFlowRecord = [[CashFlowRecord alloc] initWithAmount:amount 
+                                        AndResultingBalance:newAccountBalance 
+                                                AndDateTime:dateTime 
+                                                  AndReason:reasonCode];
+    [accBalanceArray addObject:cashFlowRecord];
 }
 
--(int)addSignalStatisticsWithSignal:(int) signal
-                    AndEntryTime:(long) entryTime
-                     AndExitTime:(long) exitTime
-                   AndEntryPrice:(float)entryPrice
-                    AndExitPrice:(float) exitPrice
-                 AndTimeInProfit:(float) timeInProfit
-           AndMaxPotentialProfit:(float) potentialProfit
-             AndMaxPotentialLoss:(float) potentialLoss
+- (int) addSignalStatisticsWithSignal: (double) signal
+                       AndEntryTime: (long) entryTime
+                        AndExitTime: (long) exitTime
+                      AndEntryPrice: (double)entryPrice
+                       AndExitPrice: (double) exitPrice
+                    AndTimeInProfit: (double) timeInProfit
+              AndMaxPotentialProfit: (double) potentialProfit
+                AndMaxPotentialLoss: (double) potentialLoss
 {
-    struct signalInfo *newSignalInfoStruct = malloc(sizeof(struct signalInfo));
-    newSignalInfoStruct->signal = signal;
-    newSignalInfoStruct->startTime = entryTime;
-    newSignalInfoStruct->endTime = exitTime;
-    newSignalInfoStruct->entryPrice = entryPrice;
-    newSignalInfoStruct->exitPrice = exitPrice;
-    newSignalInfoStruct->timeInProfit = timeInProfit;
-    newSignalInfoStruct->maxPotentialLoss = potentialLoss;
-    newSignalInfoStruct->maxPotentialProfit = potentialProfit;
-    newSignalInfoStruct->timeInProfit = timeInProfit;
-    
-    NSValue *wrappedsignalInfo = [NSValue valueWithBytes:newSignalInfoStruct objCType:@encode(struct signalInfo)];
-    [signalInfoArray addObject:wrappedsignalInfo];
-    
+    SignalRecord *signalRecord;
+    signalRecord = [[SignalRecord alloc] initWithSignal:signal 
+                                           AndStartTime:entryTime 
+                                             AndEndTime:exitTime 
+                                          AndEntryPrice:entryPrice 
+                                           AndExitPrice:exitPrice 
+                                        AndTimeInProfit:timeInProfit 
+                                  AndMaxPotentialProfit:potentialProfit 
+                                    AndMaxPotentialLoss:potentialLoss];
+    [signalInfoArray addObject:signalRecord];
     return [signalInfoArray count] - 1;
 }
 
-
-
--(double)currentBalance
+- (double) currentBalance
 {
-    struct balanceAdjustment *lastBalance;
     double balance;
     if([accBalanceArray count]>0){
-        lastBalance = malloc(sizeof(struct balanceAdjustment));
-        [[accBalanceArray objectAtIndex:([accBalanceArray count]-1)] getValue:lastBalance];
-        balance = lastBalance->resultingBalance;
+        CashFlowRecord *cashFlowRecord;
+        cashFlowRecord = [accBalanceArray objectAtIndex:[accBalanceArray count]-1];
+        balance = [cashFlowRecord resultingBalance];
     }else{
         balance = 0.0;
     }
@@ -304,199 +233,93 @@ struct signalInfo{
 -(int) currentExposure
 {
     long positionIndex = 0;
-    struct position *openPosition;
+    PositionRecord *openPosition;
     int currentExposure = 0;
     if([openPositionsArray count]>0)
     {
         while(positionIndex < [openPositionsArray count])
         {
-            openPosition = malloc(sizeof(struct position));
-            [[openPositionsArray objectAtIndex:positionIndex] getValue:openPosition];
-            currentExposure = currentExposure + openPosition->amount;
+            openPosition = [openPositionsArray objectAtIndex:positionIndex]; 
+            currentExposure = currentExposure + [openPosition amount];
             positionIndex++;
         }
     }
     return currentExposure;
 }
 
--(double) costOfCurrentExposure
-{
-    long positionIndex = 0;
-    struct position *openPosition;
-    int costOfExposure = 0;
-    while(positionIndex < [openPositionsArray count])
-    {
-        openPosition = malloc(sizeof(struct position));
-        [[openPositionsArray objectAtIndex:positionIndex] getValue:openPosition];
-        costOfExposure = costOfExposure + (openPosition->amount * openPosition->price);
-        positionIndex++;
-    }
-    return costOfExposure;
-}
-
 -(void) printPositions
 {
     long positionIndex = 0;
-    struct position *openPosition;
+    PositionRecord *openPosition;
     while(positionIndex <= [openPositionsArray count])
     {
-        openPosition = malloc(sizeof(struct position));
-        [[openPositionsArray objectAtIndex:positionIndex] getValue:openPosition];
-        NSLog(@"%lu Position %d at price %5.4f" , openPosition->dateTime, openPosition->amount, openPosition->price);
+        openPosition = [openPositionsArray objectAtIndex:positionIndex];
+        NSLog(@"%lu Position %d at price %5.4f" , [openPosition dateTime], [openPosition amount], [openPosition price]);
         positionIndex++;
     }
 }
-
-
--(double) accBalanceAtDateTime:(long) dateTime
-{
-    
-    long balanceIndex =  [accBalanceArray count];
-    bool stillSearching = YES;
-    //struct marketTransaction *currentTranaction; 
-    double currentBalance = 0.0;
-    while(stillSearching && balanceIndex >0)
-    {
-        balanceIndex--;
-        struct balanceAdjustment balAdj;
-        [[tradesArray objectAtIndex:balanceIndex] getValue:&balAdj];
-        if(balAdj.dateTime < dateTime){
-            stillSearching = NO;
-            currentBalance = balAdj.resultingBalance;
-        }
-    }
-    return currentBalance;
-}
-
-
--(int) currentBaseBalance:(long) dateTime
-{
-    long balanceIndex =  [accBalanceArray count];
-    bool stillSearching = YES;
-    //struct marketTransaction *currentTranaction; 
-    int currentBalance = 0;
-    while(stillSearching && balanceIndex >0)
-    {
-        balanceIndex--;
-        struct balanceAdjustment balAdj;
-        [[tradesArray objectAtIndex:balanceIndex] getValue:&balAdj];
-        if(balAdj.dateTime < dateTime){
-            stillSearching = NO;
-            currentBalance = (int)balAdj.resultingBalance;
-        }
-    }
-    return currentBalance;
-}
-
--(double) currentQuoteBalance:(long) dateTime
-{
-    long balanceIndex =  [accBalanceArray count];
-    bool stillSearching = YES;
-    //struct marketTransaction *currentTranaction; 
-    double currentBalance = 0.0;
-    while(stillSearching && balanceIndex >0)
-    {
-        balanceIndex--;
-        struct balanceAdjustment balAdj;
-        [[tradesArray objectAtIndex:balanceIndex] getValue:&balAdj];
-        if(balAdj.dateTime < dateTime){
-            stillSearching = NO;
-            currentBalance = balAdj.resultingBalance;
-        }
-    }
-    return currentBalance;
-}
-
-//-(long) numberOfMarketTransactions
-//{
-//    return [trades count];
-//}
-
-//-(double) positionPnlAtPrice:(float) newPrice
-//{
-//    double positionPnl = 0;
-//    struct position *openPosition;
-//    for(int iPos = 0;iPos <[openPositions count];iPos++){
-//        openPosition = malloc(sizeof(struct position));
-//        [[openPositions objectAtIndex:iPos] getValue:openPosition];
-//        positionPnl = positionPnl + openPosition->amount * (newPrice - openPosition->price);
-//    }
-//    return positionPnl;
-//}
-
-
-
 
 -(void) addInterestToPosition:(int) positionIndex
                    WithAmount:(int) interestAmount 
                        AtTime:(long) interestDateTime
 {
-    struct position *openPosition = malloc(sizeof( struct position));
-    [[openPositionsArray objectAtIndex:positionIndex] getValue:openPosition];
-    openPosition->interestAccrued = openPosition->interestAccrued + interestAmount;
-    openPosition->interestAccruedDateTime = interestDateTime;
-    [openPositionsArray replaceObjectAtIndex:positionIndex 
-                             withObject:[NSValue valueWithBytes:openPosition 
-                                                       objCType:@encode(struct position)]];
+    PositionRecord *openPosition;
+    openPosition = [openPositionsArray objectAtIndex:positionIndex];
+    [openPosition setInterestAccrued:[openPosition interestAccrued] + interestAmount];
+    [openPosition setInterestAccruedDateTime:interestDateTime];
+    
     [self addBalanceAdjustmentWithAmount:interestAmount 
                              AndDateTime:interestDateTime 
                                AndReason:INTEREST];
 }
 
-
-
--(float) addTradeWithAmount:(int) tradeAmount 
-                    AtTime: (long) tradeDateTime 
-                 WithPrice:(double) tradePrice
-       AndAccQuoteBidPrice:(double) accQuoteBidPrice
-       AndAccQuoteAskPrice:(double) accQuoteAskPrice
-      AndBaseQuoteBidPrice:(double) baseQuoteBidPrice
-      AndBaseQuoteAskPrice:(double) baseQuoteAskPrice
-            AndSignalIndex:(int) signalIndex
+-(double) addTradeWithAmount: (int) tradeAmount 
+                      AtTime: (long) tradeDateTime 
+                   WithPrice: (double) tradePrice
+         AndAccQuoteBidPrice: (double) accQuoteBidPrice
+         AndAccQuoteAskPrice: (double) accQuoteAskPrice
+        AndBaseQuoteBidPrice: (double) baseQuoteBidPrice
+        AndBaseQuoteAskPrice: (double) baseQuoteAskPrice
+              AndSignalIndex: (int) signalIndex
 {
-    float realisedPnl = 0.0;
+    double realisedPnl = 0.0;
     //adjust the positions as nessesary. If there are opposite position these will be closed oldest first
     
-    if([openPositionsArray count] == 0 || ([UtilityFunctions signum:[self currentExposure]] == [UtilityFunctions signum:tradeAmount])){
-        struct position *newPosition = malloc(sizeof( struct position));
-        newPosition->amount = tradeAmount;
-        newPosition->price = tradePrice;
-        newPosition->dateTime = tradeDateTime;
-        newPosition->interestAccruedDateTime = tradeDateTime;
-        newPosition->interestAccrued = 0.0;
-        [openPositionsArray addObject:[NSValue valueWithBytes:newPosition objCType:@encode(struct position)]];
+    if([openPositionsArray count] == 0 || ([UtilityFunctions signOfInt:[self currentExposure]] == [UtilityFunctions signOfInt:tradeAmount])){
+        PositionRecord *newPosition; 
+        newPosition = [[PositionRecord alloc] initWithAmount:tradeAmount 
+                                                 AndDateTime:tradeDateTime 
+                                                    AndPrice:tradePrice 
+                                         AndInterestDateTime:tradeDateTime 
+                                          AndInterestAccrued:0.0];
+        [openPositionsArray addObject:newPosition];
     }else{
         int tradeRemainder = tradeAmount;
         int positionsToCancel = 0;
         int iPos = 0;
-        struct position *openPosition;
+        PositionRecord *openPosition;
         iPos = 0;
         while(iPos < [openPositionsArray count]  && tradeRemainder != 0){
-            openPosition = malloc(sizeof(struct position));
-            [[openPositionsArray objectAtIndex:iPos] getValue:openPosition];
+            openPosition = [openPositionsArray objectAtIndex:iPos];
             
-            if([UtilityFunctions signum:openPosition->amount]*[UtilityFunctions signum:tradeAmount] == -1)
+            if([UtilityFunctions signOfInt:[openPosition amount]]*[UtilityFunctions signOfInt:tradeAmount] == -1)
             {
-                if(abs(openPosition->amount) > abs(tradeAmount)){
+                if(abs([openPosition amount]) > abs(tradeAmount)){
                     tradeRemainder = 0;
-                    openPosition->amount = openPosition->amount + tradeAmount;
-                    [openPositionsArray replaceObjectAtIndex:iPos 
-                                             withObject:[NSValue valueWithBytes:openPosition 
-                                                                       objCType:@encode(struct position)]];
-                    realisedPnl = tradeAmount * (tradePrice - openPosition->price);
+                    [openPosition setAmount:[openPosition amount] + tradeAmount];
+                    realisedPnl = tradeAmount * (tradePrice - [openPosition price]);
                     
                     if(realisedPnl>0){
                         realisedPnl = realisedPnl / accQuoteAskPrice; 
                     }else{
                         realisedPnl = realisedPnl / accQuoteBidPrice; 
                     }
-                    //[self addBalaInterestBalAdjForAmount:tradeAmount From:openPosition->dateTime To: tradeDateTime];  
                     [self addBalanceAdjustmentWithAmount:realisedPnl AndDateTime:tradeDateTime AndReason:TRADE_PNL];
                     
                 }else{
-                    tradeRemainder = tradeRemainder + openPosition->amount;
+                    tradeRemainder = tradeRemainder + [openPosition amount];
                     positionsToCancel = positionsToCancel + 1;
-                    realisedPnl = openPosition->amount * (tradePrice - openPosition->price);
+                    realisedPnl = [openPosition amount] * (tradePrice - [openPosition price]);
                     if(realisedPnl>0){
                         realisedPnl = realisedPnl / accQuoteAskPrice; 
                     }else{
@@ -515,156 +338,53 @@ struct signalInfo{
             }
         }
         if(abs(tradeRemainder)>0){
-            struct position *newPosition = malloc(sizeof( struct position));
-            newPosition->amount = tradeRemainder;
-            newPosition->price = tradePrice;
-            newPosition->dateTime = tradeDateTime;
-            newPosition->interestAccruedDateTime = tradeDateTime;
-            newPosition->interestAccrued = 0.0;
-            [openPositionsArray addObject:[NSValue valueWithBytes:newPosition objCType:@encode(struct position)]];
+            PositionRecord *newPosition;
+            newPosition = [[PositionRecord alloc] initWithAmount:tradeRemainder 
+                                                     AndDateTime:tradeDateTime
+                                                        AndPrice:tradePrice
+                                             AndInterestDateTime:tradeDateTime
+                                              AndInterestAccrued:0.0];
+            [openPositionsArray addObject:newPosition];
         }
                
     }
     
     //Add the trade
-    struct marketTransaction *newTrade = malloc(sizeof( struct marketTransaction));
-    newTrade->amount = tradeAmount;
-    newTrade->price = tradePrice;
-    newTrade->dateTime = tradeDateTime;
-    newTrade->resultingMarketExposure = [self currentExposure];
-    newTrade->spread = baseQuoteAskPrice-baseQuoteBidPrice;
+    TransactionRecord *newTrade;
+    double spreadInAccountCurrency;
     if([accCode isEqualToString:quoteCode]){
-        newTrade->spreadInAccCurrency = baseQuoteAskPrice-baseQuoteBidPrice;
+        spreadInAccountCurrency = baseQuoteAskPrice-baseQuoteBidPrice;
     }else{
-        newTrade->spreadInAccCurrency = (baseQuoteAskPrice-baseQuoteBidPrice)/baseQuoteBidPrice;
+          spreadInAccountCurrency = (baseQuoteAskPrice-baseQuoteBidPrice)/baseQuoteBidPrice;  
     }
-    newTrade->signalIndex = signalIndex;
-    [tradesArray addObject:[NSValue valueWithBytes:newTrade objCType:@encode(struct marketTransaction)]];
-
-    //spreadCrossingCostInBaseCurrency = spreadCrossingCostInBaseCurrency + 0.5 * abs(tradeAmount) *(1-baseQuoteBidPrice/baseQuoteAskPrice);
+    
+    newTrade = [[TransactionRecord alloc] initWithAmount:tradeAmount 
+                                             AndDateTime:tradeDateTime 
+                                                AndPrice:tradePrice AndResultingExposure:[self currentExposure] 
+                                               AndSpread:baseQuoteAskPrice-baseQuoteBidPrice AndSpreadInAccCurrency:spreadInAccountCurrency AndSignalDateTime:0 AndSignalIndex:signalIndex];
+    [tradesArray addObject:newTrade];
     return realisedPnl;
 }
 
-
-
-
-//-(double)getMarginAvailableWithBaseQuoteBidPrice: (float) baseQuoteBidPrice  
-//                            AndBaseQuoteAskPrice: (float) baseQuoteAskPrice 
-//                             AndAccQuoteBidPrice: (float) accQuoteBidPrice
-//                             AndAccQuoteAskPrice: (float) accQuoteAskPrice
-//{
-//    double marginUsed, marginAvailable;
-//    double nav;
-//    
-//    nav = [self getNAVWithBaseQuoteBidPrice: baseQuoteBidPrice  
-//                              AndBaseQuoteAskPrice: baseQuoteAskPrice 
-//                               AndAccQuoteBidPrice: accQuoteBidPrice
-//                               AndAccQuoteAskPrice: accQuoteAskPrice];
-//    
-//    
-//    marginUsed = [self getMarginUsedWithAccBaseBidPrice:accQuoteBidPrice 
-//                                     AndAccBaseAskPrice:accQuoteAskPrice];
-//    marginAvailable = nav - marginUsed;
-//    return marginAvailable;
-//}
-
-//-(double)getMarginUsedWithAccBaseBidPrice: (float) accBaseBidPrice
-//                             AndAccBaseAskPrice: (float) accBaseAskPrice
-//{
-//    double marginUsed;
-//    int currentExposure;
-//    
-//    currentExposure = [self currentExposure];
-//    
-//    if(currentExposure > 0)
-//    {
-//        marginUsed = ((1/maxLeverage) * ([self currentExposure] / accBaseBidPrice));
-//    }else{
-//        marginUsed = ((1/maxLeverage) * (abs([self currentExposure]) / accBaseAskPrice));
-//    }
-//    return marginUsed;
-//}
-
-//-(double)getMarginRequiredForExposure: (long) exposure
-//                 WithAccBaseBidPrice: (float) accBaseBidPrice
-//                  AndAccBaseAskPrice: (float) accBaseAskPrice
-//{
-//    double marginUsed;
-//    if(exposure > 0)
-//    {
-//        marginUsed = ((1/maxLeverage) * (exposure * accBaseAskPrice));
-//    }else{
-//        marginUsed = ((1/maxLeverage) * (exposure * accBaseBidPrice));
-//    }
-//    return marginUsed;
-//}
-
-//-(double) getNAVWithBaseQuoteBidPrice: (float) baseQuoteBidPrice  
-//                 AndBaseQuoteAskPrice: (float) baseQuoteAskPrice 
-//                  AndAccQuoteBidPrice: (float) accQuoteBidPrice
-//                  AndAccQuoteAskPrice: (float) accQuoteAskPrice;
-//{
-//
-//    //Account balance and unrealised P&L 
-//    double balance = [self currentBalance];
-//    double unrealizedPnl;
-//    int exposure = [self currentExposure];
-//    double costOfExposure = [self costOfCurrentExposure];
-//    
-//    if(exposure == 0){
-//        return balance;
-//    }else{
-//        if(exposure > 0){
-//            unrealizedPnl = (exposure * baseQuoteBidPrice) - costOfExposure;
-//        }else{
-//            unrealizedPnl = (exposure * baseQuoteAskPrice) - costOfExposure;
-//        }
-//        unrealizedPnl = unrealizedPnl / baseQuoteAskPrice;
-//        if(unrealizedPnl > 0){
-//            balance = balance + (unrealizedPnl / accQuoteAskPrice);
-//        }else{
-//            balance = balance + (unrealizedPnl / accQuoteBidPrice);
-//        }
-//    }
-//    return balance;
-//}
-
--(long) dateTimeForBalAdjAtIndex: (NSUInteger) index
-{
-    struct balanceAdjustment returnData;
-    [[accBalanceArray objectAtIndex:index] getValue:&returnData];
-    return returnData.dateTime;
-}
-
--(long) dateTimeForTradeAtIndex: (NSUInteger) index
-{
-    struct marketTransaction returnData;
-    [[tradesArray objectAtIndex:index] getValue:&returnData];
-    return returnData.dateTime;
-}
-
-
 -(int) resultingExposureForTradeAtIndex: (NSUInteger) tradeIndex
 {
-    struct marketTransaction returnData;
-    [[tradesArray objectAtIndex:tradeIndex] getValue:&returnData];
-    return returnData.resultingMarketExposure;
+    return [[tradesArray objectAtIndex:tradeIndex] resultingMarketExposure];
 }
 
--(int)numberOfPositions
+-(int) numberOfPositions
 {
     return (int)[openPositionsArray count];
 }
 
--(float)wgtAverageCostOfPosition
+-(double) wgtAverageCostOfPosition
 {
-    float wgtCost = 0.0;
+    double wgtCost = 0.0;
     int positionSize = 0;
     for(int positionIndex = 0; positionIndex < [openPositionsArray count];positionIndex++){
-        struct position openPosition;
-        [[openPositionsArray objectAtIndex:positionIndex] getValue:&openPosition];
-        wgtCost = openPosition.amount * openPosition.price;
-        positionSize = positionSize + openPosition.amount; 
+        PositionRecord *openPosition;
+        openPosition = [openPositionsArray objectAtIndex:positionIndex];
+        wgtCost = [openPosition amount] * [openPosition price];
+        positionSize = positionSize + [openPosition amount]; 
     }
     if(positionSize != 0)
     {
@@ -674,69 +394,55 @@ struct signalInfo{
     }
 }
 
--(NSDictionary *)detailsOfPositionAtIndex:(int)positionIndex
+-(NSDictionary *) detailsOfPositionAtIndex:(int)positionIndex
 {
     NSMutableDictionary *positionDetails = [[NSMutableDictionary alloc] init];
-    struct position openPosition;
-    [[openPositionsArray objectAtIndex:positionIndex] getValue:&openPosition];
+    PositionRecord *openPosition;
+    openPosition = [openPositionsArray objectAtIndex:positionIndex];
     [positionDetails setObject:[NSNumber numberWithInt:openPosition.amount ] forKey:@"AMOUNT"];
     [positionDetails setObject:[NSNumber numberWithLong:openPosition.dateTime ] forKey:@"DATETIME"];
-    [positionDetails setObject:[NSNumber numberWithFloat:openPosition.price] forKey:@"PRICE"];
+    [positionDetails setObject:[NSNumber numberWithDouble:openPosition.price] forKey:@"PRICE"];
     [positionDetails setObject:[NSNumber numberWithInt:openPosition.interestAccrued] forKey:@"INTERESTACCURED"];
-    [positionDetails setObject:[NSNumber numberWithFloat:openPosition.interestAccruedDateTime] forKey:@"INTERESTTIMEDATE"];
+    [positionDetails setObject:[NSNumber numberWithDouble:openPosition.interestAccruedDateTime] forKey:@"INTERESTTIMEDATE"];
     return positionDetails;
     
 }
 
-
-
 -(int) sizeOfPositionAtIndex:(int) positionIndex{
-    struct position *openPosition = malloc(sizeof( struct position));
-    [[openPositionsArray objectAtIndex:positionIndex] getValue:openPosition];
-    return openPosition->amount;
+    PositionRecord *openPosition;
+    openPosition = [openPositionsArray objectAtIndex:positionIndex];
+    return [openPosition amount];
 }
 
 -(long) dateTimeOfPositionAtIndex:(int) positionIndex{
-    struct position *openPosition = malloc(sizeof( struct position));
-    [[openPositionsArray objectAtIndex:positionIndex] getValue:openPosition];
-    return openPosition->dateTime;
+    PositionRecord *openPosition;
+    openPosition = [openPositionsArray objectAtIndex:positionIndex];
+    return [openPosition dateTime];
 }
 
--(float) entryPriceOfPositionAtIndex:(int) positionIndex{
-    struct position *openPosition = malloc(sizeof( struct position));
-    [[openPositionsArray objectAtIndex:positionIndex] getValue:openPosition];
-    return openPosition->price;
+-(double) entryPriceOfPositionAtIndex:(int) positionIndex{
+    PositionRecord *openPosition;
+    openPosition = [openPositionsArray objectAtIndex:positionIndex];
+    return [openPosition price];
 }
 
 
 -(long) dateTimeOfInterestForPositionAtIndex:(int) positionIndex{
-    struct position *openPosition = malloc(sizeof( struct position));
-    [[openPositionsArray objectAtIndex:positionIndex] getValue:openPosition];
-    return openPosition->interestAccruedDateTime;
+    PositionRecord *openPosition;
+    openPosition = [openPositionsArray objectAtIndex:positionIndex];
+    return [openPosition interestAccruedDateTime];
 }
-
-
-//-(void) addInterest: (double) InterestAmount ToPositionAtIndex:(int) positionIndex;
-//{
-//    struct position *openPosition = malloc(sizeof( struct position));
-//    [[openPositionsArray objectAtIndex:positionIndex] getValue:openPosition];
-//    openPosition->interestAccrued = openPosition->interestAccrued + InterestAmount;
-//    [openPositionsArray replaceObjectAtIndex:positionIndex 
-//                             withObject:[NSValue valueWithBytes:openPosition 
-//                                                       objCType:@encode(struct position)]];
-//    
-//}
 
 -(long)timeDateOfEarliestPosition
 {
     if([openPositionsArray count] >0)
     {
-        struct position *openPosition;
-        openPosition = malloc(sizeof(struct position));
-        [[openPositionsArray objectAtIndex:0] getValue:openPosition];
-        
+        PositionRecord *openPosition;
+        openPosition = [openPositionsArray objectAtIndex:0];
+        return [openPosition dateTime];
+    }else{
+        return 0;
     }
-    return 0;
 }
 
 -(int)numberOfTrades
@@ -744,68 +450,66 @@ struct signalInfo{
     return (int)[tradesArray count];
 }
 
-
-
 -(NSDictionary *)detailsOfTradeAtIndex:(int)tradeIndex
 {
     NSMutableDictionary *tradeDetails = [[NSMutableDictionary alloc] init];
-    struct marketTransaction trade;
-    [[tradesArray objectAtIndex:tradeIndex] getValue:&trade];
-    [tradeDetails setObject:[NSNumber numberWithInt:trade.amount ] forKey:@"AMOUNT"];
-    [tradeDetails setObject:[NSNumber numberWithLong:trade.dateTime ] forKey:@"DATETIME"];
-    [tradeDetails setObject:[NSNumber numberWithFloat:trade.price] forKey:@"PRICE"];
-    [tradeDetails setObject:[NSNumber numberWithInt:trade.resultingMarketExposure] forKey:@"ENDEXP"];
-    [tradeDetails setObject:[NSNumber numberWithFloat:trade.spread] forKey:@"SPREAD"];
-    [tradeDetails setObject:[NSNumber numberWithLong:trade.signalDateTime] forKey:@"SIGDATETIME"]; 
+    TransactionRecord *trade;
+    trade = [tradesArray objectAtIndex:tradeIndex];
+    [tradeDetails setObject:[NSNumber numberWithInt:[trade amount] ] forKey:@"AMOUNT"];
+    [tradeDetails setObject:[NSNumber numberWithLong:[trade dateTime]] forKey:@"DATETIME"];
+    [tradeDetails setObject:[NSNumber numberWithDouble:[trade price]] forKey:@"PRICE"];
+    [tradeDetails setObject:[NSNumber numberWithInt:[trade resultingMarketExposure]] forKey:@"ENDEXP"];
+    [tradeDetails setObject:[NSNumber numberWithDouble:[trade spread]] forKey:@"SPREAD"];
+    [tradeDetails setObject:[NSNumber numberWithLong:[trade signalDateTime]] forKey:@"SIGDATETIME"]; 
     return tradeDetails;
  }
 
 
 -(int)getAmountForTradeAtIndex:(int) tradeIndex
 {
-    struct marketTransaction trade;
-    [[tradesArray objectAtIndex:tradeIndex] getValue:&trade];
+    TransactionRecord *trade;
+    trade = [tradesArray objectAtIndex:tradeIndex];
     return trade.amount;
 }
 
 -(long)getDateTimeForTradeAtIndex:(int) tradeIndex
 {
-    struct marketTransaction trade;
-    [[tradesArray objectAtIndex:tradeIndex] getValue:&trade];
-    return trade.dateTime;
+    TransactionRecord *trade;
+    trade = [tradesArray objectAtIndex:tradeIndex];
+    return [trade dateTime];
 }
 
--(float)getPriceForTradeAtIndex:(int) tradeIndex
+-(double)getPriceForTradeAtIndex:(int) tradeIndex
 {
-    struct marketTransaction trade;
-    [[tradesArray objectAtIndex:tradeIndex] getValue:&trade];
-    return trade.price;
+    TransactionRecord *trade;
+    trade = [tradesArray objectAtIndex:tradeIndex];
+    return [trade price];
 }
 
--(float)getTotalSpreadCostForTradeAtIndex:(int) tradeIndex
+-(double)getTotalSpreadCostForTradeAtIndex:(int) tradeIndex
 {
-    struct marketTransaction trade;
-    [[tradesArray objectAtIndex:tradeIndex] getValue:&trade];
-    return -(trade.spreadInAccCurrency*abs(trade.amount))/2;
+    TransactionRecord *trade;
+    trade = [tradesArray objectAtIndex:tradeIndex];
+    return -([trade spreadInAccCurrency]*abs([trade amount]))/2;
 }
 
 
 
 -(int)getResultingMarketExposureForTradeAtIndex:(int) tradeIndex
 {
-    struct marketTransaction trade;
-    [[tradesArray objectAtIndex:tradeIndex] getValue:&trade];
-    return trade.resultingMarketExposure;
+    TransactionRecord *trade;
+    trade = [tradesArray objectAtIndex:tradeIndex];
+    return [trade resultingMarketExposure];
 }
 
 -(NSString *)getTradeDetailToPrint:(int) tradeIndex;
 {
-    struct marketTransaction trade;
+    TransactionRecord *trade;
     NSString *dateTimeString;
-    [[tradesArray objectAtIndex:tradeIndex] getValue:&trade];
-    dateTimeString = [EpochTime stringDateWithTime:trade.dateTime];
+    trade = [tradesArray objectAtIndex:tradeIndex];
+    dateTimeString = [EpochTime stringDateWithTime:[trade dateTime]];
     return [NSString stringWithFormat: @"On %@ Traded %@ %d  at Price %@ %5.2f resulting in exposure %@ %d",
-            dateTimeString, baseCode, trade.amount, quoteCode, trade.price, baseCode, trade.resultingMarketExposure];    
+            dateTimeString, baseCode, [trade amount], quoteCode, [trade price], baseCode, [trade resultingMarketExposure]];    
 }
 
 -(BOOL)writeTradesToFile:(NSURL *) urlOfFile
@@ -826,18 +530,17 @@ struct signalInfo{
         
         NSString *dateTimeString;
         NSString *lineOfDataAsString;
-        struct marketTransaction trade;
+        TransactionRecord *trade;
         lineOfDataAsString = @"DATETIME, CODE, AMOUNT, PRICE, RESULTING EXPOSURE \r\n";
         [outFile writeData:[lineOfDataAsString dataUsingEncoding:NSUTF8StringEncoding]];
         for(int tradeIndex = 0; tradeIndex < [tradesArray count];tradeIndex++){
-            [[tradesArray objectAtIndex:tradeIndex] getValue:&trade];
-            dateTimeString = [EpochTime stringDateWithTime:trade.dateTime];
-            lineOfDataAsString = [NSString stringWithFormat:@"%@, %@%@, %d, %5.4f, %d", dateTimeString, baseCode, quoteCode, trade.amount, trade.price, trade.resultingMarketExposure];
+            trade = [tradesArray objectAtIndex:tradeIndex];
+            dateTimeString = [EpochTime stringDateWithTime:[trade dateTime]];
+            lineOfDataAsString = [NSString stringWithFormat:@"%@, %@%@, %d, %5.4f, %d", dateTimeString, baseCode, quoteCode, [trade amount], [trade price], [trade resultingMarketExposure]];
             lineOfDataAsString = [lineOfDataAsString stringByAppendingFormat:@"\r\n"];
             [outFile writeData:[lineOfDataAsString dataUsingEncoding:NSUTF8StringEncoding]];
         }
         [outFile closeFile];
-        
     }
     return allOk;
     
@@ -861,14 +564,13 @@ struct signalInfo{
         NSString *dateTimeString;
         NSString *lineOfDataAsString;
         NSString *reasonString;
-        struct balanceAdjustment balAdj;
+        CashFlowRecord *balAdj;
         lineOfDataAsString = @"DATETIME, AMOUNT, REASON, RESULTING BALANCE, CODE \r\n";
         [outFile writeData:[lineOfDataAsString dataUsingEncoding:NSUTF8StringEncoding]];
         for(int balAdjIndex = 0; balAdjIndex < [accBalanceArray count];balAdjIndex++){
-            [[accBalanceArray objectAtIndex:balAdjIndex] getValue:&balAdj];
-            dateTimeString = [EpochTime stringDateWithTime:balAdj.dateTime];
-            
-            switch(balAdj.reason)
+            balAdj = [accBalanceArray objectAtIndex:balAdjIndex];
+            dateTimeString = [EpochTime stringDateWithTime:[balAdj dateTime]];
+            switch([balAdj reason])
             {
                 case TRANSFER:
                     reasonString = [NSString stringWithString:@"TRANSFER"];
@@ -884,7 +586,7 @@ struct signalInfo{
                     break;
             }   
 
-            lineOfDataAsString = [NSString stringWithFormat:@"%@, %f, %@, %f, %@", dateTimeString, balAdj.amount, reasonString, balAdj.resultingBalance, accCode];
+            lineOfDataAsString = [NSString stringWithFormat:@"%@, %f, %@, %f, %@", dateTimeString, [balAdj amount], reasonString, [balAdj resultingBalance], accCode];
             lineOfDataAsString = [lineOfDataAsString stringByAppendingFormat:@"\r\n"];
             [outFile writeData:[lineOfDataAsString dataUsingEncoding:NSUTF8StringEncoding]];
         }
@@ -894,25 +596,19 @@ struct signalInfo{
     return allOk;
 }
 
-//-(double)getSpreadCrossingCostInBaseCurrency;
-//{
-//    return spreadCrossingCostInBaseCurrency;
-//}
-
 //Balance Adjustment Info
-
--(NSDictionary *)detailsOfBalanceAdjustmentIndex:(int)tradeIndex
+- (NSDictionary *) detailsOfBalanceAdjustmentIndex:(int)tradeIndex
 {
     NSMutableDictionary *balAdjDetails = [[NSMutableDictionary alloc] init];
-    struct balanceAdjustment balAdj;
-    [[accBalanceArray objectAtIndex:tradeIndex] getValue:&balAdj];
+    CashFlowRecord *balAdj;
+    balAdj = [accBalanceArray objectAtIndex:tradeIndex];
     
-    [balAdjDetails setObject:[NSNumber numberWithLong:balAdj.dateTime] forKey:@"DATETIME"];
-    [balAdjDetails setObject:[NSNumber numberWithFloat:balAdj.amount] forKey:@"AMOUNT"];
+    [balAdjDetails setObject:[NSNumber numberWithLong:[balAdj dateTime]] forKey:@"DATETIME"];
+    [balAdjDetails setObject:[NSNumber numberWithDouble:[balAdj amount]] forKey:@"AMOUNT"];
     
-    [balAdjDetails setObject:[NSNumber numberWithFloat:balAdj.resultingBalance] forKey:@"ENDBAL"];
+    [balAdjDetails setObject:[NSNumber numberWithDouble:[balAdj resultingBalance]] forKey:@"ENDBAL"];
     NSString *reasonString;
-    switch(balAdj.reason)
+    switch([balAdj reason])
     {
         case TRANSFER:
             reasonString = [NSString stringWithString:@"TRANSFER"];
@@ -933,33 +629,33 @@ struct signalInfo{
 }
                         
                               
--(float)getAmountForBalanceAdjustmentAtIndex:(int) balAdjIndex
+-(double)getAmountForBalanceAdjustmentAtIndex:(int) balAdjIndex
 {
-    struct balanceAdjustment balAdj;
-    [[accBalanceArray objectAtIndex:balAdjIndex] getValue:&balAdj];
-    return balAdj.amount;
+    CashFlowRecord *balAdj;
+    balAdj = [accBalanceArray objectAtIndex:balAdjIndex];
+    return [balAdj amount];
 }
 
 -(long)getDateTimeForBalanceAdjustmentAtIndex:(int) balAdjIndex
 {
-    struct balanceAdjustment balAdj;
-    [[accBalanceArray objectAtIndex:balAdjIndex] getValue:&balAdj];
-    return balAdj.dateTime;
+    CashFlowRecord *balAdj;
+    balAdj = [accBalanceArray objectAtIndex:balAdjIndex];
+    return [balAdj dateTime];
 }
 
--(float)getResultingBalanceForBalanceAdjustmentAtIndex:(int) balAdjIndex
+-(double)getResultingBalanceForBalanceAdjustmentAtIndex:(int) balAdjIndex
 {
-    struct balanceAdjustment balAdj;
-    [[accBalanceArray objectAtIndex:balAdjIndex] getValue:&balAdj];
-    return balAdj.resultingBalance;
+    CashFlowRecord *balAdj;
+    balAdj = [accBalanceArray objectAtIndex:balAdjIndex];
+    return [balAdj resultingBalance];
 }
 
 -(NSString *)getReasonForBalanceAdjustmentAtIndex:(int) balAdjIndex
 {
-    struct balanceAdjustment balAdj;
-    [[accBalanceArray objectAtIndex:balAdjIndex] getValue:&balAdj];
+    CashFlowRecord *balAdj;
+    balAdj = [accBalanceArray objectAtIndex:balAdjIndex];
     NSString *reasonString;
-    switch(balAdj.reason)
+    switch([balAdj reason])
     {
         case TRANSFER:
             reasonString = [NSString stringWithString:@"TRANSFER"];
@@ -980,9 +676,9 @@ struct signalInfo{
 
 -(BOOL)isTransferBalanceAdjustmentAtIndex:(int) balAdjIndex
 {
-    struct balanceAdjustment balAdj;
-    [[accBalanceArray objectAtIndex:balAdjIndex] getValue:&balAdj];
-    if(balAdj.reason == TRANSFER){
+    CashFlowRecord *balAdj;
+    balAdj = [accBalanceArray objectAtIndex:balAdjIndex];
+    if([balAdj reason] == TRANSFER){
         return YES;
     }else{
         return NO;
@@ -996,11 +692,11 @@ struct signalInfo{
 
 -(NSString *)getBalanceDetailToPrint:(int) balAdjIndex;
 {
-    struct balanceAdjustment newBalAdj; 
+    CashFlowRecord *newBalAdj; 
     NSString *reason;
     NSString *dateTimeString;
     
-    [[accBalanceArray objectAtIndex:balAdjIndex] getValue:&newBalAdj];
+    newBalAdj = [accBalanceArray objectAtIndex:balAdjIndex];
     
     switch(newBalAdj.reason){
         case(TRANSFER):
@@ -1029,38 +725,38 @@ struct signalInfo{
 -(NSDictionary *)detailsOfSignalAtIndex:(int)signalInfoIndex
 {
     NSMutableDictionary *signalInfoDetails = [[NSMutableDictionary alloc] init];
-    struct signalInfo signalInfoStruct;
-    [[signalInfoArray objectAtIndex:signalInfoIndex] getValue:&signalInfoStruct];
-    [signalInfoDetails setObject:[NSNumber numberWithInt:signalInfoStruct.signal] forKey:@"SIGNAL"];
-    [signalInfoDetails setObject:[NSNumber numberWithLong:signalInfoStruct.startTime] forKey:@"ENTRYTIME"];
-    [signalInfoDetails setObject:[NSNumber numberWithLong:signalInfoStruct.endTime] forKey:@"EXITTIME"]; 
-    [signalInfoDetails setObject:[NSNumber numberWithFloat:signalInfoStruct.entryPrice] forKey:@"ENTRYPRICE"];
-    [signalInfoDetails setObject:[NSNumber numberWithFloat:signalInfoStruct.exitPrice] forKey:@"EXITPRICE"];
-    [signalInfoDetails setObject:[NSNumber numberWithFloat:signalInfoStruct.maxPotentialLoss] forKey:@"POTLOSS"];
-    [signalInfoDetails setObject:[NSNumber numberWithFloat:signalInfoStruct.maxPotentialProfit] forKey:@"POTGAIN"];
-    [signalInfoDetails setObject:[NSNumber numberWithFloat:signalInfoStruct.timeInProfit] forKey:@"UPTIME"]; 
+    SignalRecord *signalRecord;
+    signalRecord = [signalInfoArray objectAtIndex:signalInfoIndex];
+    [signalInfoDetails setObject:[NSNumber numberWithDouble:[signalRecord signal]] forKey:@"SIGNAL"];
+    [signalInfoDetails setObject:[NSNumber numberWithLong:[signalRecord startTime]] forKey:@"ENTRYTIME"];
+    [signalInfoDetails setObject:[NSNumber numberWithLong:[signalRecord endTime]] forKey:@"EXITTIME"]; 
+    [signalInfoDetails setObject:[NSNumber numberWithDouble:[signalRecord entryPrice]] forKey:@"ENTRYPRICE"];
+    [signalInfoDetails setObject:[NSNumber numberWithDouble:[signalRecord exitPrice]] forKey:@"EXITPRICE"];
+    [signalInfoDetails setObject:[NSNumber numberWithDouble:[signalRecord maxPotentialLoss]] forKey:@"POTLOSS"];
+    [signalInfoDetails setObject:[NSNumber numberWithDouble:[signalRecord maxPotentialProfit]] forKey:@"POTGAIN"];
+    [signalInfoDetails setObject:[NSNumber numberWithDouble:[signalRecord timeInProfit]] forKey:@"UPTIME"]; 
     return signalInfoDetails;
 }
 
 -(int)getNewSignalForChangeAtIndex:(int) signalChangeIndex
 {
-    struct signalInfo signalInfoStruct;
-    [[signalInfoArray objectAtIndex:signalChangeIndex] getValue:&signalInfoStruct];
-    return signalInfoStruct.signal;
+    SignalRecord *signalRecord;
+    signalRecord = [signalInfoArray objectAtIndex:signalChangeIndex];
+    return [signalRecord signal];
 }
 
 -(long)getDateTimeStartForSignalChangeAtIndex:(int) signalChangeIndex
 {
-    struct signalInfo signalInfoStruct;
-    [[signalInfoArray objectAtIndex:signalChangeIndex] getValue:&signalInfoStruct];
-    return signalInfoStruct.startTime;
+    SignalRecord *signalRecord;
+    signalRecord = [signalInfoArray objectAtIndex:signalChangeIndex];
+    return [signalRecord startTime];
 }
 
 -(long)getDateTimeEndForSignalChangeAtIndex:(int) signalChangeIndex
 {
-    struct signalInfo signalInfoStruct;
-    [[signalInfoArray objectAtIndex:signalChangeIndex] getValue:&signalInfoStruct];
-    return signalInfoStruct.endTime;
+    SignalRecord *signalRecord;
+    signalRecord = [signalInfoArray objectAtIndex:signalChangeIndex];
+    return [signalRecord endTime];
 }
 
 -(NSDictionary *)getPerformanceAttribution
@@ -1071,25 +767,24 @@ struct signalInfo{
     double interestAccrued = 0.0;
     double other = 0.0;
     BOOL unIdentified = NO;
-    struct balanceAdjustment *balAdj;
+    CashFlowRecord *balAdj;
     
     for(int balAdjIndex = 0;balAdjIndex < [accBalanceArray count]; balAdjIndex++)
     {
-        balAdj = malloc(sizeof(struct balanceAdjustment));
-        [[accBalanceArray objectAtIndex:balAdjIndex] getValue:balAdj];
+        balAdj = [accBalanceArray objectAtIndex:balAdjIndex];
     
-        switch(balAdj->reason){
+        switch([balAdj reason]){
         case(TRANSFER):
-            transferAmounts = transferAmounts + balAdj->amount;
+            transferAmounts = transferAmounts + [balAdj amount];
             break;
         case(TRADE_PNL):
-            tradePnl = tradePnl + balAdj->amount;
+            tradePnl = tradePnl + [balAdj amount];
             break;
         case(INTEREST):
-            interestAccrued = interestAccrued + balAdj->amount;
+            interestAccrued = interestAccrued + [balAdj amount];
             break;
         default:
-            other = other + balAdj->amount;
+            other = other + [balAdj amount];
             unIdentified = YES;
             break;
         }
@@ -1102,5 +797,30 @@ struct signalInfo{
     }
     return perfAttrib;
 }
+
+#pragma mark -
+#pragma mark Properties
+
+@synthesize name;
+@synthesize startDate;
+@synthesize endDate;
+@synthesize accCode;
+@synthesize baseCode;
+@synthesize quoteCode;
+@synthesize maxLeverage;
+@synthesize signalParameters;
+@synthesize positioningType;
+@synthesize simulationDataSeries;
+@synthesize analysisDataSeries;
+@synthesize longPeriods;
+@synthesize shortPeriods;
+@synthesize dataStartDateTime;
+@synthesize samplingRate;
+@synthesize tradingLag;
+@synthesize tradingDayStart;
+@synthesize tradingDayEnd;
+@synthesize reportDataFieldsArray;
+@synthesize userAddedData;
+
 
 @end

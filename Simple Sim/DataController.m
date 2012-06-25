@@ -8,33 +8,32 @@
 
 #import "DataController.h"
 #import "FMDatabase.h"
-//#import "IdNamePair.h"
 #import "FMDatabaseAdditions.h"
 #import "DataSeries.h"
 #import "EpochTime.h"
 #import "DataView.h"
 #import "DataSeriesValue.h"
 #import "UtilityFunctions.h"
+#import "DataProcessor.h"
 
 #define DATABASE_GRANULARITY_SECONDS 1
-#define MAX_DATA_CHUNK 30*24*60*60
-#define DAY_SECONDS 24*60*60
+//30*24*60*60 
+#define MAX_DATA_CHUNK  2592000 
+//360*24*60*60 
+//#define MAX_DATA_CHUNK 31104000
+
+//24*60*60
+#define DAY_SECONDS 86400
 
 @interface DataController()
--(void)setupListofPairs;
--(void)setupListofDataFields;
+- (void) setupListofPairs;
+- (void) setupListofDataFields;
+- (void) readingRecordSetsProgress:(NSNumber *) progressFraction;
+- (void) progressAsFraction:(NSNumber *) progressValue;
 @end
 
 @implementation DataController
-@synthesize connected;
-@synthesize dataSeries;
-@synthesize fxPairs;
-@synthesize dataFields;
-@synthesize minDateTimes;
-@synthesize maxDateTimes;
 
-
-//NSString *dbPath = @"/Users/Martin/Documents/dev/db1/timeseries.db";
 NSString *dbPath = @"/Users/Martin/Projects/Databases/timeseries.db";
 FMDatabase *db;
 
@@ -43,11 +42,14 @@ FMDatabase *db;
     self = [super init];
     if(self){
         db = [FMDatabase databaseWithPath:dbPath];
+        delegate = nil;
+        doThreads = NO;
+        adhocDataAdded = NO;
+        _fileDataAdded = NO;
         if (![db open]) {
             db = nil;
             connected = NO;
-        }else
-        {
+        }else{
             connected = YES;
             [self setupListofPairs];
             [self setupListofDataFields];
@@ -69,15 +71,93 @@ FMDatabase *db;
     }
 }
 
+- (BOOL) setupDataSeriesForName: (NSString *) dataSeriesName 
+                    AndStrategy: (NSString *) strategyString
+{
+    BOOL success = YES;
+    double pipSize;
+    NSString *seriesName; 
+    int dbid = [[fxPairs objectForKey:dataSeriesName] intValue]; 
+    @try
+    {
+        if([self connected] == YES)
+        {
+            seriesName = [db stringForQuery:[NSString stringWithFormat:@"SELECT SeriesName FROM SeriesName WHERE SeriesId = %d", dbid]];
+            pipSize = [db doubleForQuery:[NSString stringWithFormat:@"SELECT PipSize FROM SeriesName WHERE SeriesId = %d", dbid]];
+        }else{
+            success = NO;
+            NSLog(@"Database error");
+        }
+    }
+    @catch (NSException *exception) {
+        NSLog(@"main: Caught %@: %@", [exception name], [exception reason]);
+        success = NO;
+    }
+    if(success){
+        
+        dataSeries = [[DataSeries alloc] initWithName:seriesName 
+                                             AndDbTag:dbid 
+                                           AndPipSize:pipSize 
+                                          AndStrategy:strategyString];
+    }
+    return success;
+}
+
+
 -(int)dataGranularity
 {
     return DATABASE_GRANULARITY_SECONDS;
+}
+
+-(void)setDelegate:(id)del
+{
+    delegate = del;
+}
+
+-(id)delegate 
+{ 
+    return delegate;
+}
+
+- (BOOL) doThreads
+{
+    return [self doThreads];
+}
+
+- (void) setDoThreads:(BOOL)doThreadedProcedures
+{
+    doThreads = doThreadedProcedures;
+}
+
+- (void) readingRecordSetsProgress:(NSNumber *) progressFraction;
+{
+    if(delegate != nil){
+        if([delegate respondsToSelector:@selector(readingRecordSetsProgress:)])
+        {
+            [delegate readingRecordSetsProgress:progressFraction];
+        }else{
+            NSLog(@"Delegate does not respond to \'readingRecordSetsProgress:\'");
+        }
+    }
+}
+
+-(void) progressAsFraction:(NSNumber *) progressValue
+{
+    if(delegate != nil){
+        if([delegate respondsToSelector:@selector(progressAsFraction:)])
+        {
+            [delegate progressAsFraction:progressValue];
+        }else{
+            NSLog(@"Delegate does not respond to \'progressAsFraction:\'");
+        }
+    }
 }
 
 -(long)getDataSeriesLength
 {
     return [dataSeries length];
 }
+
 -(long)getMinDateTimeForLoadedData
 {
     long minDateTime = 0;
@@ -98,8 +178,17 @@ FMDatabase *db;
     return maxDateTime; 
 }
 
+-(NSArray *)getFieldNames
+{
+    return [dataSeries getFieldNames];
+}
 
--(void)setupListofPairs{
+- (BOOL) strategyUnderstood:(NSString *) strategyString
+{
+    return [DataProcessor strategyUnderstood:strategyString];
+}
+
+- (void) setupListofPairs{
     NSMutableDictionary *retrievedPairs = [[NSMutableDictionary alloc]init];
     NSMutableDictionary *dataMinDateTimes = [[NSMutableDictionary alloc]init];
     NSMutableDictionary *dataMaxDateTimes = [[NSMutableDictionary alloc]init];
@@ -122,14 +211,14 @@ FMDatabase *db;
     maxDateTimes = dataMaxDateTimes;
 }
 
--(NSDictionary *)getValuesForFields:(NSArray *) fieldNames AtDateTime: (long) dateTime
+- (NSDictionary *) getValuesForFields:(NSArray *) fieldNames 
+                           AtDateTime: (long) dateTime
 {
     return [dataSeries getValues:fieldNames 
                        AtDateTime:dateTime];
 }
 
-
--(void)setupListofDataFields
+- (void) setupListofDataFields
 {
     NSMutableDictionary *listOfDataFields = [[NSMutableDictionary alloc]init];
     if([self connected] == YES){
@@ -142,29 +231,9 @@ FMDatabase *db;
     dataFields = listOfDataFields;
 }
 
-//-(long *)getDateRangeForSeries:(NSInteger) seriesId
-//{
-//    long *myArray  = malloc(sizeof(long)*2);
-//    myArray[0] = 0;
-//    myArray[1] = 0;
-//    @try{
-//        if([self connected] == YES)
-//        {
-//            FMResultSet *s = [db executeQuery:[NSString stringWithFormat:@"SELECT Mindate, Maxdate FROM DataDateRange WHERE SeriesID = %d", seriesId]];
-//            [s next];
-//            myArray[0] = [s intForColumnIndex:0];
-//            myArray[1] = [s intForColumnIndex:1];
-//        }else{
-//            NSLog(@"Database error");
-//        }
-//    }
-//    @catch (NSException *exception) {
-//        NSLog(@"main: Caught %@: %@", [exception name], [exception reason]);
-//    }
-//    return myArray;
-//}
-
--(DataSeriesValue *) valueFromDataBaseForName:(NSString *) name AndDateTime:(long) dateTime AndField: (NSString *) field
+- (DataSeriesValue *) valueFromDataBaseForName: (NSString *) name 
+                                   AndDateTime: (long) dateTime 
+                                      AndField: (NSString *) field
 {
     DataSeriesValue *returnObject = [[DataSeriesValue alloc] init];
     
@@ -189,9 +258,7 @@ FMDatabase *db;
         
         NSString *queryString;
         FMResultSet *rs;
-        
         fieldId = [[dataFields objectForKey:field] intValue];
-        
         queryString = [NSString stringWithFormat:@"SELECT TimeDate, Value FROM DataSeries WHERE SeriesId = %d AND DataTypeId = %d AND TimeDate <= %lu ORDER BY TimeDate DESC LIMIT 1",seriesId,fieldId, dateTime]; 
         rs = [db executeQuery:queryString];
         [rs next ]; 
@@ -206,7 +273,9 @@ FMDatabase *db;
     return returnObject;
 }
 
--(DataSeriesValue *) valueFromDataBaseForFxPair:(NSString *) name AndDateTime:(long) dateTime AndField: (NSString *) field
+- (DataSeriesValue *) valueFromDataBaseForFxPair: (NSString *) name 
+                                     AndDateTime: (long) dateTime 
+                                        AndField: (NSString *) field
 {
     DataSeriesValue *returnObject = [[DataSeriesValue alloc] init];
     
@@ -248,7 +317,7 @@ FMDatabase *db;
     return returnObject;
 }
 
--(NSArray *) getAllInterestRatesForCurrency: (NSString *) currencyCode 
+- (NSArray *) getAllInterestRatesForCurrency: (NSString *) currencyCode 
                                    AndField: (NSString *) bidOrAsk
 {
     int codeForInterestRate, fieldId;
@@ -275,288 +344,464 @@ FMDatabase *db;
 }
 
 
+- (void) setDataForStartDateTime: (long) requestedStartDate 
+                  AndEndDateTime: (long) requestedEndDate 
+                 AndSamplingRate: (long) samplingRate
+                     WithSuccess: (int *) successAsInt
+                     AndUpdateUI: (BOOL) doUpdateUI
+                  
+{
+    DataSeries *retrievedData;
+    retrievedData = [self retrieveDataForStartDateTime: requestedStartDate 
+                                        AndEndDateTime: requestedEndDate 
+                                       AndSamplingRate: samplingRate
+                                           WithSuccess: successAsInt
+                                           AndUpdateUI: doUpdateUI];
+    dataSeries = retrievedData;
+}
 
--(BOOL)setupDataSeriesForName: (NSString *) dataSeriesName
+
+- (DataSeries *) retrieveDataForStartDateTime: (long) requestedStartDate 
+                               AndEndDateTime: (long) requestedEndDate 
+                              AndSamplingRate: (long) samplingRate
+                                  WithSuccess: (int *) successAsInt
+                                  AndUpdateUI: (BOOL) doUpdateUI
 {
     BOOL success = YES;
-    double pipSize;
-    NSString *seriesName; 
-    int dbid = [[fxPairs objectForKey:dataSeriesName] intValue]; 
-    @try
-    {
-        if([self connected] == YES)
-        {
-            seriesName = [db stringForQuery:[NSString stringWithFormat:@"SELECT SeriesName FROM SeriesName WHERE SeriesId = %d", dbid]];
-            pipSize = [db doubleForQuery:[NSString stringWithFormat:@"SELECT PipSize FROM SeriesName WHERE SeriesId = %d", dbid]];
+    long sampleDateTime;
+    long *dateTimeArray;
+    NSMutableData *arrayOfDataArraysData;
+    double **arrayOfDataArrays;
+    
+    CPTNumericData *dataArray;
+    long oldDataIndex, newDataIndex;
+    long oldDataLength;
+    NSArray *fieldNames;
+    int numberOfFields;
+    long maxData;
+    int dataFieldIndex;
+    
+    NSMutableData *intermediateSampledDateTimesData;
+    NSMutableData *intermediateMappedDateTimesData;
+    NSMutableData *intermediateDataValuesArray;
+    
+    NSMutableArray *intermediateDataArray;
+    
+    long *intermediateSampledDateTimesArray  = NULL;
+    long *intermediateMappedDateTimesArray  = NULL;
+    double **intermediateDataValuesPointerArray = NULL;
+    
+    NSNumber *progressAmount;
+    NSString *userMessage;
+    DataSeries *newDataSeries;
+    int requestTruncated = 0;
+    
+    
+    NSMutableArray *statsArray = [[NSMutableArray alloc] init];
+    
+    success = [self getMoreDataForStartDateTime: requestedStartDate 
+                                 AndEndDateTime: requestedEndDate
+                         AndReturningStatsArray: statsArray
+                       WithRequestTruncatedFlag: &requestTruncated]; 
+    
+    if(success && !cancelProcedure){
+        if(doUpdateUI){
+            progressAmount = [NSNumber numberWithDouble:(double)([dataSeries maxDateTime]-requestedStartDate)/(requestedEndDate-requestedStartDate)];
+            [self performSelectorOnMainThread:@selector(progressAsFraction:) 
+                                   withObject:progressAmount 
+                                waitUntilDone:NO];
+        }
+    }else{
+        NSLog(@"Data request failed, something wrong");
+    }
+    
+    if(success && !cancelProcedure){
+        oldDataLength = [dataSeries length];
+    
+        fieldNames = [dataSeries getFieldNames];
+        numberOfFields = [fieldNames count];
+    
+        maxData = (requestedEndDate- requestedStartDate)/samplingRate;
+    
+        if(maxData > 0 ){
+            //NSMutableData *tempData;
+            intermediateSampledDateTimesData = [[NSMutableData alloc] initWithLength:maxData * sizeof(long)];
+            intermediateSampledDateTimesArray = (long *)[intermediateSampledDateTimesData mutableBytes];
+            
+            intermediateMappedDateTimesData = [[NSMutableData alloc] initWithLength:maxData * sizeof(long)];
+            intermediateMappedDateTimesArray = (long *)[intermediateMappedDateTimesData mutableBytes];
+            
+            intermediateDataValuesArray = [[NSMutableData alloc] initWithLength:numberOfFields * sizeof(double*)];
+            intermediateDataValuesPointerArray = (double **)[intermediateDataValuesArray mutableBytes];
+            
+            intermediateDataArray = [[NSMutableArray alloc] initWithCapacity:numberOfFields];
+            
+            for(dataFieldIndex = 0; dataFieldIndex < numberOfFields; dataFieldIndex++){
+                NSMutableData *temp = [[NSMutableData alloc] initWithLength:maxData * sizeof(double*)];
+                [intermediateDataArray addObject:temp];
+                intermediateDataValuesPointerArray[dataFieldIndex] = (double *)[temp mutableBytes];
+            }
+            
+            arrayOfDataArraysData = [[NSMutableData alloc] initWithLength:numberOfFields * sizeof(double*)];
+            arrayOfDataArrays = (double **)[arrayOfDataArraysData mutableBytes];
+    
+            dateTimeArray = (long *)[[dataSeries xData] bytes]; 
+            for(dataFieldIndex = 0; dataFieldIndex < numberOfFields; dataFieldIndex++){
+                dataArray =  [[dataSeries yData] objectForKey:[fieldNames objectAtIndex:dataFieldIndex]];
+                arrayOfDataArrays[dataFieldIndex] = (double *)[dataArray bytes];
+            }
         }else{
             success = NO;
-            NSLog(@"Database error");
+            [NSException raise:@"Unknown error" format:@"Zero data returned, something wrong"];
         }
     }
-    @catch (NSException *exception) {
-        NSLog(@"main: Caught %@: %@", [exception name], [exception reason]);
-        success = NO;
-    }
-    if(success){
-        dataSeries = [[DataSeries alloc] initWithName:seriesName AndDbTag:dbid AndPipSize:pipSize];
-    }
-    return success;
-}
-
--(BOOL)moveDataToStartDateTime: (long) requestedStartDate 
-          AndEndDateTime: (long) requestedEndDate;
-{
-    BOOL isOk;
-    //NSArray *currentFieldNames = [[currentData yData] allKeys];
-    isOk = [self getDataSeriesForStartDateTime: requestedStartDate 
-                                AndEndDateTime: requestedEndDate];
-    return isOk; 
-}
-
-
--(BOOL)getDataSeriesForStartDateTime: (long) requestedStartDate 
-                     AndEndDateTime: (long) requestedEndDate
-{
-    //We always get the BID and ASK and calculate a mid, other options can be coded in
-    // EWMA is coded in already
-    bool dbSuccess = YES;
-    bool allNewData;
-    int newStartSampleCount, newEndSampleCount;
-    long oldStart, oldEnd, oldLength;
-    long startAdjSecs, endAdjSecs;
-    long *newStartDateLongs, *newEndDateLongs;
-    double *newStartBidDoubles, *newStartAskDoubles;
-    double *newEndBidDoubles, *newEndAskDoubles;
     
-    NSMutableArray *extraFields;
-    NSMutableArray *ewmaFields = [[NSMutableArray alloc] init];
-    //NSArray *ewmaParams;
-    
-    //If the amount of data requested is more than 20% longer than our rule of thumb max data
-    //then lessen the amount of data the function will return
-    
-    if(((requestedEndDate-requestedStartDate)/MAX_DATA_CHUNK) > 1.2){
-        requestedEndDate = requestedStartDate + MAX_DATA_CHUNK;
+    if(success && !cancelProcedure){        
+        oldDataIndex = 0;
+        newDataIndex = 0;
+        sampleDateTime = requestedStartDate;
+        while(sampleDateTime < dateTimeArray[oldDataIndex]){
+            sampleDateTime = sampleDateTime + samplingRate;
+        }
+        while(dateTimeArray[oldDataIndex] < requestedStartDate){
+            oldDataIndex++;
+        }
+        if(oldDataIndex >= oldDataLength){
+            userMessage = @"Something wrong couldn't find >= startdate in the data";
+            success = NO;
+        }
     }
     
+    if(success && !cancelProcedure){
+        BOOL keepGoing = YES;
+        int requestTruncated = 1;
+        while(keepGoing){
+            //While the data time is less than or equal to sample time keep going
+            //But if we have got to the end of the data and the data time is equal to sample time
+            // then we need to stop as this is our sample 
+            while(dateTimeArray[oldDataIndex] <= sampleDateTime && keepGoing){
+                
+                if(oldDataIndex == oldDataLength -1){
+                    if(dateTimeArray[oldDataIndex] == sampleDateTime){
+                        intermediateSampledDateTimesArray[newDataIndex] = dateTimeArray[oldDataIndex];
+                        intermediateMappedDateTimesArray[newDataIndex] = sampleDateTime;
+                        
+                        for(dataFieldIndex = 0; dataFieldIndex < numberOfFields; dataFieldIndex++){
+                            intermediateDataValuesPointerArray[dataFieldIndex][newDataIndex] = arrayOfDataArrays[dataFieldIndex][oldDataIndex];
+                        }
+                        sampleDateTime = sampleDateTime + samplingRate;
+                        if(sampleDateTime > requestedEndDate){
+                            keepGoing = NO;
+                        }
+                        newDataIndex++;
+                    }
+                    if(keepGoing){
+                        //This ensures that hte first date in the new array is from the last array
+                        //so there is no sampling gaps 
+                        requestedStartDate = dateTimeArray[oldDataIndex]; 
+                        success = [self getMoreDataForStartDateTime: requestedStartDate 
+                                                     AndEndDateTime: requestedEndDate
+                                             AndReturningStatsArray: statsArray
+                                           WithRequestTruncatedFlag: &requestTruncated]; 
+                        
+                        if(!success || cancelProcedure){
+                            keepGoing = NO;
+                            if(!success){
+                                NSLog(@"Problem retrieving data, stopping");
+                            }
+                        }else{
+                            if(doUpdateUI){
+                                progressAmount = [NSNumber numberWithDouble:(double)([dataSeries maxDateTime]-requestedStartDate)/(requestedEndDate - requestedStartDate)];
+                            
+                                [self performSelectorOnMainThread:@selector(progressAsFraction:) 
+                                                       withObject:progressAmount 
+                                                    waitUntilDone:NO];
+                            }
+                            dateTimeArray = (long *)[[dataSeries xData] bytes]; 
+                            for(dataFieldIndex = 0; dataFieldIndex < numberOfFields; dataFieldIndex++){
+                                dataArray =  [[dataSeries yData] objectForKey:[fieldNames objectAtIndex: dataFieldIndex]];
+                                arrayOfDataArrays[dataFieldIndex] = (double *)[dataArray bytes];
+                            }
+                            oldDataLength = [dataSeries length];
+                            oldDataIndex = 0;
+                        }
+                    }
+                }else{
+                    oldDataIndex = oldDataIndex + 1;
+                }
+            }
+            
+            if(keepGoing){
+                if(oldDataIndex > 0){
+                    if(dateTimeArray[oldDataIndex-1] > (sampleDateTime - samplingRate)){
+                        intermediateSampledDateTimesArray[newDataIndex] = dateTimeArray[oldDataIndex-1];
+                        intermediateMappedDateTimesArray[newDataIndex] = sampleDateTime;
+                
+                        for(dataFieldIndex = 0; dataFieldIndex < numberOfFields; dataFieldIndex++){
+                            intermediateDataValuesPointerArray[dataFieldIndex][newDataIndex] = arrayOfDataArrays[dataFieldIndex][oldDataIndex-1];
+                        }
+                        newDataIndex++;
+                    }
+                }
+                sampleDateTime = sampleDateTime + samplingRate;
+                if(sampleDateTime > requestedEndDate){
+                    keepGoing = NO;
+                }
+            }
+        }
+    }
     
-    bool doEwma;
-    float *ewmaParams;
-    FMResultSet *rs;
-    
-    oldLength = [dataSeries length]; 
-    if(oldLength == 0)
-    {
-        allNewData = YES;
-        startAdjSecs = 0;
-        endAdjSecs = 0;
+    if(success && !cancelProcedure){
+        long newDataLength = newDataIndex;
+        NSMutableData *dateTimesData;
+        NSMutableDictionary *newDataDictionary = [[NSMutableDictionary alloc] init];
+        NSMutableData *newData;
+        long *dateTimesArray;
+        NSMutableData *arrayOfNewDataArraysData;
+        double **arrayOfNewDataArrays;
         
+        dateTimesData = [[NSMutableData alloc] initWithLength:newDataLength * sizeof(long)]; 
+        dateTimesArray = (long *)[dateTimesData mutableBytes];
+        
+        arrayOfNewDataArraysData = [[NSMutableData alloc] initWithLength:numberOfFields * sizeof(double*)];
+        arrayOfNewDataArrays = (double **)[arrayOfNewDataArraysData mutableBytes];
+    
+        for(dataFieldIndex = 0; dataFieldIndex < numberOfFields; dataFieldIndex++){
+            newData = [[NSMutableData alloc] initWithLength:newDataLength * sizeof(double)]; 
+            [newDataDictionary setObject:newData forKey:[fieldNames objectAtIndex:dataFieldIndex]];
+            arrayOfNewDataArrays[dataFieldIndex] = (double *)[newData mutableBytes];
+        }
+    
+        for(newDataIndex= 0; newDataIndex < newDataLength; newDataIndex++){
+            dateTimesArray[newDataIndex] = intermediateMappedDateTimesArray[newDataIndex];
+            if(newDataIndex > 0){
+                if(dateTimesArray[newDataIndex]==dateTimesArray[newDataIndex-1]){
+                    [NSException raise:@"Date problem in sampling" format:nil];
+                }
+            }
+            
+            for(dataFieldIndex = 0; dataFieldIndex < numberOfFields; dataFieldIndex++){
+                arrayOfNewDataArrays[dataFieldIndex][newDataIndex] = intermediateDataValuesPointerArray[dataFieldIndex][newDataIndex];
+            }
+        }
+        
+        if(!cancelProcedure){
+            newDataSeries = [dataSeries getCopyOfStaticData];
+            CPTNumericData *dateTimeCPTData; 
+            dateTimeCPTData = [CPTNumericData numericDataWithData:dateTimesData 
+                                                         dataType:CPTDataType(CPTIntegerDataType,sizeof(long),CFByteOrderGetCurrent()) shape:nil];
+            [newDataSeries setXData:dateTimeCPTData];
+    
+            CPTNumericData *dataArrayCPTData;
+            //[newDataSeries setYData:[[NSMutableDictionary alloc] init]];
+            [[newDataSeries  yData] removeAllObjects];
+            for(dataFieldIndex = 0; dataFieldIndex < numberOfFields; dataFieldIndex++){
+                newData = [newDataDictionary  objectForKey:[fieldNames objectAtIndex:dataFieldIndex]];
+                dataArrayCPTData = [CPTNumericData numericDataWithData:newData 
+                                                              dataType:CPTDataType(CPTFloatingPointDataType, 
+                                                                          sizeof(double), 
+                                                                          CFByteOrderGetCurrent()) shape:nil];
+                [[newDataSeries yData] setObject:dataArrayCPTData forKey:[fieldNames objectAtIndex:dataFieldIndex]];
+            }
+            [newDataSeries setSampleRate:samplingRate];
+            [[newDataSeries dataViews] removeAllObjects];
+            if([dateTimeCPTData length] > 0 ){
+                [newDataSeries setPlotViewWithName:@"ALL" 
+                              AndStartDateTime:[[dateTimeCPTData sampleValue:0] longValue]  
+                                AndEndDateTime:[[dateTimeCPTData sampleValue:([dateTimeCPTData length]/[dateTimeCPTData sampleBytes])-1] longValue]];
+                signalStats = statsArray;
+            }
+        }
+    }
+    
+    *successAsInt = (success) ? 1 : 0;
+    return newDataSeries;
+}    
+
+
+-(BOOL) getMoreDataForStartDateTime: (long) requestedStartDate 
+                     AndEndDateTime: (long) requestedEndDate
+             AndReturningStatsArray: (NSMutableArray *) statsArray
+           WithRequestTruncatedFlag: (int *) requestTrucated   
+{
+    //We always get the BID and ASK and calculate a MID, other options added as per strategy requirements
+    BOOL success = YES;
+    BOOL useOldData, useNewData, strategyVariables;
+    //int newStartSampleCount, newEndSampleCount;
+    long oldStart, oldEnd;
+    NSMutableData *newDateLongsTempData;
+    long *newDateLongsTemp;
+    long adjustedStartDate, adjustedEndDate;
+    NSMutableData *newBidDoublesTempData, *newAskDoublesTempData;
+    double *newBidDoublesTemp, *newAskDoublesTemp;
+    double progress = 0.0, progressUpdate = 0.0;
+    
+    if([[dataSeries strategy] isEqualToString:@""] || [[dataSeries strategy] isEqualToString:@"BAM"]){
+        strategyVariables = NO;
     }else{
-        //Check for other data which we can calculate
-        extraFields = [[[dataSeries yData] allKeys] mutableCopy];
-        [extraFields removeObject:[NSString stringWithString:@"BID"]];
-        [extraFields removeObject:[NSString stringWithString:@"ASK"]];
-        [extraFields removeObject:[NSString stringWithString:@"MID"]];
-        for(NSString *fieldname in extraFields){
-           if([[fieldname substringToIndex:4] isEqualToString:@"EWMA"])
-           {
-               [ewmaFields addObject:fieldname];
-           }
-        }
-        if([ewmaFields count] > 0){
-            doEwma = YES;
-         }else{
-            doEwma = NO;
-        }
+        strategyVariables = YES;
+    }
+    
+    adjustedStartDate = requestedStartDate;
+    adjustedEndDate = requestedEndDate;
+    
+    if([dataSeries length] != 0){
         oldStart = [dataSeries minDateTime];
         oldEnd = [dataSeries maxDateTime];
-        
         //If the day is nearly overlapping make it overlap
-        if(requestedStartDate > oldEnd && (requestedStartDate - oldEnd) <= (7 * DAY_SECONDS)){
-            requestedStartDate = oldEnd;
+        if(adjustedStartDate > oldEnd && (adjustedStartDate - oldEnd) <= (7 * DAY_SECONDS)){
+            adjustedStartDate = oldEnd;
         }
-        
-        
-        if((requestedEndDate < oldStart) || (requestedStartDate > oldEnd) ){
-            allNewData = YES;
-            startAdjSecs = 0;
-            endAdjSecs = 0;
-        }else{
-            allNewData = NO;
-            startAdjSecs = requestedStartDate - oldStart;
-            endAdjSecs = requestedEndDate - oldEnd;
-        }
-        
     }
-        
+
+    //If the amount of data requested is more than 20% longer than our rule of thumb max data
+    //then lessen the amount of data the function will return
+    if((((double)adjustedEndDate-adjustedStartDate)/MAX_DATA_CHUNK) > 1.2){
+        adjustedEndDate = adjustedStartDate + MAX_DATA_CHUNK;
+        *requestTrucated = 1;
+    }else{
+        *requestTrucated = 0;
+    }
     
-    //requestedStartDate = oldStart + startAdjSecs;
-    //newEnd = oldEnd + endAdjSecs;
+    if([dataSeries length]==0 ){
+        useOldData = NO;
+        useNewData = YES;
+    }else{
+        if(!([dataSeries sampleRate]== 0 || [dataSeries sampleRate] != DATABASE_GRANULARITY_SECONDS)){
+            useOldData = NO;
+            useNewData = YES;
+        }else{
+            if((adjustedStartDate < oldStart) || (adjustedStartDate > oldEnd)){
+                useOldData = NO;
+                useNewData = YES;
+            }else{
+                if(adjustedStartDate >= oldStart && adjustedEndDate <= oldEnd){
+                    useOldData = YES;
+                    useNewData = NO;     
+                }else {
+                    useOldData = YES;
+                    useNewData = YES;  
+                }
+            }
+        }
+    }
     
-    newStartSampleCount = 0;
-    newEndSampleCount = 0;
-    CPTNumericData *dateData;
-    CPTNumericData *bidData;
-    CPTNumericData *askData;
+    CPTNumericData *oldDateData;
+    CPTNumericData *oldBidData;
+    CPTNumericData *oldAskData;
     CPTNumericData *midData;
-    CPTNumericData *ewmaData;
     long *oldDateLongs; 
     double *oldBidDoubles; 
     double *oldAskDoubles;
     double *oldMidDoubles;
     
-    double **oldEwmaDoubles;
-    
-    oldEwmaDoubles = malloc([ewmaFields count]*sizeof(double*));
-    
-    if(doEwma){
-        ewmaParams = malloc([ewmaFields count]*sizeof(int));
-        for(int i =0;i<[ewmaFields count];i++)
-        {
-            oldEwmaDoubles[i] = (double *)[[[dataSeries yData] objectForKey:[ewmaFields objectAtIndex:i]] bytes];
-            ewmaParams[i] = 2.0/(1.0+[UtilityFunctions fib:[[[ewmaFields objectAtIndex:i] substringFromIndex:4] intValue]]);
-        }
-    }
-
-    
-    
-    if(!allNewData){
+    if(useOldData){
         //Get a handle on the original data
-        dateData = [dataSeries xData];
-        bidData = [[dataSeries yData] objectForKey:@"BID"];
-        askData = [[dataSeries yData] objectForKey:@"ASK"];
+        oldDateData = [dataSeries xData];
+        oldBidData = [[dataSeries yData] objectForKey:@"BID"];
+        oldAskData = [[dataSeries yData] objectForKey:@"ASK"];
         midData = [[dataSeries yData] objectForKey:@"MID"];
-        oldDateLongs = (long *)[dateData bytes];
-        oldBidDoubles = (double *)[bidData bytes];
-        oldAskDoubles = (double *)[askData bytes];
+        oldDateLongs = (long *)[oldDateData bytes];
+        oldBidDoubles = (double *)[oldBidData bytes];
+        oldAskDoubles = (double *)[oldAskData bytes];
         oldMidDoubles = (double *)[midData bytes];
     }
     
-    
-    //if we are asked to move the start of the data forwards
-    int oldDataStartIndex = 0;
-    if(!allNewData){ 
-        if(startAdjSecs > 0){
+    long oldDataStartIndex = [dataSeries length] - 1;
+    if(useOldData){
+        while(oldDateLongs[oldDataStartIndex] > adjustedStartDate && oldDataStartIndex > 0){ 
             oldDataStartIndex--;
-            do
-            { 
-                oldDataStartIndex++;
-            }while(requestedStartDate > oldDateLongs[oldDataStartIndex] && oldDataStartIndex < [dataSeries length]);
-            if(oldDataStartIndex>1){
-                //Go back one to make sure we overlap the first time
-                oldDataStartIndex--;
-            }
+        }
+        if(oldDateLongs[oldDataStartIndex] < adjustedStartDate && oldDataStartIndex < [dataSeries length] - 1 ){
+            oldDataStartIndex++;
+        }
+        if(oldDataStartIndex >= [dataSeries length]){
+            useOldData = NO;
         }
     }
-   
-    //if we are asked  to move the start of the data backwards
-    //Or if there was no data to begin with
-    int resultCount;
-    if(startAdjSecs < 0 || allNewData){
+      
+    FMResultSet *rs;
+    //If we need all new data 
+    long resultCount, queryStart, queryEnd, recordsetIndex;
+    if(useNewData){
         @try{
-            long queryStart, queryEnd;
-            if(allNewData){
-                queryStart = requestedStartDate;
-                queryEnd = requestedEndDate;
-            }else{
-                queryStart = requestedStartDate;
-                queryEnd = oldStart;
-            }
-            resultCount = [db intForQuery:[NSString stringWithFormat:@"SELECT COUNT(*) FROM DataSeries WHERE SeriesId = %d AND DataTypeId = %d AND TimeDate >= %ld AND TimeDate < %ld",[dataSeries dbId],1,queryStart,queryEnd]];
-            newStartDateLongs = malloc(resultCount * sizeof(long));
-            newStartBidDoubles = malloc(resultCount * sizeof(double)); 
-            newStartAskDoubles = malloc(resultCount * sizeof(double));
-            
-            NSString *queryString = [NSString stringWithFormat:@"SELECT DS1.TimeDate, DS1.Value, DS2.Value FROM DataSeries DS1 INNER JOIN DataSeries DS2 ON DS1.TimeDate = DS2.TimeDate AND DS1.SeriesId = DS2.SeriesId  WHERE DS1.SeriesId = %d AND DS1.DataTypeId = %d AND DS2.DataTypeId = %d AND DS1.TimeDate >= %ld AND DS1.TimeDate < %ld ORDER BY DS1.TimeDate ASC", [dataSeries dbId],1,2,queryStart,queryEnd];
-            rs = [db executeQuery:queryString];
-        }
-        @catch (NSException *exception) {
-            NSLog(@"main: Caught %@: %@", [exception name], [exception reason]);
-            dbSuccess = NO;
-        }                
-        if(dbSuccess)
-        {
-            newStartSampleCount = 0;
-            while ([rs next ]) 
-            {
-                newStartDateLongs[newStartSampleCount] = [rs longForColumnIndex:0];
-                newStartBidDoubles[newStartSampleCount] = [rs doubleForColumnIndex:1];
-                newStartAskDoubles[newStartSampleCount] = [rs doubleForColumnIndex:2];
-                newStartSampleCount ++; 
-            }
-        }
-    }
-    
-    //if we are asked to move the end of the data backwards
-    int oldDataEndIndex = 0;
-    if(!allNewData){
-        oldDataEndIndex = (int)[dataSeries length]-1;
-        if(endAdjSecs < 0){
-            oldDataEndIndex++;
-            do
-            { 
-                oldDataEndIndex--;
-            }while(requestedEndDate < oldDateLongs[oldDataEndIndex] && oldDataEndIndex > 0);
-        }
-    }
-    
-    //if we are asked to move the end of the data forwards
-    if(endAdjSecs > 0 && dbSuccess){
-        @try{
-            long queryStart, queryEnd;
-            if(allNewData){
-                queryStart = requestedStartDate;
-                queryEnd = requestedEndDate;
-            }else{
+            NSString *queryString;
+            if(useOldData){
+                // Differnce when using old data is that startdate is not included in new data
+                // as it is part of the old data 
                 queryStart = oldEnd;
-                queryEnd = requestedEndDate;
+                
+                queryEnd = [db longForQuery:[NSString stringWithFormat:@"SELECT TimeDate FROM DataSeries WHERE SeriesId = %d AND DataTypeId = %d AND TimeDate >= %ld ORDER BY TimeDate ASC LIMIT 1",[dataSeries dbId],1,adjustedEndDate]];
+                
+                resultCount = [db intForQuery:[NSString stringWithFormat:@"SELECT COUNT(*) FROM DataSeries WHERE SeriesId = %d AND DataTypeId = %d AND TimeDate > %ld AND TimeDate <= %ld",[dataSeries dbId],1,queryStart,queryEnd]];
+                
+                queryString = [NSString stringWithFormat:@"SELECT DS1.TimeDate, DS1.Value, DS2.Value FROM DataSeries DS1 INNER JOIN DataSeries DS2 ON DS1.TimeDate = DS2.TimeDate AND DS1.SeriesId = DS2.SeriesId  WHERE DS1.SeriesId = %d AND DS1.DataTypeId = %d AND DS2.DataTypeId = %d AND DS1.TimeDate > %ld AND DS1.TimeDate <= %ld ORDER BY DS1.TimeDate ASC", [dataSeries dbId],1,2,queryStart,queryEnd];
+            }else{
+                queryStart = [db longForQuery:[NSString stringWithFormat:@"SELECT TimeDate FROM DataSeries WHERE SeriesId = %d AND DataTypeId = %d AND TimeDate <= %ld ORDER BY TimeDate DESC LIMIT 1",[dataSeries dbId],1,adjustedStartDate]];
+                
+                queryEnd = [db longForQuery:[NSString stringWithFormat:@"SELECT TimeDate FROM DataSeries WHERE SeriesId = %d AND DataTypeId = %d AND TimeDate >= %ld ORDER BY TimeDate ASC LIMIT 1",[dataSeries dbId],1,adjustedEndDate]];
+                
+                resultCount = [db intForQuery:[NSString stringWithFormat:@"SELECT COUNT(*) FROM DataSeries WHERE SeriesId = %d AND DataTypeId = %d AND TimeDate >= %ld AND TimeDate <= %ld",[dataSeries dbId],1,queryStart,queryEnd]];
+                
+                queryString = [NSString stringWithFormat:@"SELECT DS1.TimeDate, DS1.Value, DS2.Value FROM DataSeries DS1 INNER JOIN DataSeries DS2 ON DS1.TimeDate = DS2.TimeDate AND DS1.SeriesId = DS2.SeriesId  WHERE DS1.SeriesId = %d AND DS1.DataTypeId = %d AND DS2.DataTypeId = %d AND DS1.TimeDate >= %ld AND DS1.TimeDate <= %ld ORDER BY DS1.TimeDate ASC", [dataSeries dbId],1,2,queryStart,queryEnd];
+                
             }
-            resultCount = [db intForQuery:[NSString stringWithFormat:@"SELECT COUNT(*) FROM DataSeries WHERE SeriesId = %d AND DataTypeId = %d AND TimeDate >= %ld AND TimeDate <= %ld",[dataSeries dbId],1,queryStart,queryEnd]];
-            newEndDateLongs = malloc(resultCount * sizeof(long));
-            newEndBidDoubles = malloc(resultCount * sizeof(double)); 
-            newEndAskDoubles = malloc(resultCount * sizeof(double));
+            newDateLongsTempData = [[NSMutableData alloc] initWithLength:resultCount * sizeof(long)];
+            newDateLongsTemp = (long *)[newDateLongsTempData mutableBytes];
             
-            NSString *queryString = [NSString stringWithFormat:@"SELECT DS1.TimeDate, DS1.Value, DS2.Value FROM DataSeries DS1 INNER JOIN DataSeries DS2 ON DS1.TimeDate = DS2.TimeDate AND DS1.SeriesId = DS2.SeriesId  WHERE DS1.SeriesId = %d AND DS1.DataTypeId = %d AND DS2.DataTypeId = %d AND DS1.TimeDate >= %ld AND DS1.TimeDate <= %ld ORDER BY DS1.TimeDate ASC", [dataSeries dbId],1,2,queryStart,queryEnd];
+            newBidDoublesTempData = [[NSMutableData alloc] initWithLength:resultCount * sizeof(double)]; 
+            newBidDoublesTemp = (double *)[newBidDoublesTempData mutableBytes];
+            
+            newAskDoublesTempData = [[NSMutableData alloc] initWithLength:resultCount * sizeof(double)];
+            newAskDoublesTemp = (double *)[newAskDoublesTempData mutableBytes];
+            
             rs = [db executeQuery:queryString];
+            
         }
         @catch (NSException *exception) {
             NSLog(@"main: Caught %@: %@", [exception name], [exception reason]);
-            dbSuccess = NO;
+            success = NO;
         }                
-        if(dbSuccess)
+        if(success && !cancelProcedure)
         {
-            newEndSampleCount = 0;
+            recordsetIndex = 0;
             while ([rs next ]) 
             {
-                newEndDateLongs[newEndSampleCount] = [rs longForColumnIndex:0];
-                newEndBidDoubles[newEndSampleCount] = [rs doubleForColumnIndex:1];
-                newEndAskDoubles[newEndSampleCount] = [rs doubleForColumnIndex:2];
-                newEndSampleCount ++; 
+                newDateLongsTemp[recordsetIndex] = [rs longForColumnIndex:0];
+                newBidDoublesTemp[recordsetIndex] = [rs doubleForColumnIndex:1];
+                newAskDoublesTemp[recordsetIndex] = [rs doubleForColumnIndex:2];
+                
+                progress = (double)(newDateLongsTemp[recordsetIndex]-requestedStartDate)/(queryEnd-requestedStartDate);
+                recordsetIndex ++; 
+                if(progress - progressUpdate > 0.1){
+                    progressUpdate = progress;
+                    if(doThreads){
+                        [self performSelectorOnMainThread:@selector(readingRecordSetsProgress:) withObject:[NSNumber numberWithDouble:progressUpdate] waitUntilDone:NO];
+                        
+                    }
+                }
             }
         }
     }
-    if(dbSuccess){
-        NSMutableData *newDateData; 
-        NSMutableData *newBidData; 
-        NSMutableData *newAskData; 
-        NSMutableData *newMidData;
-        long *newDateLongs; 
-        double *newBidDoubles; 
-        double *newAskDoubles;
-        double *newMidDoubles;
-
-        NSMutableData *newEWMAData[[ewmaFields count]];
-        double **newEWMADoubles;
-        newEWMADoubles = malloc([ewmaFields count]*sizeof(double*));
-        
-        NSUInteger newDataLength;
-        //newDataLength = [currentData length];
-        
-        if(allNewData){
+    
+    NSMutableData *newDateData; 
+    NSMutableData *newBidData; 
+    NSMutableData *newAskData; 
+    NSMutableData *newMidData;
+    long *newDateLongs; 
+    double *newBidDoubles; 
+    double *newAskDoubles;
+    double *newMidDoubles;
+    NSUInteger newDataLength = 0;
+    int indexOnNew = 0;
+    
+    if(success && !cancelProcedure){
+        if(useOldData){
             //One of which will be zero
-            newDataLength = newStartSampleCount;
-        }else{
-            newDataLength = newStartSampleCount + ((oldDataEndIndex-oldDataStartIndex)+1) + newEndSampleCount;
+            newDataLength = [dataSeries length] - oldDataStartIndex;
+        }
+        if(useNewData){
+            newDataLength = newDataLength + resultCount;
         }
         
         newDateData = [[NSMutableData alloc] initWithLength:newDataLength * sizeof(long)]; 
@@ -568,132 +813,217 @@ FMDatabase *db;
         newBidDoubles = [newBidData mutableBytes]; 
         newAskDoubles = [newAskData mutableBytes];
         newMidDoubles = [newMidData mutableBytes];
-        
-        if(doEwma){
-            for(int i = 0;i<[ewmaFields count];i++)
-            {
-                newEWMAData[i] = [[NSMutableData alloc] initWithLength:newDataLength * sizeof(double)];
-                newEWMADoubles[i] = [newEWMAData[i] mutableBytes];
-
-            }
-        }
-        
-        int indexOnNew = 0; 
-        if(newStartSampleCount > 0){
-            for(int i = 0; i < newStartSampleCount;i++){
-                newDateLongs[indexOnNew] =  newStartDateLongs[i];
-                newBidDoubles[indexOnNew] = newStartBidDoubles[i];
-                newAskDoubles[indexOnNew] = newStartAskDoubles[i];
-                newMidDoubles[indexOnNew] = (newStartBidDoubles[i] + newStartAskDoubles[i])/2;
-                //If we are here we are using new start data so EWMA needs to be recalculated
-                if(doEwma){
-                    for(int fieldIndex = 0; fieldIndex <[ewmaFields count];fieldIndex++){
-                        if(indexOnNew==0)
-                        {
-                            newEWMADoubles[fieldIndex][indexOnNew] = newMidDoubles[indexOnNew];
-                        }else{
-                            //(lambda * midDoubleArray[i]) + ((1-lambda) * ewma[i-1]);
-                            newEWMADoubles[fieldIndex][indexOnNew] = (ewmaParams[fieldIndex]*newMidDoubles[indexOnNew]) + ((1-ewmaParams[fieldIndex]) * newEWMADoubles[fieldIndex][indexOnNew-1]);
-                        }
-                    }
-                }
-                
+    
+        if(useOldData){
+            for(int i = oldDataStartIndex; i < [dataSeries length];i++){
+                newDateLongs[indexOnNew] =  oldDateLongs[i];
+                newBidDoubles[indexOnNew] = oldBidDoubles[i];
+                newAskDoubles[indexOnNew] = oldAskDoubles[i];
+                newMidDoubles[indexOnNew] = (oldBidDoubles[i] + oldAskDoubles[i])/2;
                 indexOnNew++;
             }
         }
-        if(!allNewData){
-            for(int indexOnOld = oldDataStartIndex; indexOnOld <= oldDataEndIndex; indexOnOld++){
-                newDateLongs[indexOnNew] =  oldDateLongs[indexOnOld];
-                newBidDoubles[indexOnNew] = oldBidDoubles[indexOnOld];
-                newAskDoubles[indexOnNew] = oldAskDoubles[indexOnOld];
-                newMidDoubles[indexOnNew] = oldMidDoubles[indexOnOld];
-                if(doEwma){
-                    for(int fieldIndex = 0; fieldIndex <[ewmaFields count];fieldIndex++){
-                        if(newStartSampleCount > 0){
-                            newEWMADoubles[fieldIndex][indexOnNew] = (ewmaParams[fieldIndex]*newMidDoubles[indexOnNew]) + ((1-ewmaParams[fieldIndex]) * newEWMADoubles[fieldIndex][indexOnNew-1]);
-                        }else{
-                            newEWMADoubles[fieldIndex][indexOnNew] = oldEwmaDoubles[fieldIndex][indexOnOld];
-                        }
-                    }
-
-                }
-                
+            
+        if(useNewData){    
+            for(int i = 0; i < resultCount;i++){
+                newDateLongs[indexOnNew] =  newDateLongsTemp[i];
+                newBidDoubles[indexOnNew] = newBidDoublesTemp[i];
+                newAskDoubles[indexOnNew] = newAskDoublesTemp[i];
+                newMidDoubles[indexOnNew] = (newBidDoubles[indexOnNew]+newAskDoubles[indexOnNew])/2;
                 indexOnNew++;
             }
+        }
+    }
+    
+    NSMutableDictionary *fileDataDictionary;     
+    NSMutableData *fileDataSeries;
+    NSMutableData *fileDataDoubleArrayData;
+    double **fileDataDoubleArrays;
+    NSArray *fileDataFieldNames;
+    if([self fileDataAdded]){
+        fileDataDictionary = [[NSMutableDictionary alloc] init ];
+        fileDataFieldNames = [fileData objectAtIndex:0];
         
-            if(newEndSampleCount > 0){
-                for(int i = 0; i < newEndSampleCount;i++){
-                    newDateLongs[indexOnNew] =  newEndDateLongs[i];
-                    newBidDoubles[indexOnNew] = newEndBidDoubles[i];
-                    newAskDoubles[indexOnNew] = newEndAskDoubles[i];
-                    newMidDoubles[indexOnNew] = (newBidDoubles[indexOnNew]+newAskDoubles[indexOnNew])/2;
-                    if(doEwma){
-                        for(int j = 0; j <[ewmaFields count];j++){
-                            if(indexOnNew==0)
-                            {
-                                newEWMADoubles[j][indexOnNew] = newMidDoubles[indexOnNew];
-                            }else{
-                                //(lambda * midDoubleArray[i]) + ((1-lambda) * ewma[i-1]);
-                                newEWMADoubles[j][indexOnNew] = (ewmaParams[j]*newMidDoubles[indexOnNew]) + ((1-ewmaParams[j]) * newEWMADoubles[j][indexOnNew-1]);
-                            }
-                        }
-                    }
-                    indexOnNew++;
+        fileDataDoubleArrayData = [[NSMutableData alloc] initWithLength:([fileDataFieldNames count]-1) * sizeof(double *)];
+        fileDataDoubleArrays = (double **)[fileDataDoubleArrayData mutableBytes];
+        
+        for(int i = 0; i < [fileDataFieldNames count]-1;i++){
+            fileDataSeries = [[NSMutableData alloc] initWithLength:newDataLength * sizeof(double)];
+            fileDataDoubleArrays[i] = [fileDataSeries mutableBytes];
+            [fileDataDictionary setObject:fileDataSeries forKey:[fileDataFieldNames objectAtIndex:(i+1)]];
+        }
+
+        long indexOnFileData, indexOnDbData = 0;
+        long validFromInc, validToEx;
+        if([fileData count] > 2){
+            for(indexOnFileData = 1; indexOnFileData<[fileData count]; indexOnFileData++){
+                NSArray *lineOfData = [fileData objectAtIndex:indexOnFileData];
+                validFromInc = (long)[[lineOfData objectAtIndex:0] longLongValue];
+                if(indexOnFileData < [fileData count]-1){
+                    validToEx =  (long)[[[fileData objectAtIndex:indexOnFileData+1] objectAtIndex:0] longLongValue];
+                }else{
+                    validToEx = newDateLongs[newDataLength-1] +1; 
                 }
+                
+                if(indexOnFileData==1){
+                    while(validFromInc > newDateLongs[indexOnDbData] && indexOnDbData < newDataLength ){
+                        for(int fieldIndex = 0; fieldIndex < [fileDataFieldNames count]-1; fieldIndex++){
+                            fileDataDoubleArrays[fieldIndex][indexOnDbData] =  0.0;
+                        }
+                        indexOnDbData++;
+                    }
+                }
+                
+                while(newDateLongs[indexOnDbData] >= validFromInc && newDateLongs[indexOnDbData] < validToEx && indexOnDbData < newDataLength){
+                    for(int fieldIndex = 0; fieldIndex < [fileDataFieldNames count]-1; fieldIndex++){
+                        fileDataDoubleArrays[fieldIndex][indexOnDbData] =  [[lineOfData objectAtIndex:fieldIndex+1] doubleValue];
+                    }
+                    indexOnDbData++;
+                }
+                if(indexOnDbData >= newDataLength)
+                {
+                    break;
+                }
+            }
+        }   
+    }
+    
+    
+    NSDictionary *derivedDataDictionary;
+    NSArray *derivedDataNames;
+    NSData *derivedData;
+    CPTNumericData *derivedCPTData;
+    NSMutableArray *overriddenNames = [[NSMutableArray alloc] init];
+    if(success && !cancelProcedure){    
+        // If we need extra dervied data fields get them here.
+        if(strategyVariables){
+            NSMutableDictionary *newData = [[NSMutableDictionary alloc] init];
+            NSMutableDictionary *parameters = [[NSMutableDictionary alloc] init];
+            
+            if(useOldData){
+                [parameters setObject:[NSNumber numberWithBool:NO] forKey:@"ALLNEWDATA"];
+            }else{
+                [parameters setObject:[NSNumber numberWithBool:YES] forKey:@"ALLNEWDATA"];
+            }
+            
+            [newData setObject:newDateData forKey:@"DATETIME"];
+            [newData setObject:newBidData forKey:@"BID"];
+            [newData setObject:newAskData forKey:@"ASK"];
+            [newData setObject:newMidData forKey:@"MID"];
+            
+            if(useOldData){
+                [parameters setObject:[dataSeries yData] forKey:@"OLDDATA"];
+                [parameters setObject:[dataSeries xData] forKey:@"OLDDATETIME"];
+                [parameters setObject:[NSNumber numberWithInt:oldDataStartIndex] forKey:@"OVERLAPINDEX"];
+            }
+            
+            derivedDataDictionary = [DataProcessor processWithDataSeries: newData
+                                                             AndStrategy: [dataSeries strategy]
+                                                          AndProcessInfo: parameters
+                                                       AndReturningStats: statsArray];
+            
+            if([derivedDataDictionary objectForKey:@"SUCCESS"] != nil){
+                if(![[derivedDataDictionary objectForKey:@"SUCCESS"] boolValue]){
+                    success = NO; 
+                    NSLog(@"No success in creating derived data");
+                }
+            }else{
+                success = NO;
+                NSLog(@"Something wrong creating derived data, cannot find the success variable");
             }
         }
         
-        dateData = [CPTNumericData numericDataWithData:newDateData 
-                                              dataType:CPTDataType(CPTIntegerDataType, 
+        derivedDataNames = [derivedDataDictionary allKeys];
+        if([self fileDataAdded]){
+            for(int i = 0; i < [derivedDataNames count];i++){
+                for(int j = 0; j < [fileDataFieldNames count]; j++){
+                    if([[derivedDataNames objectAtIndex:i] isEqualToString:[fileDataFieldNames objectAtIndex:j]]){
+                        [overriddenNames addObject:[derivedDataNames objectAtIndex:i]];
+                    }
+                }
+            }
+        }
+    }
+    
+    if(success && !cancelProcedure){
+        CPTNumericData *dateCPTData, *bidCPTData, *askCPTData, *midCPTData;
+        
+        dateCPTData = [CPTNumericData numericDataWithData:newDateData 
+                                                     dataType:CPTDataType(CPTIntegerDataType, 
                                                                    sizeof(long), 
                                                                    CFByteOrderGetCurrent()) 
-                                                 shape:nil]; 
-        bidData = [CPTNumericData numericDataWithData:newBidData 
-                                             dataType:CPTDataType(CPTFloatingPointDataType, 
+                                                        shape:nil]; 
+        bidCPTData = [CPTNumericData numericDataWithData:newBidData 
+                                                    dataType:CPTDataType(CPTFloatingPointDataType, 
+                                                                  sizeof(double), 
+                                                                  CFByteOrderGetCurrent()) 
+                                                       shape:nil]; 
+        askCPTData = [CPTNumericData numericDataWithData:newAskData 
+                                                    dataType:CPTDataType(CPTFloatingPointDataType, 
                                                                   sizeof(double), 
                                                                   CFByteOrderGetCurrent()) 
                                                 shape:nil]; 
-        askData = [CPTNumericData numericDataWithData:newAskData 
+        midCPTData = [CPTNumericData numericDataWithData:newMidData 
                                              dataType:CPTDataType(CPTFloatingPointDataType, 
                                                                   sizeof(double), 
                                                                   CFByteOrderGetCurrent()) 
-                                                shape:nil]; 
-        midData = [CPTNumericData numericDataWithData:newMidData 
-                                             dataType:CPTDataType(CPTFloatingPointDataType, 
-                                                                  sizeof(double), 
-                                                                  CFByteOrderGetCurrent()) 
-                                                shape:nil]; 
+                                                       shape:nil]; 
         
-        
-        [dataSeries setXData:dateData];
-        [dataSeries setYData:[[NSMutableDictionary alloc] init]];
-        [[dataSeries yData] setObject:bidData forKey:@"BID"];
-        [[dataSeries yData] setObject:askData forKey:@"ASK"];
-        [[dataSeries yData] setObject:midData forKey:@"MID"];
-        if(doEwma){
-            for(int j = 0; j < [ewmaFields count]; j++)
-            {
-                ewmaData = [CPTNumericData numericDataWithData:newEWMAData[j] 
-                                                      dataType:CPTDataType(CPTFloatingPointDataType, 
-                                                                           sizeof(double), 
-                                                                           CFByteOrderGetCurrent()) 
-                                                         shape:nil];
-                [[dataSeries yData] setObject:ewmaData forKey:[ewmaFields objectAtIndex:j]];
+        [dataSeries setXData:dateCPTData];
+        [[dataSeries yData] removeAllObjects];
+        [[dataSeries yData] setObject:bidCPTData forKey:@"BID"];
+        [[dataSeries yData] setObject:askCPTData forKey:@"ASK"];
+        [[dataSeries yData] setObject:midCPTData forKey:@"MID"];
+            
+        for(int i = 0; i < [derivedDataNames count]; i++){
+            if(![[derivedDataNames objectAtIndex:i] isEqualToString:@"SUCCESS"]){
+                derivedData = [derivedDataDictionary objectForKey: [derivedDataNames objectAtIndex:i]];
                 
+                derivedCPTData = [CPTNumericData numericDataWithData:derivedData 
+                                                            dataType:CPTDataType(CPTFloatingPointDataType, 
+                                                                              sizeof(double), 
+                                                                              CFByteOrderGetCurrent()) 
+                                                                shape:nil];
+                 if([self fileDataAdded ] && [overriddenNames count] > 0){
+                     NSString *crossCheckedKey = [derivedDataNames objectAtIndex:i];
+                     for(int j = 0; j < [overriddenNames count]; j++){
+                         if([[overriddenNames objectAtIndex:j] isEqualToString:crossCheckedKey]){
+                             crossCheckedKey = [NSString stringWithFormat:@"%@**",crossCheckedKey];
+                         }
+                     }
+                     [[dataSeries yData] setObject:derivedCPTData forKey:crossCheckedKey];
+                 }else{
+                     [[dataSeries yData] setObject:derivedCPTData forKey:[derivedDataNames objectAtIndex:i]];
+                 }
+            }
+        }
+        
+        if([self fileDataAdded]){
+            NSData *fileDataExpanded;
+            CPTNumericData *fileCPTData;
+            for(int fileDataIndex = 0; fileDataIndex < [fileDataFieldNames count]-1; fileDataIndex++){
+                fileDataExpanded = [fileDataDictionary objectForKey:[fileDataFieldNames objectAtIndex:fileDataIndex+1]];
+                fileCPTData = [CPTNumericData numericDataWithData:fileDataExpanded 
+                                                         dataType:CPTDataType(CPTFloatingPointDataType, 
+                                                                              sizeof(double), 
+                                                                              CFByteOrderGetCurrent())
+                                                            shape:nil];
+                [[dataSeries yData] setObject:fileCPTData forKey:[fileDataFieldNames objectAtIndex:fileDataIndex+1]];               
             }
         }
         
         [[dataSeries dataViews] removeAllObjects];
         [dataSeries setPlotViewWithName:@"ALL" AndStartDateTime:newDateLongs[0] AndEndDateTime:newDateLongs[indexOnNew-1]];
     }
-    return dbSuccess;
+    
+    return success;
 }
 
 -(long)getMinDataDateTimeForPair:(NSString *) fxPairName
 {
     return [[minDateTimes objectForKey:fxPairName] longValue];
 }
-//
+
 -(long)getMaxDataDateTimeForPair:(NSString *) fxPairName
 {
     return [[maxDateTimes objectForKey:fxPairName] longValue];
@@ -727,154 +1057,9 @@ FMDatabase *db;
     } 
 }
 
-
-//-(DataSeries *)getDataSeriesForId: (int) dbid  AndType: (int) dataTypeId AndStartTime: (long) startTime AndEndTime: (long) endTime 
-//{
-//    BOOL success = YES;
-//    NSString *seriesName; 
-//    NSString *fieldName;
-//    NSUInteger resultCount;
-//    NSUInteger rowCount;
-//    DataSeries *returnData;
-//    double pipSize;
-//    
-//    @try{
-//        if([self connected] == YES)
-//        {
-//            seriesName = [db stringForQuery:[NSString stringWithFormat:@"SELECT SeriesName FROM SeriesName WHERE SeriesId = %d", dbid]];
-//            fieldName = [db stringForQuery:[NSString stringWithFormat:@"SELECT Description FROM DataType WHERE DataTypeId = %d", dataTypeId]];
-//            pipSize = [db doubleForQuery:[NSString stringWithFormat:@"SELECT PipSize FROM SeriesName WHERE SeriesId = %d", dbid]];
-//            resultCount = [db intForQuery:[NSString stringWithFormat:@"SELECT COUNT(*) FROM DataSeries WHERE SeriesId = %d AND DataTypeId = %d AND TimeDate >= %ld AND TimeDate <= %ld",dbid,dataTypeId,startTime,endTime]];
-//            
-//        }else{
-//            success = NO;
-//            NSLog(@"Database error");
-//        }
-//    }
-//    @catch (NSException *exception) {
-//        NSLog(@"main: Caught %@: %@", [exception name], [exception reason]);
-//        success = NO;
-//    }
-//    
-//    if(success){
-//        returnData = [[DataSeries alloc] initWithName:seriesName AndDbTag:dbid AndPipSize:pipSize];
-//        //[returnData setPipSize:pipSize];
-//        //long minDate, maxDate;
-//        //double minValue, maxValue;
-//        NSMutableData * newXData = [NSMutableData dataWithLength:resultCount * sizeof(long)]; 
-//        NSMutableData * newYData = [NSMutableData dataWithLength:resultCount * sizeof(double)]; 
-//        long *newXLongs = [newXData mutableBytes]; 
-//        double *newYDoubles = [newYData mutableBytes]; 
-//        @try{
-//            if([self connected] == YES)
-//            {
-//                FMResultSet *rs = [db executeQuery:[NSString stringWithFormat:@"SELECT TimeDate, Value FROM DataSeries WHERE SeriesId = %d AND DataTypeId = %d AND TimeDate >= %ld AND TimeDate <= %ld ORDER BY TimeDate ASC", dbid,1,startTime,endTime]];
-//                rowCount = 0;
-//                while ([rs next ] && (rowCount < resultCount)) 
-//                {
-//                    newXLongs[rowCount] = [rs longForColumnIndex:0];
-//                    newYDoubles[rowCount] = [rs doubleForColumnIndex:1];
-//                    rowCount = rowCount + 1;
-//                }
-//                if(rowCount != resultCount){
-//                    NSLog(@"****The result count didn't seem to be added in full, check!!!!!!");
-//                }
-//                //maxDate = newXLongs[rowCount - 1];                       
-//                CPTNumericData * xData = [CPTNumericData numericDataWithData:newXData 
-//                                                                    dataType:CPTDataType(CPTIntegerDataType, 
-//                                                                                         sizeof(long), 
-//                                                                                         CFByteOrderGetCurrent()) 
-//                                                                       shape:nil]; 
-//                CPTNumericData * yData = [CPTNumericData numericDataWithData:newYData 
-//                                                                    dataType:CPTDataType(CPTFloatingPointDataType, 
-//                                                                                         sizeof(double), 
-//                                                                                         CFByteOrderGetCurrent()) 
-//                                                                       shape:nil]; 
-//                [returnData setDataSeriesWithFieldName:fieldName 
-//                                                 AndDates:xData 
-//                                                 AndData:yData];
-//            }else{
-//                NSLog(@"Database error");
-//            }
-//        }
-//        @catch (NSException *exception) {
-//            NSLog(@"main: Caught %@: %@", [exception name], [exception reason]);
-//        }
-//    }
-//    NSLog(@"Returning %lu data for %@",rowCount-1,seriesName);
-//    return returnData;
-//}
-
--(void)addEWMAWithParameter: (int) param
-{
-    NSString *fieldNameMid = @"MID";
-    NSString *fieldNameEWMA = [NSString stringWithFormat:@"EWMA%d",param];
-    double lambda = 2.0/(1.0+param);
-    double minValue, maxValue;
-    double *midDoubleArray;
-    
-    NSMutableData *newData = [NSMutableData dataWithLength:([dataSeries length] * sizeof(double))];
-    
-    double *ewma = [newData mutableBytes]; 
-    CPTNumericData *mid =  [[dataSeries yData] objectForKey:fieldNameMid];
-    midDoubleArray = (double *)[mid bytes];
-    
-    ewma[0] = midDoubleArray[0];
-    minValue = ewma[0];
-    maxValue = ewma[0];
-    for(long i = 1; i < [dataSeries length]; i++){
-        ewma[i] = (lambda * midDoubleArray[i]) + ((1-lambda) * ewma[i-1]);
-        minValue = fmin(minValue,ewma[i]);
-        maxValue = fmax(maxValue,ewma[i]);
-    }
-    NSString *newFieldName = [NSString stringWithString:fieldNameEWMA];
-    CPTNumericData * ewmaData = [CPTNumericData numericDataWithData:newData 
-                                                           dataType:CPTDataType(CPTFloatingPointDataType, 
-                                                                                sizeof(double), 
-                                                                                CFByteOrderGetCurrent()) 
-                                                              shape:nil];
-    [[dataSeries yData] setObject:ewmaData forKey:newFieldName];
-    DataView *dataViewAll = [[dataSeries dataViews] objectForKey:@"ALL"];
-    [dataViewAll addMin:minValue AndMax:maxValue ForKey:fieldNameEWMA];
-}
-
-
--(void)addEWMAByIndex: (int) indexNumber
-{
-    NSString *fieldNameMid = @"MID";
-    
-    NSString *fieldNameEWMA = [NSString stringWithFormat:@"EWMA%d",indexNumber];
-    double param = [UtilityFunctions fib:indexNumber];
-    double lambda = 2.0/(1.0+param);
-    double minValue, maxValue;
-    double *midDoubleArray;
-    
-    NSMutableData *newData = [NSMutableData dataWithLength:([dataSeries length] * sizeof(double))];
-    
-    double *ewma = [newData mutableBytes]; 
-    CPTNumericData *mid =  [[dataSeries yData] objectForKey:fieldNameMid];
-    midDoubleArray = (double *)[mid bytes];
-    
-    ewma[0] = midDoubleArray[0];
-    minValue = ewma[0];
-    maxValue = ewma[0];
-    for(long i = 1; i < [dataSeries length]; i++){
-        ewma[i] = (lambda * midDoubleArray[i]) + ((1-lambda) * ewma[i-1]);
-        minValue = fmin(minValue,ewma[i]);
-        maxValue = fmax(maxValue,ewma[i]);
-    }
-    NSString *newFieldName = [NSString stringWithString:fieldNameEWMA];
-    CPTNumericData * ewmaData = [CPTNumericData numericDataWithData:newData 
-                                                           dataType:CPTDataType(CPTFloatingPointDataType, 
-                                                                                sizeof(double), 
-                                                                                CFByteOrderGetCurrent()) 
-                                                              shape:nil];
-    [[dataSeries yData] setObject:ewmaData forKey:newFieldName];
-    DataView *dataViewAll = [[dataSeries dataViews] objectForKey:@"ALL"];
-    [dataViewAll addMin:minValue AndMax:maxValue ForKey:fieldNameEWMA];
-}
-
--(DataSeries *)newDataSeriesWithXData:(NSMutableData *) dateTimes AndYData:(NSDictionary *) dataValues AndSampleRate:(int)newSampleRate
+-(DataSeries *)createNewDataSeriesWithXData:(NSMutableData *) dateTimes 
+                                   AndYData:(NSDictionary *) dataValues 
+                              AndSampleRate:(long)newSampleRate
 {
     DataSeries *newDataSeries;
     newDataSeries = [dataSeries getCopyOfStaticData];
@@ -888,7 +1073,8 @@ FMDatabase *db;
     NSMutableData *newYData;
     CPTNumericData *newYDataForPlot;
     
-    [newDataSeries setYData:[[NSMutableDictionary alloc] init]];
+    //[newDataSeries setYData:[[NSMutableDictionary alloc] init]];
+    [[newDataSeries yData] removeAllObjects];
     for(int fieldIndex = 0; fieldIndex < [fieldNames count]; fieldIndex++){
         newYData = [dataValues  objectForKey:[fieldNames objectAtIndex:fieldIndex]];
         newYDataForPlot = [CPTNumericData numericDataWithData:newYData 
@@ -902,519 +1088,30 @@ FMDatabase *db;
     [newDataSeries setPlotViewWithName:@"ALL" 
                       AndStartDateTime:[[dateTimeData sampleValue:0] longValue]  
                         AndEndDateTime:[[dateTimeData sampleValue:([dateTimeData length]/[dateTimeData sampleBytes])-1] longValue]];
-    
     return newDataSeries;
 }
 
-//-(DataSeries *)getBidAskSeriesForId: (int) dbid  AndStartTime: (long) startTime AndEndTime: (long) endTime ToSampledSeconds: (int) numberOfSeconds 
-//{
-//    BOOL success = YES;
-//    NSString *seriesName; 
-//    NSUInteger sampleCount;
-//    DataSeries *returnData;
-//    double pipSize;
-//    
-//    @try{
-//        if([self connected] == YES)
-//        {
-//            seriesName = [db stringForQuery:[NSString stringWithFormat:@"SELECT SeriesName FROM SeriesName WHERE SeriesId = %d", dbid]];
-//            //fieldName = [db stringForQuery:[NSString stringWithFormat:@"SELECT Description FROM DataType WHERE DataTypeId = %d", dataTypeId]];
-//            pipSize = [db doubleForQuery:[NSString stringWithFormat:@"SELECT PipSize FROM SeriesName WHERE SeriesId = %d", dbid]];
-//        }else{
-//            success = NO;
-//            NSLog(@"Database error");
-//        }
-//    }
-//    @catch (NSException *exception) {
-//        NSLog(@"main: Caught %@: %@", [exception name], [exception reason]);
-//        success = NO;
-//    }
-//    
-//    if(success){
-//        @try{
-//            NSString *queryString = [NSString stringWithFormat:@"SELECT DS1.TimeDate, DS1.Value, DS2.Value FROM DataSeries DS1 INNER JOIN DataSeries DS2 ON DS1.TimeDate = DS2.TimeDate AND DS1.SeriesId = DS2.SeriesId  WHERE DS1.SeriesId = %d AND DS1.DataTypeId = %d AND DS2.DataTypeId = %d AND DS1.TimeDate >= %ld AND DS1.TimeDate <= %ld ORDER BY DS1.TimeDate ASC", dbid,1,2,startTime,endTime];
-//                
-//            FMResultSet *rs = [db executeQuery:queryString];
-//            NSMutableData *newDateData; 
-//            NSMutableData *newBidData; 
-//            NSMutableData *newAskData;
-//            NSMutableData *newMidData;
-//            long *newDateLongs; 
-//            double *newBidDoubles; 
-//            double *newAskDoubles;
-//            double *newMidDoubles;
-//            
-//            sampleCount = 0;
-//                
-//            if(numberOfSeconds <= DATABASE_GRANULARITY_SECONDS){
-//                sampleCount = [db intForQuery:[NSString stringWithFormat:@"SELECT COUNT(*) FROM DataSeries WHERE SeriesId = %d AND DataTypeId = %d AND TimeDate >= %ld AND TimeDate <= %ld",dbid,1,startTime,endTime]];
-//                    
-//                returnData = [[DataSeries alloc] initWithName:seriesName AndDbTag:dbid AndPipSize:pipSize];
-//                //[returnData setPipSize:pipSize];
-//                [returnData setSampleRate:numberOfSeconds];
-//                newDateData = [[NSMutableData alloc] initWithLength:sampleCount * sizeof(long)]; 
-//                newBidData = [[NSMutableData alloc] initWithLength:sampleCount * sizeof(double)]; 
-//                newAskData = [[NSMutableData alloc] initWithLength:sampleCount * sizeof(double)];  
-//                newMidData = [[NSMutableData alloc] initWithLength:sampleCount * sizeof(double)];
-//                newDateLongs = [newDateData mutableBytes]; 
-//                newBidDoubles = [newBidData mutableBytes]; 
-//                newAskDoubles = [newAskData mutableBytes];
-//                newMidDoubles = [newMidData mutableBytes];
-//                    
-//                for(int i = 0; i < sampleCount; i++){
-//                    [rs next];
-//                    newDateLongs[i] = [rs doubleForColumnIndex:0]; 
-//                    newBidDoubles[i] = [rs doubleForColumnIndex:1];
-//                    newAskDoubles[i] = [rs doubleForColumnIndex:2];
-//                    newMidDoubles[i] = (newBidDoubles[i] + newAskDoubles[i])/2;
-//                }
-//            }
-//            else
-//            {
-//                long dataCountMax = (endTime - startTime + 1)/numberOfSeconds;
-//                long *intermediateDateData = malloc(dataCountMax * sizeof(long));
-//                double *intermediateBidData = malloc(dataCountMax * sizeof(double)); 
-//                double *intermediateAskData = malloc(dataCountMax * sizeof(double));
-//                long currentDateTime;
-//                double previousBidValue, previousAskValue, currentBidValue, currentAskValue;
-//                bool dataForInterval = NO;
-//                previousBidValue = 0;
-//                previousAskValue = 0;
-//                long anchorDateTime = [EpochTime epochTimeAtZeroHour:startTime];
-//                long currentSampleDateTime;
-//                currentSampleDateTime = anchorDateTime + numberOfSeconds * ((startTime-anchorDateTime)/numberOfSeconds);
-//                while ([rs next ]) 
-//                {
-//                    currentDateTime = [rs longForColumnIndex:0];
-//                    previousBidValue = currentBidValue;
-//                    previousAskValue = currentAskValue;
-//                    
-//                    currentBidValue = [rs doubleForColumnIndex:1];
-//                    currentAskValue = [rs doubleForColumnIndex:2];
-//                    
-//                    if(currentDateTime < currentSampleDateTime)
-//                    {
-//                        dataForInterval = YES;
-//                    }
-//                    else
-//                    {    
-//                        if(dataForInterval == YES)
-//                        {
-//                            if(currentDateTime == currentSampleDateTime){
-//                                intermediateDateData[sampleCount] = currentSampleDateTime;
-//                                intermediateBidData[sampleCount] = currentBidValue;
-//                                intermediateAskData[sampleCount] = currentAskValue;
-//
-//                                currentSampleDateTime = currentSampleDateTime + numberOfSeconds;
-//                                sampleCount = sampleCount + 1;
-//                                dataForInterval = NO;
-//                            }
-//                            if(currentDateTime > currentSampleDateTime & index > 0){
-//                                intermediateDateData[sampleCount] = currentSampleDateTime;
-//                                intermediateBidData[sampleCount] = previousBidValue;
-//                                intermediateAskData[sampleCount] = previousAskValue;
-//
-//                                currentSampleDateTime = currentSampleDateTime + numberOfSeconds;
-//                                sampleCount = sampleCount + 1;
-//                                dataForInterval = NO;
-//                            }
-//                        }
-//                        else
-//                        {
-//                            while(currentSampleDateTime < currentDateTime){
-//                                currentSampleDateTime = currentSampleDateTime + numberOfSeconds;
-//                            }
-//                            dataForInterval = YES;
-//                        }
-//                    }
-//                }  
-//                returnData = [[DataSeries alloc] initWithName:seriesName AndDbTag:dbid AndPipSize:pipSize];
-//                //[returnData setPipSize:pipSize];
-//                [returnData setSampleRate:numberOfSeconds];
-//                newDateData = [[NSMutableData alloc] initWithLength:sampleCount * sizeof(long)]; 
-//                newBidData = [[NSMutableData alloc] initWithLength:sampleCount * sizeof(double)]; 
-//                newAskData = [[NSMutableData alloc] initWithLength:sampleCount * sizeof(double)]; 
-//                newMidData = [[NSMutableData alloc] initWithLength:sampleCount * sizeof(double)]; 
-//                
-//                newDateLongs = [newDateData mutableBytes]; 
-//                newBidDoubles = [newBidData mutableBytes]; 
-//                newAskDoubles = [newAskData mutableBytes];
-//                newMidDoubles = [newMidData mutableBytes];
-//            
-//                for(int i = 0; i < sampleCount; i++){
-//                    newDateLongs[i] = intermediateDateData[i]; 
-//                    newBidDoubles[i] = intermediateBidData[i];
-//                    newAskDoubles[i] = intermediateAskData[i];
-//                    newMidDoubles[i] = (intermediateBidData[i] + intermediateAskData[i])/2;
-//                }
-//            }
-//            CPTNumericData * dateData = [CPTNumericData numericDataWithData:newDateData 
-//                                                                dataType:CPTDataType(CPTIntegerDataType, 
-//                                                                                     sizeof(long), 
-//                                                                                         CFByteOrderGetCurrent()) 
-//                                                                   shape:nil]; 
-//            CPTNumericData * bidData = [CPTNumericData numericDataWithData:newBidData 
-//                                                                dataType:CPTDataType(CPTFloatingPointDataType, 
-//                                                                                         sizeof(double), 
-//                                                                                         CFByteOrderGetCurrent()) 
-//                                                                    shape:nil]; 
-//            CPTNumericData * askData = [CPTNumericData numericDataWithData:newAskData 
-//                                                                  dataType:CPTDataType(CPTFloatingPointDataType, 
-//                                                                                       sizeof(double), 
-//                                                                                       CFByteOrderGetCurrent()) 
-//                                                                     shape:nil]; 
-//            CPTNumericData * midData = [CPTNumericData numericDataWithData:newMidData 
-//                                                                  dataType:CPTDataType(CPTFloatingPointDataType, 
-//                                                                                       sizeof(double), 
-//                                                                                       CFByteOrderGetCurrent()) 
-//                                                                     shape:nil]; 
-//            [returnData setXData:dateData];
-//            [returnData setYData:[[NSMutableDictionary alloc] init]];
-//            [[returnData yData] setObject:bidData forKey:@"BID"];
-//            [[returnData yData] setObject:askData forKey:@"ASK"];
-//            [[returnData yData] setObject:midData forKey:@"MID"];
-//            [returnData setPlotViewWithName:@"ALL" AndStartDateTime:newDateLongs[0] AndEndDateTime:newDateLongs[sampleCount-1]];
-//        }
-//        @catch (NSException *exception) {
-//            NSLog(@"main: Caught %@: %@", [exception name], [exception reason]);
-//            success = NO;
-//        }
-//    NSLog(@"Returning %lu data for %@",sampleCount,seriesName);
-//    }
-//    return returnData;
-//}
-
-//-(bool)addDataSeriesTo:(DataSeries *) dataSeries ForType: (int) dataTypeId 
-//{
-//    bool success = YES;
-//    NSString *fieldName;
-//    NSUInteger resultCount;
-//    NSUInteger rowCount;
-//    
-//    @try{
-//        if([self connected] == YES)
-//        {
-//            resultCount = [db intForQuery:[NSString stringWithFormat:@"SELECT COUNT(*) FROM DataSeries WHERE SeriesId = %d AND DataTypeId = %d AND TimeDate >= %ld AND TimeDate <= %ld",[dataSeries dbId],dataTypeId,[dataSeries minDateTime],[dataSeries maxDateTime]]];
-//            fieldName = [db stringForQuery:[NSString stringWithFormat:@"SELECT Description FROM DataType WHERE DataTypeId = %d", dataTypeId]];
-//        }else{
-//            success = NO;
-//            NSLog(@"Database error");
-//        }
-//    }
-//    @catch (NSException *exception) {
-//        NSLog(@"main: Caught %@: %@", [exception name], [exception reason]);
-//        success = NO;
-//    }
-//    if(resultCount == [dataSeries length]){
-//        success = YES;
-//    }else{
-//        success = NO;
-//    }
-//    if(success){
-//        double minValue, maxValue;
-//        //NSMutableData * newXData = [NSMutableData dataWithLength:resultCount * sizeof(long)]; 
-//        NSMutableData * newYData = [NSMutableData dataWithLength:resultCount * sizeof(double)]; 
-//        //long *newXLongs = [newXData mutableBytes]; 
-//        double *newYDoubles = [newYData mutableBytes]; 
-//        @try{
-//            if([self connected] == YES)
-//            {
-//                FMResultSet *rs = [db executeQuery:[NSString stringWithFormat:@"SELECT TimeDate, Value FROM DataSeries WHERE SeriesId = %d AND DataTypeId = %d AND TimeDate >= %ld AND TimeDate <= %ld ORDER BY TimeDate ASC", [dataSeries dbId],dataTypeId,[dataSeries minDateTime],[dataSeries maxDateTime]]];
-//                rowCount = 0;
-//                while ([rs next ] && (rowCount < resultCount)) 
-//                {
-//                    //newXLongs[rowCount] = [rs longForColumnIndex:0];
-//                    newYDoubles[rowCount] = [rs doubleForColumnIndex:1];
-//                    if(rowCount == 0){
-//                        minValue = newYDoubles[rowCount];
-//                        maxValue = newYDoubles[rowCount];
-//                    }else{
-//                        minValue = fmin(newYDoubles[rowCount], minValue); 
-//                        maxValue = fmax(newYDoubles[rowCount], maxValue); 
-//                    }
-//                    rowCount = rowCount + 1;
-//                }
-//                if(rowCount != resultCount){
-//                    NSLog(@"****The result count didn't seem to be added in full, check!!!!!!");
-//                }
-//                //Need to fully check the equality of the xData. BUT WE DON'T DO IT. 
-//                CPTNumericData * yData = [CPTNumericData numericDataWithData:newYData 
-//                                                                    dataType:CPTDataType(CPTFloatingPointDataType, 
-//                                                                                         sizeof(double), 
-//                                                                                         CFByteOrderGetCurrent()) 
-//                                                                       shape:nil]; 
-//                [[dataSeries yData] setObject:yData forKey:fieldName];
-//                
-//            }else{
-//                NSLog(@"Database error");
-//            }
-//        }
-//        @catch (NSException *exception) {
-//            NSLog(@"main: Caught %@: %@", [exception name], [exception reason]);
-//        }
-//    }
-//    NSLog(@"added %@",fieldName);
-//}
-
-//-(void)addMidToBidAskSeries:(DataSeries *) dataSeries
-//{
-//    NSMutableData *newMidData = [NSMutableData dataWithLength:([dataSeries length] * sizeof(double))]; 
-//    double *mid = [newMidData mutableBytes]; 
-//    CPTNumericData *bid =  [[dataSeries yData] objectForKey:@"BID"];
-//    CPTNumericData *ask =  [[dataSeries yData] objectForKey:@"ASK"];
-//    double minMidValue, maxMidValue;
-//    NSString *fieldName = @"MID";
-//    
-//    minMidValue = ([[bid sampleValue:0] doubleValue] + [[ask sampleValue:0] doubleValue])/2.0;
-//    maxMidValue = minMidValue;
-//    for(long i = 0; i < [dataSeries length]; i++){
-//        mid[i] = ([[bid sampleValue:i] doubleValue] + [[ask sampleValue:i] doubleValue])/2.0;
-//        minMidValue = fmin(minMidValue, mid[i]);
-//        maxMidValue = fmax(maxMidValue, mid[i]);
-//    }
-//    CPTNumericData * midData = [CPTNumericData numericDataWithData:newMidData 
-//                                                        dataType:CPTDataType(CPTFloatingPointDataType, 
-//                                                                             sizeof(double), 
-//                                                                             CFByteOrderGetCurrent()) 
-//                                                           shape:nil]; 
-//    [[dataSeries yData] setObject:midData forKey:fieldName];
-//    DataView *dataViewAll = [[dataSeries dataViews] objectForKey:@"ALL"];
-//    [dataViewAll addMin:minMidValue AndMax:maxMidValue ForKey:@"MID"];
-//    
-//    NSLog(@"Added Mid");
-//}
-
-//-(bool)adjustRangeOfDataSeries: (DataSeries *) dataSeries AtStart: (int) startAdjSecs AndEnd: (int) endAdjSecs
-//{
-//    
-//    bool dbSuccess = YES;
-//    bool updateData;
-//    int newStartSampleCount, newEndSampleCount;
-//    long oldStart, oldEnd, oldLength, newStart, newEnd;
-//    oldLength = [dataSeries length]; 
-//    oldStart = [dataSeries minDateTime];
-//    oldEnd = [dataSeries maxDateTime];
-//    long *newStartDateLongs, *newEndDateLongs;
-//    double *newStartBidDoubles, *newStartAskDoubles;
-//    double *newEndBidDoubles, *newEndAskDoubles;
-//    FMResultSet *rs;
-// 
-//    updateData = YES;
-//    
-//    
-//    //newStart = oldStart + startAdjSecs;
-//    //newEnd = oldEnd + endAdjSecs;
-//    
-//    newStartSampleCount = 0;
-//    newEndSampleCount = 0;
-//    newStart = oldStart + startAdjSecs;
-//    newEnd = oldEnd + endAdjSecs;
-//    
-//    if((newEnd < oldStart) || (newStart > oldEnd) ){
-//        updateData = NO;
-//    }
-//    //Get a handle on the original data
-//    CPTNumericData * dateData = [dataSeries xData];
-//    CPTNumericData * bidData = [[dataSeries yData] objectForKey:@"BID"];
-//    CPTNumericData * askData = [[dataSeries yData] objectForKey:@"ASK"];
-//    CPTNumericData * midData = [[dataSeries yData] objectForKey:@"MID"];
-//
-//    //if we are asked to move the start of the data forwards
-//    int oldDataStartIndex = 0;
-//    if(updateData){ 
-//        if(startAdjSecs > 0){
-//            oldDataStartIndex--;
-//            do
-//            { 
-//                oldDataStartIndex++;
-//            }while(newStart > [[dateData sampleValue:oldDataStartIndex] longValue] && oldDataStartIndex < [dataSeries length]);
-//        }
-//    }
-//  
-//    
-//    //if we are asked  to move the start of the data backwards  
-//    int resultCount;
-//    if(startAdjSecs < 0){
-//        @try{
-//            long queryStart, queryEnd;
-//            if(updateData){
-//                queryStart = newStart;
-//                queryEnd = oldStart;
-//            }else{
-//                queryStart = newStart;
-//                queryEnd = newEnd;
-//            }
-//            resultCount = [db intForQuery:[NSString stringWithFormat:@"SELECT COUNT(*) FROM DataSeries WHERE SeriesId = %d AND DataTypeId = %d AND TimeDate >= %ld AND TimeDate < %ld",[dataSeries dbId],1,queryStart,queryEnd]];
-//            newStartDateLongs = malloc(resultCount * sizeof(long));
-//            newStartBidDoubles = malloc(resultCount * sizeof(double)); 
-//            newStartAskDoubles = malloc(resultCount * sizeof(double));
-//            
-//            NSString *queryString = [NSString stringWithFormat:@"SELECT DS1.TimeDate, DS1.Value, DS2.Value FROM DataSeries DS1 INNER JOIN DataSeries DS2 ON DS1.TimeDate = DS2.TimeDate AND DS1.SeriesId = DS2.SeriesId  WHERE DS1.SeriesId = %d AND DS1.DataTypeId = %d AND DS2.DataTypeId = %d AND DS1.TimeDate >= %ld AND DS1.TimeDate < %ld ORDER BY DS1.TimeDate ASC", [dataSeries dbId],1,2,queryStart,queryEnd];
-//                rs = [db executeQuery:queryString];
-//        }
-//        @catch (NSException *exception) {
-//                NSLog(@"main: Caught %@: %@", [exception name], [exception reason]);
-//                dbSuccess = NO;
-//        }                
-//        if(dbSuccess)
-//        {
-//            newStartSampleCount = 0;
-//            while ([rs next ]) 
-//            {
-//                newStartDateLongs[newStartSampleCount] = [rs longForColumnIndex:0];
-//                newStartBidDoubles[newStartSampleCount] = [rs doubleForColumnIndex:1];
-//                newStartAskDoubles[newStartSampleCount] = [rs doubleForColumnIndex:2];
-//                newStartSampleCount ++; 
-//            }
-//        }
-//    }
-//    
-//    //if we are asked to move the end of the data backwards
-//    int oldDataEndIndex = 0;
-//    if(updateData){
-//        oldDataEndIndex = (int)[dataSeries length]-1;
-//        if(endAdjSecs < 0){
-//            oldDataEndIndex++;
-//            do
-//            { 
-//                oldDataEndIndex--;
-//            }while(newEnd < [[dateData sampleValue:oldDataEndIndex] longValue] && oldDataEndIndex > 0);
-//        }
-//    }
-//    
-//    //if we are asked to move the end of the data forwards
-//    if(endAdjSecs > 0 && dbSuccess){
-//        @try{
-//            long queryStart, queryEnd;
-//            if(updateData){
-//                queryStart = oldEnd;
-//                queryEnd = newEnd;
-//            }else{
-//                queryStart = newStart;
-//                queryEnd = newEnd;
-//            }
-//            resultCount = [db intForQuery:[NSString stringWithFormat:@"SELECT COUNT(*) FROM DataSeries WHERE SeriesId = %d AND DataTypeId = %d AND TimeDate >= %ld AND TimeDate <= %ld",[dataSeries dbId],1,queryStart,queryEnd]];
-//            newEndDateLongs = malloc(resultCount * sizeof(long));
-//            newEndBidDoubles = malloc(resultCount * sizeof(double)); 
-//            newEndAskDoubles = malloc(resultCount * sizeof(double));
-//                
-//            NSString *queryString = [NSString stringWithFormat:@"SELECT DS1.TimeDate, DS1.Value, DS2.Value FROM DataSeries DS1 INNER JOIN DataSeries DS2 ON DS1.TimeDate = DS2.TimeDate AND DS1.SeriesId = DS2.SeriesId  WHERE DS1.SeriesId = %d AND DS1.DataTypeId = %d AND DS2.DataTypeId = %d AND DS1.TimeDate >= %ld AND DS1.TimeDate <= %ld ORDER BY DS1.TimeDate ASC", [dataSeries dbId],1,2,queryStart,queryEnd];
-//            rs = [db executeQuery:queryString];
-//        }
-//        @catch (NSException *exception) {
-//            NSLog(@"main: Caught %@: %@", [exception name], [exception reason]);
-//            dbSuccess = NO;
-//        }                
-//        if(dbSuccess)
-//        {
-//            newEndSampleCount = 0;
-//            while ([rs next ]) 
-//            {
-//                newEndDateLongs[newEndSampleCount] = [rs longForColumnIndex:0];
-//                newEndBidDoubles[newEndSampleCount] = [rs doubleForColumnIndex:1];
-//                    newEndAskDoubles[newEndSampleCount] = [rs doubleForColumnIndex:2];
-//                    newEndSampleCount ++; 
-//            }
-//        }
-//    }
-//    if(dbSuccess){
-//        NSMutableData *newDateData; 
-//        NSMutableData *newBidData; 
-//        NSMutableData *newAskData; 
-//        NSMutableData *newMidData;
-//        long *newDateLongs; 
-//        double *newBidDoubles; 
-//        double *newAskDoubles;
-//        double *newMidDoubles;
-//    
-//        NSUInteger newDataLength;
-//        newDataLength = [dataSeries length];
-//    
-//        if(updateData){
-//            newDataLength = newStartSampleCount + ((oldDataEndIndex-oldDataStartIndex)+1) + newEndSampleCount;
-//        }else{
-//            //One of which will be zero
-//            newDataLength = newStartSampleCount + newEndSampleCount;
-//        }
-//
-//        newDateData = [[NSMutableData alloc] initWithLength:newDataLength * sizeof(long)]; 
-//        newBidData = [[NSMutableData alloc] initWithLength:newDataLength * sizeof(double)]; 
-//        newAskData = [[NSMutableData alloc] initWithLength:newDataLength * sizeof(double)]; 
-//        newMidData = [[NSMutableData alloc] initWithLength:newDataLength * sizeof(double)]; 
-//    
-//        newDateLongs = [newDateData mutableBytes]; 
-//        newBidDoubles = [newBidData mutableBytes]; 
-//        newAskDoubles = [newAskData mutableBytes];
-//        newMidDoubles = [newMidData mutableBytes];
-//    
-//        int index = 0; 
-//        if(newStartSampleCount > 0){
-//            for(int i = 0; i < newStartSampleCount;i++){
-//                newDateLongs[index] =  newStartDateLongs[i];
-//                newBidDoubles[index] = newStartBidDoubles[i];
-//                newAskDoubles[index] = newStartAskDoubles[i];
-//                newMidDoubles[index] = (newStartBidDoubles[i] + newStartAskDoubles[i])/2;
-//                index++;
-//            }
-//        }
-//        if(updateData){
-//            for(int i = oldDataStartIndex; i <= oldDataEndIndex;i++){
-//                newDateLongs[index] =  [[dateData sampleValue:i] longValue];
-//                newBidDoubles[index] = [[bidData sampleValue:i] doubleValue];
-//                newAskDoubles[index] = [[askData sampleValue:i] doubleValue];
-//                newMidDoubles[index] = (newBidDoubles[index] + newAskDoubles[index])/2;
-//                index++;
-//            }
-//        }
-//        if(newEndSampleCount > 0){
-//            for(int i = 0; i < newEndSampleCount;i++){
-//                newDateLongs[index] =  newEndDateLongs[i];
-//                newBidDoubles[index] = newEndBidDoubles[i];
-//                newAskDoubles[index] = newEndAskDoubles[i];
-//                newMidDoubles[index] = (newBidDoubles[index]+newAskDoubles[index])/2;
-//                index++;
-//            }
-//        }
-//    
-//        dateData = [CPTNumericData numericDataWithData:newDateData 
-//                                                           dataType:CPTDataType(CPTIntegerDataType, 
-//                                                                                sizeof(long), 
-//                                                                                CFByteOrderGetCurrent()) 
-//                                                              shape:nil]; 
-//        bidData = [CPTNumericData numericDataWithData:newBidData 
-//                                                          dataType:CPTDataType(CPTFloatingPointDataType, 
-//                                                                               sizeof(double), 
-//                                                                               CFByteOrderGetCurrent()) 
-//                                                             shape:nil]; 
-//        askData = [CPTNumericData numericDataWithData:newAskData 
-//                                                          dataType:CPTDataType(CPTFloatingPointDataType, 
-//                                                                               sizeof(double), 
-//                                                                               CFByteOrderGetCurrent()) 
-//                                                             shape:nil]; 
-//        midData = [CPTNumericData numericDataWithData:newMidData 
-//                                         dataType:CPTDataType(CPTFloatingPointDataType, 
-//                                                              sizeof(double), 
-//                                                              CFByteOrderGetCurrent()) 
-//                                            shape:nil]; 
-//     
-//    
-//        [dataSeries setXData:dateData];
-//        [dataSeries setYData:[[NSMutableDictionary alloc] init]];
-//        [[dataSeries yData] setObject:bidData forKey:@"BID"];
-//        [[dataSeries yData] setObject:askData forKey:@"ASK"];
-//        [[dataSeries yData] setObject:midData forKey:@"MID"];
-//        [[dataSeries dataViews] removeAllObjects];
-//        [dataSeries setPlotViewWithName:@"ALL" AndStartDateTime:newDateLongs[0] AndEndDateTime:newDateLongs[index-1]];
-//    }
-//    return dbSuccess;
-//}
+- (void) setData: (NSArray *) userData 
+        FromFile: (NSString *) userDataFilename
+{
+    [self setFileDataAdded:YES];
+    fileDataFileName = userDataFilename;
+    fileData = userData;
+}
 
 
+#pragma mark -
+#pragma mark Properties
 
-
-
-
-
-
+@synthesize connected;
+@synthesize dataSeries;
+@synthesize fxPairs;
+@synthesize dataFields;
+@synthesize minDateTimes;
+@synthesize maxDateTimes;
+@synthesize signalStats;
+@synthesize fileData;
+@synthesize fileDataFileName;
+@synthesize fileDataAdded = _fileDataAdded;
 @end
 

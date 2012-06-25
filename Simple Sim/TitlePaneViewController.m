@@ -27,7 +27,7 @@
 
 -(void)awakeFromNib
 {
-    titlePanePlot = [[SeriesPlot alloc] init];
+    titlePanePlot = [[SeriesPlot alloc] initWithIdentifier:@"TITLESCREEN"];
     [titlePanePlot setHostingView:titlePaneGraphHostingView];
     [titlePanePlot initialGraphAndAddAnnotation:YES];
 }

@@ -47,137 +47,38 @@
     __weak NSButton *setupButton;
     __weak NSButton *testButton;
     __weak NSTableView *simAnalysisDataTable;
-    //__weak NSTextField *intraDayTimeExtendTextField;
     __weak NSTextField *intraDayDataSeriesSamplingSeconds;
-    
     __weak NSTextField *DataViewFields;
     __weak NSBox *box;
     __weak NSButton *SimulationViewButton;
-
     __weak NSButton *InteractiveViewButton;
-    //NSDate *minAvailableDate;
-    //NSDate *maxAvailableDate;
-    //SeriesPlot *plot1;
-    //SeriesPlot *plot2;
-    //SeriesPlot *plot3;
-    //SeriesPlot *plot4;
     DataController *dataControllerForUI;
-    //SimulationController *simulationController;
-//    NSMutableArray *longTermTimeSeries;
-//    NSMutableArray *shortTermTimeSeries;
-//    NSMutableArray *intraDayTimeSeries;
-    //NSMutableArray *simulationTimeSeries;
-//    NSMutableDictionary *formData;
-    //DataSeries *baseData;
     NSArray *coloursForPlots;
     NSArray *fieldNameOrdering;
     NSDictionary *listOfFxPairs;
-    //
     NSMutableDictionary *viewControllers;
 
 }
-//-(IBAction)changeViewController:(id)sender;
-//-(void)displayViewController:(NSViewController *)vc;
+@property (retain) NSDate *currentDay; 
+@property (retain, readonly) NSDate *minAvailableDate;
+@property (retain, readonly) NSDate *maxAvailableDate;
+@property (retain) NSArray *colorsForPlots;
 
 
-//- (IBAction)changePair:(id)sender;
-//- (IBAction)changeDate:(id)sender;
-//- (IBAction)setUp:(id)sender;
+- (void) showAlertPanelWithInfo: (NSDictionary *) alertInfo;
+- (void) gettingDataIndicatorSwitchOn;
+- (void) gettingDataIndicatorSwitchOff;
+- (void) readingRecordSetsProgress: (NSNumber *) progressFraction;
+- (void) putFieldNamesInCorrectOrdering:(NSMutableArray *) fieldNamesFromData;
 
-//- (IBAction)cancelSetupSheet:(id)sender;
-//- (IBAction)test:(id)sender;
-//- (IBAction)dataRangeMoveBack:(id)sender;
-//- (IBAction)dataRangeMoveForward:(id)sender;
-//- (IBAction)setupViaMenu:(id)sender;
-//- (IBAction)plotPositions:(id)sender;
-//- (IBAction)toggleLongShortIndicator:(id)sender;
-//- (IBAction)intraDayTimeExtendButton:(id)sender;
 - (IBAction)changeToSimulationView:(id)sender;
 - (IBAction)changeToInteractiveView:(id)sender;
 
 
-
-//@property (nonatomic, retain) SeriesPlot *plot1;
-//@property (nonatomic, retain) SeriesPlot *plot2;
-//@property (nonatomic, retain) SeriesPlot *plot3;
-@property (retain) NSDate *currentDay; 
-//@property (retain) DataSeries *baseData;
-@property (retain, readonly) NSDate *minAvailableDate;
-@property (retain, readonly) NSDate *maxAvailableDate;
-//@property (retain) NSMutableArray *longTermTimeSeries; 
-//@property (retain) NSMutableArray *shortTermTimeSeries; 
-//@property (retain) NSMutableArray *intraDayTimeSeries; 
-@property (retain) NSArray *colorsForPlots;
-
-//@property (weak) IBOutlet NSScrollView *longTermTimeSeriesScrollView;
-//@property (weak) IBOutlet NSScrollView *intraDayTimeSeriesScrollView;
-//@property (weak) IBOutlet NSScrollView *shortTermTimeSeriesScrollView;
-//@property (strong) IBOutlet NSWindow *setupSheet;
-//@property (weak) IBOutlet NSProgressIndicator *dataSetupProgressBar;
 @property (weak) IBOutlet NSProgressIndicator *leftSideProgressBar;
-//@property (weak) IBOutlet NSTextField *shortTermHistory;
-//@property (weak) IBOutlet NSTextField *longTermHistory;
-//@property (weak) IBOutlet NSDatePicker *datePicker;
-//@property (weak) IBOutlet NSTextField *dayOfWeekLabel;
-//@property (weak) IBOutlet NSTextField *fromDateLabel;
-//@property (weak) IBOutlet NSTextField *toDateLabel;
-//@property (weak) IBOutlet NSPopUpButton *pairPicker;
-@property (weak) IBOutlet NSTextField *sideTitle;
-//@property (weak) IBOutlet NSTextField *currentDateLabel;
-//@property (weak) IBOutlet NSTabView *mainTabs;
-//@property (weak) IBOutlet CPTGraphHostingView *hostingView1;
-//@property (weak) IBOutlet NSTextField *shortTermSamplingValue;
-//@property (weak) IBOutlet NSTextField *longTermSamplingValue;
-//@property (weak) IBOutlet NSMatrix *shortTermSamplingUnit;
-//@property (weak) IBOutlet CPTGraphHostingView *hostingView3;
-//@property (weak) IBOutlet CPTGraphHostingView *hostingView4;
+@property (weak) IBOutlet NSProgressIndicator *leftSideProgressBar2;
 
-//@property (weak) IBOutlet NSMatrix *longTermSamplingUnit;
-//@property (weak) IBOutlet CPTGraphHostingView *hostingView2;
-//@property (weak) IBOutlet NSTextField *intraDaySamplingValue;
-//@property (weak) IBOutlet NSMatrix *intraDaySamplingUnit;
-//@property (weak) IBOutlet NSTableView *longTermTimeSeriesTableView;
-//@property (weak) IBOutlet NSTableView *shortTermTimeSeriesTableView;
-//@property (weak) IBOutlet NSTableView *intraDayTimeSeriesTableView;
-//@property (weak) IBOutlet NSTableView *simulationTimeSeriesTableView;
-
-
-
-
-//@property (weak) IBOutlet NSTextField *intraDayTimeLabel;
-//@property (weak) IBOutlet NSTextField *setUpStatusLabel;
 @property (weak) IBOutlet NSTextField *leftPanelStatusLabel;
-//@property (unsafe_unretained) IBOutlet NSTextView *sumulationDetails;
-//
-//- (NSInteger)numberOfRowsInTableView:(NSTableView *)tableView;
-//- (id)tableView:(NSTableView *)tableView objectValueForTableColumn:(NSTableColumn *)tableColumn row:(NSInteger)row;
-//- (void)tableView:(NSTableView *)tableView setObjectValue:(id) obj forTableColumn:(NSTableColumn *)tableColumn row:(NSInteger)row;
-//- (void)addToTableView:(NSTableView *)tableView TimeSeriesLine: (TimeSeriesLine *)TSLine;
-//- (void)clearTSTableView:(NSTableView *)tableView;
-//- (void)tableView:(NSTableView *)tableView didClickTableColumn:(NSTableColumn *)tableColumn;
-//- (void)outputSimulationMessage:(NSString *) message;
-- (void)gettingDataIndicatorSwitchOn;
-- (void)gettingDataIndicatorSwitchOff;
-//- (void)clearSimulationMessage;
-//- (void)plotSimulationData: (DataSeries *) dataToPlot;
-
-//@property (weak) IBOutlet NSTabView *sideTabs;
-@property (weak) IBOutlet NSBox *intraDayLeftSideTab;
-//@property (weak) IBOutlet NSButton *setupDataButton;
-@property (weak) IBOutlet NSTextField *dataRangeMoveValue;
-@property (weak) IBOutlet NSButton *shiftDataRangeBack;
-@property (weak) IBOutlet NSButton *shiftDataRangeForward;
-@property (weak) IBOutlet NSTextField *shiftDataDaysLabel;
-//@property (weak) IBOutlet NSButton *testButton;
-//@property (weak) IBOutlet NSButton *plotPositionsButton;
-
-
-//@property (weak) IBOutlet NSTableView *simAnalysisDataTable;
-
-
-//@property (weak) IBOutlet NSTextField *intraDayTimeExtendTextField;
-//@property (weak) IBOutlet NSTextField *intraDayDataSeriesSamplingSeconds;
-//@property (weak) IBOutlet NSTextField *DataViewFields;
 
 @property (weak) IBOutlet NSBox *box;
 @property (weak) IBOutlet NSButton *SimulationViewButton;

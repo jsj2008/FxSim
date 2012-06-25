@@ -12,7 +12,6 @@
 @class DataSeries;
 
 @interface DataView: NSObject<CPTPlotDataSource>{
-    NSString *description;
     DataSeries *dataSeries;
     NSUInteger startIndexForPlot;
     NSUInteger countForPlot;
@@ -20,7 +19,7 @@
     NSMutableDictionary *minYvalues;
     NSMutableDictionary *maxYvalues;
 }
-@property (nonatomic, strong) NSString *description;
+@property (nonatomic, strong) NSString *name;
 @property NSUInteger startIndexForPlot;
 @property NSUInteger countForPlot;
 @property (nonatomic, strong) NSMutableDictionary *minYvalues;
@@ -30,9 +29,11 @@
 
 -(void)addMin: (double) min AndMax: (double) max ForKey: (NSString *)key;
 
--(id)initAsDummy;
-
--(long)firstX;
--(long)lastX;
+- (id) initAsDummy;
+- (NSString *)description;
+- (long) minDateTime;
+- (long) maxDateTime;
+- (double) minDataValue;
+- (double) maxDataValue;
 
 @end

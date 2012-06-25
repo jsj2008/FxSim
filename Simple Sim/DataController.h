@@ -12,51 +12,84 @@
 
 @interface DataController : NSObject{
     BOOL connected;
-    DataSeries *dataSeries;
+    BOOL doThreads;
+    BOOL cancelProcedure;
+    BOOL adhocDataAdded;
+    id delegate;
+    
+    BOOL _fileDataAdded;
+    NSString *fileDataFileName;
+    NSArray *fileData;
+    //NSArray *fileDataFieldNames;
+    //long *fileDataDateTimes;
+    //double **fileDataValues;
 }
-@property(readonly, assign) BOOL connected;
+@property(readonly) BOOL connected;
 @property(readonly) DataSeries *dataSeries;
-@property(readonly, retain)   NSDictionary *fxPairs;
-@property(readonly, retain)   NSDictionary *dataFields;
-@property(readonly, retain)   NSDictionary *minDateTimes;
-@property(readonly, retain)   NSDictionary *maxDateTimes;
+@property(readonly, retain) NSDictionary *fxPairs;
+@property(readonly, retain) NSDictionary *dataFields;
+@property(readonly, retain) NSDictionary *minDateTimes;
+@property(readonly, retain) NSDictionary *maxDateTimes;
+@property(readonly) NSString *fileDataFileName;
+@property(readonly) NSArray *fileData;
+@property BOOL fileDataAdded;
 
 
+@property(retain) NSArray *signalStats;
 
--(id)init;
-//
--(BOOL)setupDataSeriesForName: (NSString *) dataSeriesName;
--(long)getMinDateTimeForLoadedData;
--(long)getMaxDateTimeForLoadedData;
--(long)getMinDateTimeForFullData;
--(long)getMaxDateTimeForFullData;
 
--(BOOL)getDataSeriesForStartDateTime: (long) newStart 
-                     AndEndDateTime: (long) newEnd;
+- (id) init;
+- (void) setDelegate:(id)del;
+- (BOOL) doThreads;
+- (void) setDoThreads:(BOOL)doThreadedProcedures;
+- (BOOL) strategyUnderstood:(NSString *) strategyString;
+- (BOOL) setupDataSeriesForName: (NSString *) dataSeriesName 
+                  AndStrategy: (NSString *) strategyString;
+- (long) getMinDateTimeForLoadedData;
+- (long) getMaxDateTimeForLoadedData;
+- (long) getMinDateTimeForFullData;
+- (long) getMaxDateTimeForFullData;
+- (NSArray *) getFieldNames;
+- (void) setData: (NSArray *) adhocDataToAdd 
+        FromFile: (NSString *) filename;
+//- (void) addUserData:(NSArray *) userData WithFileName:(NSString *) userDataFileName;
 
--(BOOL)moveDataToStartDateTime: (long) newStart 
-                AndEndDateTime: (long) newEnd;
-//
--(void)addEWMAWithParameter: (int) param;
--(void)addEWMAByIndex: (int) indexNumber;
--(int)dataGranularity;
-//
-//
--(long)getMinDataDateTimeForPair:(NSString *) fxPairName;
-//
--(long)getMaxDataDateTimeForPair:(NSString *) fxPairName;
-//
--(NSDictionary *)getValuesForFields:(NSArray *) fieldNames AtDateTime: (long) dateTime;
--(DataSeriesValue *) valueFromDataBaseForFxPair: (NSString *) name 
-                                    AndDateTime: (long) dateTime 
-                                       AndField: (NSString *) field;
+
+- (DataSeries *) retrieveDataForStartDateTime: (long)requestedStartDate 
+                               AndEndDateTime: (long)requestedEndDate 
+                              AndSamplingRate: (long)samplingRate
+                                  WithSuccess: (int *)successAsInt
+                                  AndUpdateUI: (BOOL)doUpdateUI;
+
+- (BOOL) getMoreDataForStartDateTime: (long) newStart 
+                      AndEndDateTime: (long) newEnd
+              AndReturningStatsArray: (NSMutableArray *) statsArray
+            WithRequestTruncatedFlag: (int *) requestTrucated;
+
+
+- (void) setDataForStartDateTime: (long)requestedStartDate 
+                  AndEndDateTime: (long)requestedEndDate 
+                 AndSamplingRate: (long)samplingRate
+                     WithSuccess: (int *)successAsInt
+                     AndUpdateUI: (BOOL) doUpdateUI;
+
+- (int) dataGranularity;
+
+- (long) getMinDataDateTimeForPair:(NSString *) fxPairName;
+- (long) getMaxDataDateTimeForPair:(NSString *) fxPairName;
+- (NSDictionary *) getValuesForFields:(NSArray *) fieldNames 
+                           AtDateTime: (long) dateTime;
+- (DataSeriesValue *) valueFromDataBaseForFxPair: (NSString *) name 
+                                     AndDateTime: (long) dateTime 
+                                        AndField: (NSString *) field;
 
 -(NSArray *) getAllInterestRatesForCurrency: (NSString *) currencyCode 
                                    AndField: (NSString *) bidOrAsk;
 
--(DataSeries *)newDataSeriesWithXData:(NSMutableData *) dateTimes 
-                             AndYData:(NSDictionary *) dataValues 
-                        AndSampleRate:(int)newSampleRate;
+-(DataSeries *) createNewDataSeriesWithXData: (NSMutableData *) dateTimes 
+                                    AndYData: (NSDictionary *) dataValues 
+                               AndSampleRate: (long) newSampleRate;
 
--(long)getDataSeriesLength;
+-(long) getDataSeriesLength;
+
 @end

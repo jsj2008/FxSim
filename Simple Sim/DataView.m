@@ -8,20 +8,21 @@
 
 #import "DataView.h"
 #import "DataSeries.h"
+#import "EpochTime.h"
 
 @implementation DataView
 @synthesize startIndexForPlot;
 @synthesize countForPlot;
-@synthesize description;
+@synthesize name;
 @synthesize minYvalues;
 @synthesize maxYvalues;
 
 
--(id)initWithDataSeries: (DataSeries *) underlyingSeries AndName:(NSString *) name AndStartIndex: (long) startIndex AndEndIndex: (long) endIndex AndMins:(NSMutableDictionary *) mins AndMaxs:(NSMutableDictionary *) maxs;
+-(id)initWithDataSeries: (DataSeries *) underlyingSeries AndName:(NSString *) viewName AndStartIndex: (long) startIndex AndEndIndex: (long) endIndex AndMins:(NSMutableDictionary *) mins AndMaxs:(NSMutableDictionary *) maxs;
 {
     self = [super init];
     if(self){
-        description = name;
+        name = viewName;
         dataSeries = underlyingSeries;
         startIndexForPlot = startIndex;
         countForPlot = (endIndex - startIndex) + 1;
@@ -37,18 +38,58 @@
     return [self initWithDataSeries: nil AndName: @"" AndStartIndex: 0 AndEndIndex:0 AndMins:Nil AndMaxs:Nil];
 }
 
--(long)firstX
+- (NSString *)description
+{
+    long startDateTime, endDateTime;
+    
+    startDateTime = [[[dataSeries xData] sampleValue:startIndexForPlot] longValue];
+    endDateTime = [[[dataSeries xData] sampleValue:(startIndexForPlot + countForPlot)-1] longValue];
+    
+    NSString *description;
+    description = [NSString stringWithFormat:@"Name       :%@\n",name]; 
+    description = [NSString stringWithFormat:@"%@Start      :%@\n",description, [EpochTime stringDateWithTime:startDateTime]];
+    description = [NSString stringWithFormat:@"%@End        :%@\n",description, [EpochTime stringDateWithTime:endDateTime]];
+   
+    return description;
+}
+
+-(long)minDateTime
 {
     return [[[dataSeries xData] sampleValue:startIndexForPlot] longValue];
 }
 
--(long)lastX
+-(long)maxDateTime
 {
     return [[[dataSeries xData] sampleValue:((startIndexForPlot + countForPlot)-1)] longValue];
 }
 
+- (double) minDataValue
+{
+    NSArray *fieldNames = [minYvalues allKeys];
+    
+    double minValue = 0.0;
+    if([fieldNames count] > 0){
+        minValue = [[minYvalues objectForKey:[fieldNames objectAtIndex:0]] doubleValue];
+        for(int i = 2; i < [minYvalues count];i++){
+            minValue = fmin(minValue,[[minYvalues objectForKey:[fieldNames objectAtIndex:0]] doubleValue]);
+        }
+    }
+    return minValue;
+}
 
-
+- (double) maxDataValue
+{
+    NSArray *fieldNames = [maxYvalues allKeys];
+    
+    double maxValue = 0.0;
+    if([fieldNames count] > 0){
+        maxValue = [[maxYvalues objectForKey:[fieldNames objectAtIndex:0]] doubleValue];
+        for(int i = 2; i < [maxYvalues count];i++){
+            maxValue = fmin(maxValue,[[maxYvalues objectForKey:[fieldNames objectAtIndex:0]] doubleValue]);
+        }
+    }
+    return maxValue;
+}
 
 -(NSUInteger)numberOfRecordsForPlot:(CPTPlot *)plot
 {
@@ -62,6 +103,9 @@
     
     NSRange rangeOnOriginal =  NSMakeRange(startIndexForPlot + indexRange.location,indexRange.length);
     CPTNumericData *dataToReturn;
+    NSString *dataIdentifer;
+    dataIdentifer = (NSString *)plot.identifier;
+    dataIdentifer = [dataIdentifer substringFromIndex:3];
     //return [dataSeries dataForPlot:plot field:field recordIndexRange: rangeOnOriginal]; 
     
     if (field == CPTScatterPlotFieldX)
@@ -69,7 +113,7 @@
         dataToReturn = [dataSeries xData]; 
     }else
     {
-        dataToReturn = [[dataSeries yData] objectForKey:plot.identifier]; 
+        dataToReturn = [[dataSeries yData] objectForKey:dataIdentifer]; 
     }
     if (NSEqualRanges(rangeOnOriginal, NSMakeRange(0, [dataSeries  length]))) 
     { 
@@ -91,43 +135,5 @@
     [[self minYvalues] setObject:[NSNumber numberWithDouble:min] forKey:key];
     [[self maxYvalues] setObject:[NSNumber numberWithDouble:max] forKey:key];
 }
-
-
-//- (CPTNumericData *)dataForPlot:(CPTPlot  *)plot 
-//                          field:(NSUInteger)field 
-//               recordIndexRange:(NSRange   )indexRange 
-//{ 
-//    CPTNumericData *dataToReturn; 
-//    NSRange range = {self.startIndexForPlot, self.countForPlot};
-//    switch (field)
-//    {
-//        case CPTScatterPlotFieldX: 
-//        {
-//            dataToReturn = self.xData; 
-//            //return dataToReturn;
-//            break;
-//        }
-//        case CPTScatterPlotFieldY:
-//        {
-//            dataToReturn = [self.yData objectForKey:plot.identifier]; 
-//            //return dataToReturn;
-//            break;
-//        }
-//    }
-//    if (NSEqualRanges(range, NSMakeRange(0, self.count))) 
-//    { 
-//        return dataToReturn; 
-//    } 
-//    else 
-//    { 
-//        NSRange            subRange = NSMakeRange(range.location * dataToReturn.dataType.sampleBytes, 
-//                                                  range.length   * dataToReturn.dataType.sampleBytes); 
-//        return [CPTNumericData numericDataWithData:[dataToReturn.data subdataWithRange:subRange] 
-//                                          dataType:dataToReturn.dataType 
-//                                             shape:nil]; 
-//    } 
-//    return nil;
-//}
-
 
 @end

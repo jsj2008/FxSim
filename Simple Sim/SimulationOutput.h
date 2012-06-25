@@ -13,14 +13,13 @@
 - (void) outputSimulationMessage:(NSString *) message;
 - (void) gettingDataIndicatorSwitchOn;
 - (void) gettingDataIndicatorSwitchOff;
-
-- (void) setProgressMinAndMax: (NSArray *) minAndMax; 
-- (void) incrementProgressBarBy:(NSNumber *) increment;
+- (void) readingRecordSetsProgress: (NSNumber *) progressFraction;
+- (void) progressAsFraction:(NSNumber *) progressValue;
 - (void) progressBarOn;
 - (void) progressBarOff;
-- (void)  initialiseSignalTableView;
--(void)setupResultsReport;
--(void)addSimInfoToAboutPanelWithName:(NSString *) simName
+- (void) initialiseSignalTableView;
+- (void) setupResultsReport;
+- (void) addSimInfoToAboutPanelWithName:(NSString *) simName
                             AndFxPair:(NSString *) fxPair
                    AndAccountCurrency:(NSString *) accCurrency
                       AndSimStartTime: (NSString *) simStartTime
