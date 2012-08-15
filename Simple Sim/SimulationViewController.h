@@ -12,8 +12,9 @@
 @class DataController;
 @class SimulationController;
 
-@interface SimulationViewController : NSViewController<SimulationOutput,NSTableViewDataSource,NSTableViewDelegate,NSTabViewDelegate>{
+@interface SimulationViewController : NSViewController<SimulationOutput, NSTableViewDataSource, NSTableViewDelegate, NSTabViewDelegate, NSWindowDelegate>{
     __weak id delegate;
+    NSWindowController *fullScreenWindowController;
     NSMutableArray *simulationTimeSeries;
     NSMutableArray *simulationSignalTimeSeries;
     NSArray *importDataArray;
@@ -36,6 +37,8 @@
     BOOL signalTableViewSortedAscending;
     NSString *signalTableViewSortColumn;
     
+    BOOL longShortIndicatorOn;
+       
     __weak NSScrollView *simulationRunScrollView;
     __weak NSButton *performSimulationButton;
     __weak NSTableView *simulationTimeSeriesTableView;
@@ -55,6 +58,7 @@
     
     //Relating to setup sheet
     IBOutlet NSWindow *setupSheet;
+    IBOutlet NSPanel *fullScreenWindow;
     
     __weak NSPopUpButton *setupTradingPairPopup;
     __weak NSPopUpButton *setupAccountCurrencyPopup;
@@ -113,7 +117,9 @@
     // Signal Analysis Sheet
     __weak NSTextField *signalAnalysisPlotLeadHours;
     
-
+    __weak NSBox *fullScreenBox;
+    __weak NSBox *simPlotBox;
+    __weak NSBox *signalAnalysisPlotBox;
 }
 
 @property (retain) NSArray *coloursForPlots;
@@ -167,6 +173,10 @@
 - (IBAction)accountCurrencyChange:(id)sender;
 - (IBAction)importCsvData:(id)sender;
 - (IBAction)signalAnalysisPlotReload:(id)sender;
+- (IBAction)signalAnalysisPlotFullScreen:(id)sender;
+- (IBAction)simPlotFullScreen:(id)sender;
+
+
 
 
 - (void) setDelegate:(id)del;
@@ -230,4 +240,7 @@
 @property (weak) IBOutlet NSButton *setupSheetImportDataButton;
 @property (weak) IBOutlet NSButton *setupSheetShowButton;
 @property (weak) IBOutlet NSTextField *setupPositioningTextField;
+@property (weak) IBOutlet NSBox *fullScreenBox;
+@property (weak) IBOutlet NSBox *signalAnalysisPlotBox;
+@property (weak) IBOutlet NSBox *simPlotBox;
 @end

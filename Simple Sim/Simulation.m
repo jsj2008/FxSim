@@ -143,11 +143,13 @@
     if(returnData != nil){
         if([dataFieldIdentifier isEqualToString:@"DRAWDOWNTIME"]){
             returnData = [EpochTime stringDateWithTime:[returnData longValue]];
+            return returnData;
         }
         
         if([dataFieldIdentifier isEqualToString:@"PNLUPTIME"] || [dataFieldIdentifier isEqualToString:@"PNLDOWNTIME"]){
             returnData = [NSString stringWithFormat:@"%d hours",[returnData longValue]/(60*60)];
         }
+        returnData = [NSString stringWithFormat:@"%5.2f",[returnData floatValue]];
         
         return returnData;
     }

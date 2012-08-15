@@ -50,6 +50,7 @@
     CPTPlotSpaceAnnotation *zoomAnnotation;
     CPTPlotSpaceAnnotation *lineAnnotation;
     NSMutableArray *lineAnnotationArray;
+    NSMutableArray *lineAnnotationLevelArray; 
     
     NSMutableArray *dateAnnotationArray;
 	CGPoint dragStart, dragEnd;

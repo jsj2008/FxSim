@@ -38,7 +38,8 @@
 - (void) resampleDataForZoomPlot:(NSDictionary *) parameters;
 - (void) updateZoomPlotWithResampledData;
 - (BOOL) writeSignalStatsToFile: (NSURL *) fileNameAndPath;
-
+- (void) enableMainButtons;
+- (void) disableMainButtons;
 @end
 
 @implementation InteractiveTradeViewController
@@ -278,7 +279,7 @@
     
     [panel1PlotButton setEnabled:YES];
     [panel1SetupButton setEnabled:NO];
-    
+    [self disableMainButtons];
     for(int i =0; i < [hideObjectsOnStartup count];i++){
         [[hideObjectsOnStartup objectAtIndex:i] setHidden:YES];
     }
@@ -766,8 +767,9 @@
     if(!initialSetupComplete){
         //Not yet, this is to show cancel that the setup button has been pressed
         doingSetup = NO;
-        
+        [self disableMainButtons];
         [panel1SetupButton setHidden:YES];
+        
         [NSApp beginSheet:setupSheet modalForWindow:[centreTabs window] modalDelegate:nil didEndSelector:NULL contextInfo:NULL];
     }
 }
@@ -788,6 +790,7 @@
     [setupSheet orderOut:nil];
     [panel1SetupButton setEnabled:YES];
     [panel1SetupButton setHidden:NO];
+    [self enableMainButtons];
 }
 
 -(void)updateZoom{
@@ -1271,6 +1274,27 @@
         NSLog(@"Delegate not responding to \'showAlertPanelWithInfo\'"); 
     } 
 }
+
+- (void) disableMainButtons
+{
+    if([[self delegate] respondsToSelector:@selector(disableMainButtons)])
+    {
+        [[self delegate] disableMainButtons];
+    }else{
+        NSLog(@"Delegate not responding to \'disableMainButtons'"); 
+    } 
+}
+
+- (void) enableMainButtons
+{
+    if([[self delegate] respondsToSelector:@selector(enableMainButtons)])
+    {
+        [[self delegate] enableMainButtons];
+    }else{
+        NSLog(@"Delegate not responding to \'enableMainButtons'"); 
+    } 
+}
+
 
 #pragma mark -
 #pragma mark TableView Methods

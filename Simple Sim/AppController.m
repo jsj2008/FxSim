@@ -33,8 +33,10 @@
 
 
 @implementation AppController
-@synthesize InteractiveViewButton;
-@synthesize SimulationViewButton;
+@synthesize realtimeButton;
+@synthesize simulationViewButton;
+@synthesize interactiveViewButton;
+
 @synthesize leftPanelStatusLabel;
 @synthesize minAvailableDate;
 @synthesize maxAvailableDate;
@@ -43,8 +45,6 @@
 @synthesize colorsForPlots;
 @synthesize currentDay;
 @synthesize box;
-
-//BOOL simDataZoomSelectFrom = YES;
 
 -(id)init
 {
@@ -97,6 +97,8 @@
     listOfFxPairs = [dataControllerForUI fxPairs];
     
     viewControllers = [[NSMutableDictionary alloc] init];
+    
+    buttonStates = [[NSDictionary alloc] initWithDictionary:[NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithBool:YES], @"SERIESVIEW" , [NSNumber numberWithBool:YES], @"SIMANALYSIS", [NSNumber numberWithBool:NO], @"REALTIME", nil]];
     
     TitlePaneViewController *tpvc;
     tpvc = [[TitlePaneViewController alloc] init];
@@ -155,7 +157,7 @@
 }
 
 - (IBAction)changeToSimulationView:(id)sender {
-    [InteractiveViewButton setState:0];
+    [interactiveViewButton setState:0];
     
     // Try to end editing
     NSWindow *w = [box window];
@@ -166,7 +168,7 @@
     }
     
     NSView *v;
-    if([SimulationViewButton state]==0){
+    if([simulationViewButton state]==0){
         v = [[viewControllers objectForKey:@"TITLEPANE"] view];
     }else{
     //Put the view in the box
@@ -189,7 +191,7 @@
     [w setFrame:windowFrame display:YES animate:YES];
     [box setContentView:v];
     
-    if([SimulationViewButton state] == 1){
+    if([simulationViewButton state] == 1){
         SimulationViewController *controllerOfView = (SimulationViewController *)[viewControllers objectForKey:@"SIMVIEW"];
         [controllerOfView viewChosenFromMainMenu];
     }
@@ -197,7 +199,7 @@
 }
     
 -  (IBAction) changeToInteractiveView:(id)sender {
-    [SimulationViewButton setState:0];
+    [simulationViewButton setState:0];
     // Try to end editing
     NSWindow *w = [box window];
     BOOL ended = [w makeFirstResponder:w];
@@ -207,7 +209,7 @@
     }
     //Put the view in the box
     NSView *v;
-    if([InteractiveViewButton state] == 0){
+    if([interactiveViewButton state] == 0){
         v = [[viewControllers objectForKey:@"TITLEPANE"] view];    
     }else{
         v = [[viewControllers objectForKey:@"INTERVIEW"] view];
@@ -230,7 +232,7 @@
     [w setFrame:windowFrame display:YES animate:YES];
     [box setContentView:v];
     
-    if([InteractiveViewButton state] == 1){
+    if([interactiveViewButton state] == 1){
         InteractiveTradeViewController *controllerOfView = (InteractiveTradeViewController *)[viewControllers objectForKey:@"INTERVIEW"];
         [controllerOfView viewChosenFromMainMenu];
     }
@@ -329,9 +331,18 @@
     }
 }
 
+-(void)disableMainButtons
+{
+    [interactiveViewButton setEnabled:NO];
+    [simulationViewButton setEnabled:NO];
+    [realtimeButton setEnabled:NO];
+}
 
+-(void)enableMainButtons
+{
+    [interactiveViewButton setEnabled:[[buttonStates objectForKey:[interactiveViewButton identifier]]boolValue]];
+    [simulationViewButton setEnabled:[[buttonStates objectForKey:[simulationViewButton identifier]] boolValue]];
+    [realtimeButton setEnabled:[[buttonStates objectForKey:[realtimeButton identifier]] boolValue]];
+}
 
-
-#pragma mark -
-#pragma mark TableView Methods
 @end

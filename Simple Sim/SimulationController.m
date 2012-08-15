@@ -198,8 +198,6 @@
         // Set up the simulation data object
         tradingDayStartSeconds = (tradingDayStartMinute*60) + (tradingDayStartHour * 60 * 60);
         tradingDayEndSeconds = (tradingDayEndMinute*60) + (tradingDayEndHour * 60 * 60);
-    
-
         newSimulation = [[Simulation alloc] initWithName: simName 
                                                  AndDate: startDateTime 
                                               AndBalance: startingBalance 
@@ -327,12 +325,12 @@
     BOOL tradingTime;
     int simStepIndex = 0;
     long timeOfDayInSeconds;
+
     simulationDateTime = startDateTime;
-    
     signalThreshold = signalThreshold * [[simData dataSeries] pipSize];
-    
     cashPosition = startingBalance;
     nav = startingBalance;
+
     if(!cancelProcedure){
         do{
             //double slow, fast, mid, bid, ask;
@@ -1022,7 +1020,7 @@
                     [self performSelectorOnMainThread:@selector(readingDatabaseOn) withObject:nil waitUntilDone:NO]; 
                 }
                 dataRequestMinDateTime = [simData getMaxDateTimeForLoadedData];
-                dataRequestMaxDateTime = endDateTime;
+                dataRequestMaxDateTime = MAX(currentDateTime,endDateTime);
                 [simData getMoreDataForStartDateTime: dataRequestMinDateTime
                                       AndEndDateTime: dataRequestMaxDateTime
                               AndReturningStatsArray: nil

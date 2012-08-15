@@ -24,9 +24,13 @@
 - (void) updateStatus:(NSString *) statusMessage;
 - (void) showAlertPanelWithInfo: (NSDictionary *) alertInfo;
 - (NSArray *) csvDataFromURL: (NSURL *)absoluteURL;
+- (void) addPlotToFullScreenWindow: (NSView *) fullScreenView;
 @end
 
 @implementation SimulationViewController
+@synthesize simPlotBox;
+@synthesize signalAnalysisPlotBox;
+@synthesize fullScreenBox;
 @synthesize setupPositioningTextField;
 
 
@@ -49,6 +53,9 @@
 
 - (void) awakeFromNib
 {
+    fullScreenWindowController = [[NSWindowController alloc] initWithWindow:fullScreenWindow];
+    [fullScreenWindow setDelegate:self];
+        
     simulationController = [[SimulationController alloc] init];
     [simulationController setDelegate:self];
     [simulationController setDoThreads:doThreads];
@@ -236,6 +243,7 @@
                   TimeSeriesLine:tsl];
         }
         startDateTime = startDateTime - ([signalAnalysisPlotLeadHours intValue] * 60*60);
+        longShortIndicatorOn = YES;
         [self plotSignalDataFrom:startDateTime 
                               To:endDateTime];
     }
@@ -299,7 +307,7 @@
     
 }
 
--(void)addSimulationDataToResultsTableView: (DataSeries *) analysisDataSeries
+- (void) addSimulationDataToResultsTableView: (DataSeries *) analysisDataSeries
 {
     [self clearTSTableView:simulationNumbersTableView];
     NSTableColumn *newTableColumn;
@@ -371,7 +379,8 @@
     [simulationNumbersTableView reloadData];
 }
 
--(void)plotSignalDataFrom: (long) startDateTime To:(long) endDateTime
+- (void) plotSignalDataFrom: (long) startDateTime 
+                         To:(long) endDateTime
 {
     DataSeries *analysisDataSeries = [[simulationController currentSimulation] analysisDataSeries]; 
     
@@ -379,22 +388,21 @@
     
     [signalAnalysisPlot setData:analysisDataSeries WithViewName:@"SIGNAL"];
     [signalAnalysisPlot renderPlotWithFields:simulationSignalTimeSeries];
-    
     simulationDataSeries = analysisDataSeries;
     
 }
 
--(void)addSimInfoToAboutPanelWithName: (NSString *) simName
-                            AndFxPair: (NSString *) fxPair
-                   AndAccountCurrency: (NSString *) accCurrency
-                      AndSimStartTime: (NSString *) simStartTime
-                        AndSimEndTime: (NSString *) simEndTime
-                      AndSamplingRate: (NSString *) samplingRate
-                        AndTradingLag: (NSString *) tradingLag
-                AndTradingWindowStart: (NSString *) tradingStartTime
-                  AndTradingWindowEnd: (NSString *) tradingEndTime
-                     AndSimParameters: (NSString *) parameters
-{
+- (void) addSimInfoToAboutPanelWithName: (NSString *) simName
+                              AndFxPair: (NSString *) fxPair
+                     AndAccountCurrency: (NSString *) accCurrency
+                        AndSimStartTime: (NSString *) simStartTime
+                          AndSimEndTime: (NSString *) simEndTime
+                        AndSamplingRate: (NSString *) samplingRate
+                          AndTradingLag: (NSString *) tradingLag
+                  AndTradingWindowStart: (NSString *) tradingStartTime
+                    AndTradingWindowEnd: (NSString *) tradingEndTime
+                       AndSimParameters: (NSString *) parameters
+{   
     [aboutSimNameLabel setStringValue:simName];
     [aboutTradingPairLabel setStringValue:fxPair];
     [aboutAccountCurrencyLabel setStringValue:accCurrency];
@@ -407,17 +415,18 @@
     [aboutSimParametersLabel setStringValue:parameters];
 }
 
--(void)viewChosenFromMainMenu
+- (void) viewChosenFromMainMenu
 {
     if(!initialSetupComplete){
         //Not yet, this is to show cancel that the setup button has been pressed
         doingSetup = NO;
+        [self disableMainButtons];
         [setupSheetShowButton setEnabled:NO];
         [NSApp beginSheet:setupSheet modalForWindow:[centreTabView window] modalDelegate:nil didEndSelector:NULL contextInfo:NULL];
     }
 }
 
--(void)endSetupSheet
+- (void) endSetupSheet
 {
     if(cancelProcedure == NO)
     {
@@ -426,12 +435,12 @@
         [NSApp endSheet:setupSheet returnCode: NSCancelButton];
         [setupSheetShowButton setEnabled:YES];
     }
-    
+    [self enableMainButtons];
     [setupSheet orderOut:nil];
     
 }
 
--(NSArray *)csvDataFromURL:(NSURL *)absoluteURL{
+- (NSArray *) csvDataFromURL:(NSURL *)absoluteURL{
    
     NSString *fileString = [NSString stringWithContentsOfURL:absoluteURL 
                                                         encoding:NSUTF8StringEncoding error:nil];
@@ -504,7 +513,41 @@
     return rows;
 }
 
-
+- (void) addPlotToFullScreenWindow: (NSView *) fullScreenView {
+     
+    //NSRect screenSizeRect = [[fullScreenWindow screen] frame];
+    NSRect usableScreenSizeRect = [[fullScreenWindow screen] visibleFrame];
+    //NSRect windowSizeRect = [fullScreenWindow frameRectForContentRect:screenSizeRect];
+    [fullScreenWindow setFrame:usableScreenSizeRect
+                       display:YES
+                       animate:NO];
+    
+    NSWindow *w = [fullScreenBox window];
+    BOOL ended = [w makeFirstResponder:w];
+    if(!ended){
+        NSBeep();
+        return;
+    }
+    
+    [fullScreenBox setContentView:fullScreenView];
+    
+    //Compute the new window frame
+    NSSize currentSize = [[fullScreenBox contentView] frame].size;
+    NSSize newSize = [fullScreenView frame].size;
+    float deltaWidth = newSize.width - currentSize.width;
+    float deltaHeight = newSize.height - currentSize.height;
+    NSRect windowFrame = [w frame];
+    windowFrame.size.height += deltaHeight;
+    windowFrame.origin.y -= deltaHeight;
+    windowFrame.size.width += deltaWidth;
+    
+    //Clear the box for resizing
+    [fullScreenBox setContentView:nil];
+    [w setFrame:windowFrame display:YES animate:YES];
+    [fullScreenBox setContentView:fullScreenView];
+    //[fullScreenWindowController showWindow:self];
+    [NSApp runModalForWindow:fullScreenWindow];
+}
 
 #pragma mark -
 #pragma mark IBActions Methods
@@ -830,6 +873,14 @@
     }
 }
 
+- (IBAction)signalAnalysisPlotFullScreen:(id)sender {
+    [self addPlotToFullScreenWindow:simulationSignalGraphHostingView];
+}
+
+- (IBAction)simPlotFullScreen:(id)sender {
+    [self addPlotToFullScreenWindow:simulationResultGraphHostingView];
+}
+
 - (IBAction)changeSelectedTradingPair:(id)sender {
     NSString *selectedPair = [[setupTradingPairPopup selectedItem] title];
     [setupAccountCurrencyPopup removeAllItems];
@@ -843,7 +894,9 @@
 {
     //Not yet, this is to show cancel that the setup button has been pressed
     doingSetup = NO;
+    cancelProcedure = NO;
     [setupSheetShowButton setEnabled:NO];
+    [self disableMainButtons];
     [NSApp beginSheet:setupSheet modalForWindow:[centreTabView window] modalDelegate:nil didEndSelector:NULL contextInfo:NULL];
 }
 
@@ -867,17 +920,15 @@
     [setUpSheetCancelButton setEnabled:NO];
 }
 
-
-
 - (IBAction)toggleLongShortIndicator:(id)sender {
+    
     [simulationResultsPlot togglePositionIndicator];
 }
 
 - (IBAction)sigPlotLongShortIndicatorToggle:(id)sender {
+    longShortIndicatorOn = !longShortIndicatorOn;
     [signalAnalysisPlot togglePositionIndicator];
 }
-
-
 
 - (IBAction)performSimulation:(id)sender {
     BOOL basicCheckOk = YES;
@@ -1188,14 +1239,30 @@
     
     if([[tableView identifier] isEqualToString:@"SIMREPORTTV"])
     {
+        id returnValue;
         if([[tableColumn identifier] isEqualToString:@"NAME"])
         {
-            return [[simulationController currentSimulation] getReportNameFieldAtIndex:row];
+             returnValue = [[simulationController currentSimulation] getReportNameFieldAtIndex:row];
         }
         if([[tableColumn identifier] isEqualToString:@"DATA1"])
         {
-            return [[simulationController currentSimulation] getReportDataFieldAtIndex:row];
+            returnValue = [[simulationController currentSimulation] getReportDataFieldAtIndex:row];
         }
+        if([returnValue isKindOfClass:[NSString class]]){
+            if([returnValue length] > 25){
+                NSString *truncated =    [returnValue substringWithRange:NSMakeRange([returnValue length]-37, 37)];
+                returnValue = [NSString stringWithFormat:@"...%@",truncated];
+            }
+        }
+        return returnValue;
+//            id returnValue = [[simulationController currentSimulation] getReportDataFieldAtIndex:row];
+//            if([returnValue isKindOfClass:[NSString class]]){
+//                return returnValue;
+//            }else{
+//                return [NSString stringWithFormat:@"%5.2f",returnValue];
+//            }
+//                 
+//        }
     }
     if([[tableView identifier] isEqualToString:@"IMPORTDATATV"])
     {
@@ -1467,6 +1534,28 @@
     } 
 }
 
+- (void) disableMainButtons
+{
+    if([[self delegate] respondsToSelector:@selector(disableMainButtons)])
+    {
+        [[self delegate] disableMainButtons];
+    }else{
+        NSLog(@"Delegate not responding to \'disableMainButtons'"); 
+    } 
+}
+
+- (void) enableMainButtons
+{
+    if([[self delegate] respondsToSelector:@selector(enableMainButtons)])
+    {
+        [[self delegate] enableMainButtons];
+    }else{
+        NSLog(@"Delegate not responding to \'enableMainButtons'"); 
+    } 
+}
+
+
+
 #pragma mark -
 #pragma mark TabView Delegate Methods
 
@@ -1491,6 +1580,31 @@
     }else{
         NSLog(@"Delegate not responding to \'putFieldNamesInCorrectOrdering\'"); 
     } 
+}
+
+#pragma mark -
+#pragma mark Window Delegate Methods
+
+//-(BOOL)windowShouldClose:(NSNotification *)notification{
+//    if([notification object] == fullScreenWindow){
+//                
+//    }
+//    return YES;
+//}
+
+-(void)windowWillClose:(NSNotification *)notification{
+    
+    if([notification object] == fullScreenWindow){
+        [NSApp stopModal];
+        [fullScreenWindow setIsVisible:NO];
+        
+        if([fullScreenBox contentView] == simulationSignalGraphHostingView){
+            [signalAnalysisPlotBox setContentView:simulationSignalGraphHostingView];
+        }
+        if([fullScreenBox contentView] == simulationResultGraphHostingView){   
+            [simPlotBox setContentView:simulationResultGraphHostingView];
+        }
+    }
 }
 
 #pragma mark -

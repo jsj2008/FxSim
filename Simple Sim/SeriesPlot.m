@@ -32,6 +32,7 @@
 		identifier = identifierString;
         dateAnnotationArray = [[NSMutableArray alloc] init];
         lineAnnotationArray = [[NSMutableArray alloc] init];
+        lineAnnotationLevelArray = [[NSMutableArray alloc] init];
 	}
  	return self;
 }
@@ -163,6 +164,7 @@
     zoomAnnotation = nil;
     [dateAnnotationArray removeAllObjects];
     [lineAnnotationArray removeAllObjects];
+    [lineAnnotationLevelArray removeAllObjects];
     
     BOOL dateAnnotateRequired;
     timeSeriesLines = linesToPlot; 
@@ -195,6 +197,7 @@
     
     NSMutableArray *fieldNames = [[NSMutableArray alloc] init];
     NSMutableArray *colors = [[NSMutableArray alloc] init];
+    NSMutableArray *layerIndexes = [[NSMutableArray alloc] init];
     minYrangeForPlot0 = 0.0;
     maxYrangeForPlot0 = 1.0;
     minYrangeForPlot1 = 0.0;
@@ -206,9 +209,11 @@
     {
         switch ([tsLine layerIndex])
         {
+                
             case 0:
                 [fieldNames addObject:[tsLine name]];
                 [colors addObject:[tsLine cpColour]];
+                [layerIndexes addObject:[NSNumber numberWithInt:[tsLine layerIndex]]];
                 if(plot0LineFound){
                     minYrangeForPlot0 = fmin(minYrangeForPlot0,[[[dataView minYvalues] valueForKey:[tsLine name]] doubleValue]); 
                     maxYrangeForPlot0 = fmax(maxYrangeForPlot0,[[[dataView maxYvalues] valueForKey:[tsLine name]] doubleValue]);
@@ -221,6 +226,7 @@
             case 1:
                 [fieldNames addObject:[tsLine name]];
                 [colors addObject:[tsLine cpColour]];
+                [layerIndexes addObject:[NSNumber numberWithInt:[tsLine layerIndex]]];
                 if(plot1LineFound == NO){
                     minYrangeForPlot1 = [[[dataView minYvalues] valueForKey:[tsLine name]] doubleValue]; 
                     maxYrangeForPlot1 = [[[dataView maxYvalues] valueForKey:[tsLine name]] doubleValue];
@@ -234,12 +240,13 @@
             case 2:
                 [fieldNames addObject:[tsLine name]];
                 [colors addObject:[tsLine cpColour]];
+                [layerIndexes addObject:[NSNumber numberWithInt:[tsLine layerIndex]]];
                 if(plot2LineFound == NO){
                     minYrangeForPlot2 = [[[dataView minYvalues] valueForKey:[tsLine name]] doubleValue]; 
                     maxYrangeForPlot2 = [[[dataView maxYvalues] valueForKey:[tsLine name]] doubleValue];
                 }else{
-                    minYrangeForPlot2 = fmin(minYrangeForPlot1,[[[dataView minYvalues] valueForKey:[tsLine name]] doubleValue]); 
-                    maxYrangeForPlot2 = fmax(maxYrangeForPlot1,[[[dataView maxYvalues] valueForKey:[tsLine name]] doubleValue]);
+                    minYrangeForPlot2 = fmin(minYrangeForPlot2,[[[dataView minYvalues] valueForKey:[tsLine name]] doubleValue]); 
+                    maxYrangeForPlot2 = fmax(maxYrangeForPlot2,[[[dataView maxYvalues] valueForKey:[tsLine name]] doubleValue]);
                     
                 }
                 plot2LineFound = YES;
@@ -247,6 +254,7 @@
             default:
                 [fieldNames addObject:[tsLine name]];
                 [colors addObject:[CPTColor clearColor]];
+                [layerIndexes addObject:[NSNumber numberWithInt:[tsLine layerIndex]]];
                 break;
         }
     }
@@ -418,11 +426,16 @@
                     [graph addPlot:dataSourceLinePlot toPlotSpace:overlayPlotSpace];
                 }
             }else{
+                
                 dataSourceLinePlot = [[CPTScatterPlot alloc] init];
                 dataSourceLinePlot.identifier = [NSString stringWithFormat:@"P0_%@",[fieldNames objectAtIndex:i]];
                 lineStyle = [dataSourceLinePlot.dataLineStyle mutableCopy];
                 lineStyle.lineWidth				 = 1.0;
-                lineStyle.lineColor				 = [colors objectAtIndex:(i%[colors count])] ;
+                if([[layerIndexes objectAtIndex:i] intValue] == 0){
+                    lineStyle.lineColor = [colors objectAtIndex:(i%[colors count])] ;
+                }else{
+                    lineStyle.lineColor = [CPTColor clearColor];
+                }
                 dataSourceLinePlot.dataLineStyle = lineStyle;
                 dataSourceLinePlot.dataSource =  dataView;
                 [graph addPlot:dataSourceLinePlot
@@ -432,7 +445,11 @@
                 dataSourceLinePlot.identifier = [NSString stringWithFormat:@"P1_%@",[fieldNames objectAtIndex:i]];
                 lineStyle = [dataSourceLinePlot.dataLineStyle mutableCopy];
                 lineStyle.lineWidth				 = 1.0;
-                lineStyle.lineColor				 = [colors objectAtIndex:(i%[colors count])] ;
+                if([[layerIndexes objectAtIndex:i] intValue] == 1){
+                    lineStyle.lineColor = [colors objectAtIndex:(i%[colors count])] ;
+                }else{
+                    lineStyle.lineColor = [CPTColor clearColor];
+                }
                 dataSourceLinePlot.dataLineStyle = lineStyle;
                 dataSourceLinePlot.dataSource =  dataView;
                 [graph addPlot:dataSourceLinePlot
@@ -442,7 +459,11 @@
                 dataSourceLinePlot.identifier = [NSString stringWithFormat:@"P2_%@",[fieldNames objectAtIndex:i]];
                 lineStyle = [dataSourceLinePlot.dataLineStyle mutableCopy];
                 lineStyle.lineWidth				 = 1.0;
-                lineStyle.lineColor				 = [colors objectAtIndex:(i%[colors count])] ;
+                if([[layerIndexes objectAtIndex:i] intValue] == 2){
+                    lineStyle.lineColor = [colors objectAtIndex:(i%[colors count])] ;
+                }else{
+                    lineStyle.lineColor = [CPTColor clearColor];
+                }
                 dataSourceLinePlot.dataLineStyle = lineStyle;
                 dataSourceLinePlot.dataSource =  dataView;
                 [graph addPlot:dataSourceLinePlot
@@ -882,8 +903,8 @@
 -(void)addHorizontalLineAt:(double) yValue ForPlotspace:(CPTXYPlotSpace *) plotSpace
 {
     double dataValues[2];
-    double minXRange = [[NSDecimalNumber decimalNumberWithDecimal:[[plotSpace0 xRange] location]] doubleValue];
-    double maxXRange =  minXRange + [[NSDecimalNumber decimalNumberWithDecimal:[[plotSpace0 xRange] length]] doubleValue];
+    double minXRange = [[NSDecimalNumber decimalNumberWithDecimal:[[plotSpace xRange] location]] doubleValue];
+    double maxXRange =  minXRange + [[NSDecimalNumber decimalNumberWithDecimal:[[plotSpace xRange] length]] doubleValue];
     
     dataValues[0] = minXRange;
     dataValues[1] = yValue;
@@ -896,7 +917,7 @@
     
     //transparentFillColor = [[CPTColor lightGrayColor] colorWithAlphaComponent:0.2];
 	[lineLayer setFill:[CPTFill fillWithColor:[CPTColor clearColor]]];
-    lineAnnotation = [[CPTPlotSpaceAnnotation alloc] initWithPlotSpace:plotSpace0 anchorPlotPoint:nil];
+    lineAnnotation = [[CPTPlotSpaceAnnotation alloc] initWithPlotSpace:plotSpace anchorPlotPoint:nil];
 	lineAnnotation.contentLayer = lineLayer;
     
     CGPoint startPoint =  [plotSpace plotAreaViewPointForDoublePrecisionPlotPoint:dataValues];
@@ -910,6 +931,7 @@
     lineAnnotation.contentLayer.frame = borderRect;
 	[graph.plotAreaFrame.plotArea addAnnotation:lineAnnotation];
     [lineAnnotationArray addObject:lineAnnotation];
+    [lineAnnotationLevelArray addObject:[NSNumber numberWithDouble:yValue]];
 }
 
 
@@ -1009,8 +1031,7 @@
         
     }else{    
     dragStart = interactionPoint;
-    
-    //Test stuff
+
     //CPTXYPlotSpace *plotSpace = (CPTXYPlotSpace *)graph.defaultPlotSpace;
     TimeSeriesLine *tsLine = [timeSeriesLines objectAtIndex:0];
     NSString *plotIdentifier = [NSString stringWithFormat:@"P0_%@",[tsLine name]];
@@ -1027,7 +1048,7 @@
     // First make a string for the y value
     NSString *currentValue;
     if([NSEvent modifierFlags] == NSAlternateKeyMask){
-        currentValue = [NSString stringWithFormat:@"%5.3f",dataCoords[CPTCoordinateY]];
+        currentValue = [NSString stringWithFormat:@"%5.4f",dataCoords[CPTCoordinateY]];
     }else{
         currentValue = [EpochTime stringOfDateTimeForTime:(long)dataCoords[CPTCoordinateX] 
                                                WithFormat: @"%a %Y-%m-%d %H:%M:%S"];
@@ -1065,6 +1086,7 @@
             while([lineAnnotationArray count] > 0){
                 [graph.plotAreaFrame.plotArea removeAnnotation:[lineAnnotationArray objectAtIndex:0]];
                 [lineAnnotationArray removeObjectAtIndex:0];
+                [lineAnnotationLevelArray removeObjectAtIndex:0];
             }
         }
     }else{
@@ -1128,6 +1150,8 @@
     plotSpace0.xRange = [CPTPlotRange plotRangeWithLocation:CPTDecimalFromDouble(minXzoomForPlot)
 													length:CPTDecimalFromDouble(maxXzoomForPlot - minXzoomForPlot)];
     
+    [plotSpace1 setXRange:[[plotSpace0 xRange] copy]];
+    [plotSpace2 setXRange:[[plotSpace0 xRange] copy]];
     zoomedOut = NO;
     
     overlayPlotSpace.xRange = [plotSpace0.xRange copy];
@@ -1246,7 +1270,21 @@
         maxYzoomForPlot2 = MAX(start2[CPTCoordinateY], end2[CPTCoordinateY]);
         [plotSpace2 setYRange:[CPTPlotRange plotRangeWithLocation:CPTDecimalFromDouble(minYzoomForPlot2)
                                                            length:CPTDecimalFromDouble(maxYzoomForPlot2 - minYzoomForPlot2)]];
-
+        
+        //This is for any horizontal lines that have been added
+        if([lineAnnotationArray count] > 0){
+        NSMutableArray *tempArray = [[NSMutableArray alloc] init];
+            for(int i = 0; i < [lineAnnotationLevelArray count]; i++){
+                [graph.plotAreaFrame.plotArea removeAnnotation:[lineAnnotationArray objectAtIndex:i]];
+                [tempArray addObject:[NSNumber numberWithDouble:[[lineAnnotationLevelArray objectAtIndex:i] doubleValue]]];
+            }
+            [lineAnnotationArray removeAllObjects];
+            [lineAnnotationLevelArray removeAllObjects];
+            for(int i = 0; i < [tempArray count]; i++){
+                [self addHorizontalLineAt:[[tempArray objectAtIndex:i] doubleValue] ForPlotspace:plotSpace0];
+            }
+            [tempArray removeAllObjects];
+        }
     }
     zoomedOut = NO;
 
@@ -1360,7 +1398,21 @@
             }
         }
     }
-    
+    //This is for any horizontal lines that have been added
+    if([lineAnnotationArray count] > 0){
+        NSMutableArray *tempArray = [[NSMutableArray alloc] init];
+        for(int i = 0; i < [lineAnnotationLevelArray count]; i++){
+            [graph.plotAreaFrame.plotArea removeAnnotation:[lineAnnotationArray objectAtIndex:i]];
+            [tempArray addObject:[NSNumber numberWithDouble:[[lineAnnotationLevelArray objectAtIndex:i] doubleValue]]];
+        }
+        [lineAnnotationArray removeAllObjects];
+        [lineAnnotationLevelArray removeAllObjects];
+        for(int i = 0; i < [tempArray count]; i++){
+            [self addHorizontalLineAt:[[tempArray objectAtIndex:i] doubleValue] ForPlotspace:plotSpace0];
+        }
+        [tempArray removeAllObjects];
+    }
+
         
     zoomedOut = YES;
 }
