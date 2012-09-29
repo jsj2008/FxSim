@@ -7,15 +7,22 @@
 //
 
 #import <Foundation/Foundation.h>
+@class PositioningSystem;
+@class SignalSystem;
+@class DataSeries;
 
 @interface DataProcessor : NSObject
 
-+(NSDictionary *)processWithDataSeries: (NSDictionary *) dataSeries
-                           AndStrategy: (NSString *) strategyString
-                        AndProcessInfo: (NSDictionary *) parameters
-                     AndReturningStats: (NSMutableArray *) statsArray;
+//+(NSDictionary *)processWithDataSeries: (NSDictionary *) dataSeries
+//                             AndSignal: (NSString *) strategyString
+//                        AndProcessInfo: (NSDictionary *) parameters
+//                     AndReturningStats: (NSMutableArray *) statsArray;
 
-+(BOOL)strategyUnderstood:(NSString *) strategyString;
-
-
++ (NSDictionary *) addToDataSeries: (NSDictionary *) dataDictionary
+                  DerivedVariables: (NSArray *) derivedVariables
+                  WithTrailingData: (NSDictionary *) previousDataDetails
+                   AndSignalSystem: (SignalSystem *) signalSystem;
++ (BOOL)strategyUnderstood:(NSString *) strategyString;
++ (long)leadTimeRequired:(NSString *) strategyString;
++ (long)leadTicsRequired:(NSString *) strategyString;
 @end

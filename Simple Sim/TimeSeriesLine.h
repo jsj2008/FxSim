@@ -15,8 +15,10 @@
     NSUInteger _colourId;
     NSString *_colour;
     CPTColor *_cpColour;
+    NSColor *_nsColour;
     NSArray *_allColourNames;
     NSArray *_allColourCPTypes;
+    NSArray *_allNSColourTypes;
 }
 
 @property (retain) NSString *name;
@@ -24,8 +26,10 @@
 @property NSUInteger colourId;
 @property (retain) NSString *colour;
 @property (retain) CPTColor *cpColour;
+@property (retain) NSColor *nsColour;
 @property (retain) NSArray *allColourNames;
 @property (retain) NSArray *allColourCPTypes;
+@property (retain) NSArray *allNSColourTypes;
 
 - (id)initWithLayerIndex: (int)        layerIndex 
                  AndName: (NSString *)  name 
@@ -33,5 +37,6 @@
 - (NSString *)description;
 - (void)setColourId:(NSUInteger) newColourId;
 - (NSUInteger)colourId;
+
 
 @end

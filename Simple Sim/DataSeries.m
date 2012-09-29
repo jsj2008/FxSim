@@ -9,12 +9,14 @@
 #import "DataSeries.h"
 #import "EpochTime.h"
 #import "DataView.h"
-
-
+//#import "SignalSystem.h"
+//#import "PositioningSystem.h"
+//#import "RulesSystem.h"
 
 #pragma mark - 
 #pragma mark Implementation 
 @implementation DataSeries 
+
 
 - (id)init
 {
@@ -22,21 +24,24 @@
     return nil;    
 }
 
-- (id)initWithName:(NSString *)seriesName 
-          AndDbTag:(NSUInteger) databaseId 
-        AndPipSize:(double) quotePipSize 
-       AndStrategy: (NSString *) strategyString;
+- (id)  initWithName: (NSString *)seriesName 
+            AndDbTag: (NSUInteger) databaseId 
+          AndPipSize: (double) quotePipSize 
+//     AndSignalSystem: (SignalSystem *) sigSystem
+//   AndPositionSystem: (PositioningSystem *) posSystem
+//      AndRulesSystem:(RulesSystem *)rulesSystem
 {
     self = [super init];
     if(self){
-        self.name = [NSString stringWithString:seriesName];
-        self.dbId = databaseId;
-        self.pipSize = quotePipSize;
-        self.xData = nil; 
-        self.yData = [[NSMutableDictionary alloc] init]; 
-        self.dataViews = [[NSMutableDictionary alloc] init];
-        self.sampleRate = 0;
-        self.strategy = strategyString;
+        _name = [NSString stringWithString:seriesName];
+        _databaseId = databaseId;
+        _pipSize = quotePipSize;
+        _xData = nil; 
+        _yData = [[NSMutableDictionary alloc] init]; 
+        _dataViews = [[NSMutableDictionary alloc] init];
+        _sampleRate = 0;
+        //_signalSystem = sigSystem;
+        //_positioningSystem = posSystem;
     }    
     return self;    
 }
@@ -44,7 +49,7 @@
 - (NSString *)description
 {
     NSString *description;
-    description = [NSString stringWithFormat:@"%@\n",name]; 
+    description = [NSString stringWithFormat:@"%@\n", [self name]]; 
     description = [NSString stringWithFormat:@"%@Start   :%@\n",description, [EpochTime stringDateWithTime:[self minDateTime]]];
     description = [NSString stringWithFormat:@"%@End     :%@\n",description, [EpochTime stringDateWithTime:[self maxDateTime]]];
     description = [NSString stringWithFormat:@"%@Length  :%d\n",description, [self length]];
@@ -77,25 +82,80 @@
 
 -(void)setDataSeriesWithFieldName:(NSString*)fieldName AndDates:(CPTNumericData *)epochdates AndData: (CPTNumericData *)dataSeries 
 {
-    self.xData = epochdates;
-    self.yData =  [[NSMutableDictionary alloc] init];
-    [self.yData setObject:dataSeries forKey:fieldName] ;
+    [self setXData:epochdates];
+    [self setYData:[[NSMutableDictionary alloc] init]];
+    [[self yData] setObject:dataSeries forKey:fieldName] ;
     [self setSampleRate:1];
 }
+
+//-(NSArray *) derivedVariables
+//{
+//    
+//    NSArray *variablesForSignal;
+//    NSArray *variablesForPositioning;
+//    NSArray *variablesForRules;
+//    NSMutableArray *derivedVariables;
+//    
+//    
+//    if([self signalSystem] != Nil){
+//        variablesForSignal = [[self signalSystem] variablesNeeded];
+//    }else{
+//        variablesForSignal = [[NSArray alloc] init];
+//    }
+//    derivedVariables = [variablesForSignal mutableCopy];
+//    
+//    if([self positioningSystem] != Nil){
+//        variablesForPositioning = [[self positioningSystem] variablesNeeded];
+//    
+//        for(int i = 0; i < [variablesForPositioning count]; i++){
+//            NSString *variableToAdd = [variablesForPositioning objectAtIndex:i];
+//            BOOL duplicate = FALSE;
+//            for(int j = 0; j < [variablesForSignal count]; j++){
+//                if([[variablesForSignal objectAtIndex:j] isEqualToString:variableToAdd]){
+//                    duplicate = TRUE;
+//                    break;
+//                }
+//            }
+//            if(!duplicate){
+//                [derivedVariables addObject:variableToAdd];
+//            }
+//        }
+//    }
+//    if([self rulesSystem] != Nil){
+//        variablesForRules = [[self rulesSystem] variablesNeeded];
+//        
+//        for(int i = 0; i < [variablesForRules count]; i++){
+//            NSString *variableToAdd = [variablesForRules objectAtIndex:i];
+//            BOOL duplicate = FALSE;
+//            for(int j = 0; j < [variablesForSignal count]; j++){
+//                if([[variablesForSignal objectAtIndex:j] isEqualToString:variableToAdd]){
+//                    duplicate = TRUE;
+//                    break;
+//                }
+//            }
+//            if(!duplicate){
+//                [derivedVariables addObject:variableToAdd];
+//            }
+//        }
+//    }
+//    return derivedVariables;
+//}
+
+
+
 
 -(DataSeries *) getCopyOfStaticData
 {
     DataSeries *returnData  = [[DataSeries alloc] initWithName:[self name] 
                                                       AndDbTag:[self dbId] 
-                                                    AndPipSize:[self pipSize]
-                                                   AndStrategy:[self strategy]];
+                                                    AndPipSize:[self pipSize]];
     return returnData;
 }
 
 -(BOOL)writeDataSeriesToFile: (NSURL *) fileNameAndPath
 {
     BOOL allOk = YES;
-    NSArray *fieldNames = [yData allKeys]; 
+    NSArray *fieldNames = [[self yData] allKeys]; 
     NSFileHandle *outFile;
     
     // Create the output file first if necessary
@@ -109,8 +169,8 @@
         outFile = [NSFileHandle fileHandleForWritingAtPath:filePathString];
         [outFile truncateFileAtOffset:0];
         NSString *lineOfDataAsString;
-        long *xDataArray = (long *)[xData bytes];
-        double **yDataArray = malloc([yData count] * sizeof(double*));
+        long *xDataArray = (long *)[[self xData] bytes];
+        double **yDataArray = malloc([[self yData] count] * sizeof(double*));
      
         lineOfDataAsString = @"EPOCHTIME, DATETIME"; 
         for(int i = 0;i < [fieldNames count] ; i++)
@@ -120,8 +180,8 @@
         lineOfDataAsString = [lineOfDataAsString stringByAppendingFormat:@"\r\n"];
         [outFile writeData:[lineOfDataAsString dataUsingEncoding:NSUTF8StringEncoding]];
         
-        for(int i = 0; i < [yData count]; i++){
-            yDataArray[i] = (double *)[[yData objectForKey:[fieldNames objectAtIndex:i]] bytes];
+        for(int i = 0; i < [[self yData] count]; i++){
+            yDataArray[i] = (double *)[[[self yData] objectForKey:[fieldNames objectAtIndex:i]] bytes];
         }
         
         for(int i = 0; i < [self length]; i ++){
@@ -143,8 +203,7 @@
 {
     DataSeries *returnData  = [[DataSeries alloc] initWithName:[self name] 
                                                       AndDbTag:[self dbId] 
-                                                    AndPipSize:[self pipSize]
-                                                   AndStrategy:[self strategy]];
+                                                    AndPipSize:[self pipSize]];
     long currentSampleDateTime, currentDateTime;
     NSNumber *datetime = [NSNumber numberWithLong:[[self.xData sampleValue:0] longValue]];
     long anchorDateTime;
@@ -400,7 +459,8 @@
 }
 
 
--(NSDictionary *)getValues:(NSArray *) fieldNames AtDateTime: (long) dateTime
+-(NSDictionary *)getValues:(NSArray *) fieldNames 
+                AtDateTime: (long) dateTime
 {
     NSMutableDictionary *returnValues = [[NSMutableDictionary alloc] init];
     long dateTimeIndex;
@@ -427,6 +487,49 @@
     }
     return returnValues;    
 }
+
+-(NSDictionary *)getValues:(NSArray *) fieldNames 
+                AtDateTime: (long) dateTime 
+             WithTicOffset: (long) numberOfTics
+{
+    NSMutableDictionary *returnValues = [[NSMutableDictionary alloc] init];
+    long dateTimeIndex, offsetTics;
+    
+    
+    if((dateTime >= [self minDateTime]) & (dateTime <= [self maxDateTime]))
+    {
+        //First find the index value
+        dateTimeIndex = [self latestDateTimeBeforeOrEqualTo:dateTime];
+        if(dateTimeIndex < numberOfTics){
+            offsetTics = dateTimeIndex;
+            dateTimeIndex = 0; 
+        }else{
+            dateTimeIndex = dateTimeIndex - numberOfTics;
+            offsetTics = numberOfTics;
+        }
+        [returnValues setObject:[NSNumber numberWithLong:offsetTics] forKey:@"TICOFFSET"];    
+        
+        NSNumber *newDateTime = [NSNumber numberWithLong:[[[self xData] sampleValue:dateTimeIndex] longValue]];
+        [returnValues setObject:newDateTime forKey:@"DATETIME"];
+        
+        for(int i=0; i < [fieldNames count]; i++)
+        {
+            CPTNumericData *data = [[self yData] objectForKey:[fieldNames objectAtIndex:i]];
+            NSNumber *newDataValue = [NSNumber numberWithDouble:[[data sampleValue:dateTimeIndex] doubleValue]];
+            [returnValues setObject:newDataValue forKey:[fieldNames objectAtIndex:i]];
+        }
+        [returnValues setObject:[NSNumber numberWithBool:YES] forKey:@"SUCCESS"];
+    }else{
+        [returnValues setObject:[NSNumber numberWithBool:NO] forKey:@"SUCCESS"];
+        NSLog(@"datetime %lu is not between %lu and %lu",dateTime,[self minDateTime],[self maxDateTime]);
+        //        [NSException raise:@"Returning no data from dataseries" format:@"datetime %l is not between %l and %l",dateTime,[self minDateTime],[self maxDateTime]];
+    }
+    return returnValues; 
+    
+    
+    
+}
+
 
 
 
@@ -577,32 +680,30 @@
 
 - (NSNumber *)getDateTimeAtIndex: (long) dataIndex{
     
-    return [xData sampleValue:dataIndex];
+    return [[self xData] sampleValue:dataIndex];
 }
 
 - (NSNumber *) getDataFor:(NSString *) dataField 
               AtIndex: (long) dataIndex{
-    if([yData objectForKey:dataField]){
-        CPTNumericData *data = [yData objectForKey:dataField];
+    if([[self yData] objectForKey:dataField]){
+        CPTNumericData *data = [[self yData] objectForKey:dataField];
         return [data sampleValue:dataIndex];
     }
     return nil;
 }
 
-
-
 #pragma mark - 
 #pragma mark Accessors 
-@synthesize xData; 
-@synthesize yData; 
-@synthesize dbId;
-@synthesize name;
-@synthesize dataViews;
-@synthesize pipSize;
-@synthesize sampleRate;
-@synthesize strategy;
-
-
+@synthesize xData = _xData; 
+@synthesize yData = _yData; 
+@synthesize dbId = _databaseId;
+@synthesize name = _name;
+@synthesize dataViews = _dataViews;
+@synthesize pipSize = _pipSize;
+@synthesize sampleRate = sampleRate;
+//@synthesize signalSystem = _signalSystem;
+//@synthesize positioningSystem = _positioningSystem;
+//@synthesize rulesSystem = _rulesSystem;
 @end 
 
 

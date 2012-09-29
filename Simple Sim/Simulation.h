@@ -8,14 +8,17 @@
 
 #import <Foundation/Foundation.h>
 @class DataSeries;
+@class PositioningSystem;
+@class SignalSystem;
+//@class RulesSystem;
 
 @interface Simulation : NSObject{
     NSMutableArray *accBalanceArray;
     NSMutableArray *tradesArray;
-    
     NSMutableArray *signalInfoArray;
     NSMutableDictionary *simulationResults;
     NSMutableArray *openPositionsArray;
+    NSMutableArray *rulesSystem;
     int currentOpenPositionAmount;
     int tradingDayStartHour;
 }
@@ -25,12 +28,13 @@
 @property (readonly, retain) NSString *baseCode;
 @property (readonly, retain) NSString *quoteCode;
 @property (readonly) float maxLeverage;
+@property (readonly) NSMutableArray *rulesSystem;
 @property int samplingRate;
 @property int tradingLag;
 @property int tradingDayStart;
 @property int tradingDayEnd;
-@property (retain) NSString *signalParameters;
-@property (retain) NSString *positioningType;
+@property (retain) PositioningSystem *positionSystem;
+@property (retain) SignalSystem *signalSystem;
 @property (retain) NSString *userAddedData;
 @property (retain) DataSeries *simulationDataSeries;
 @property (retain) DataSeries *analysisDataSeries;
@@ -40,6 +44,7 @@
 @property (retain) NSMutableArray* reportDataFieldsArray;
 @property long startDate;
 @property long endDate;
+@property long currentCashBalance;
 
 typedef enum {
     TRANSFER = 1,
@@ -74,21 +79,27 @@ typedef enum {
          AndAccQuoteAskPrice: (double) accQuoteAskPrice
         AndBaseQuoteBidPrice: (double) baseQuoteBidPrice
         AndBaseQuoteAskPrice: (double) baseQuoteAskPrice
-              AndSignalIndex: (int) signalIndex;
+               AndSignalTime: (long) timeOfSignal;
 
 -(void) addInterestToPosition:(int) positionIndex
                    WithAmount:(int) interestAmount 
                        AtTime:(long) interestDateTime;
 
+-(BOOL) addTradingRule: (NSString *) ruleString;
+//-(int)addSignalStatisticsWithSignal: (double) signal
+//                       AndEntryTime: (long) entryTime
+//                        AndExitTime: (long) exitTime
+//                      AndEntryPrice: (double)entryPrice
+//                       AndExitPrice: (double) exitPrice
+//                    AndTimeInProfit: (double) timeInProfit
+//              AndMaxPotentialProfit: (double) potentialProfit
+//                AndMaxPotentialLoss: (double) potentialLoss;
 
 -(int)addSignalStatisticsWithSignal: (double) signal
                        AndEntryTime: (long) entryTime
                         AndExitTime: (long) exitTime
                       AndEntryPrice: (double)entryPrice
-                       AndExitPrice: (double) exitPrice
-                    AndTimeInProfit: (double) timeInProfit
-              AndMaxPotentialProfit: (double) potentialProfit
-                AndMaxPotentialLoss: (double) potentialLoss;
+                       AndExitPrice: (double) exitPrice;
 
 -(int)getNewSignalForChangeAtIndex:(int) signalChangeIndex;
 -(long)getDateTimeStartForSignalChangeAtIndex:(int) signalChangeIndex;

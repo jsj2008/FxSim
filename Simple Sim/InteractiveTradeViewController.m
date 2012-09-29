@@ -14,6 +14,8 @@
 #import "TimeSeriesLine.h"
 #import "SignalStats.h"
 #import "UtilityFunctions.h"
+#import "SimulationController.h"
+#import "SignalSystem.h"
 
 
 #define START_TIME_FOR_ID_PLOT 2
@@ -64,6 +66,7 @@
         [panel2DataController setDelegate:self];
         
         signalTableViewSortedAscending = YES;
+        _signalSystem = Nil;
     }
     return self;
 }
@@ -163,11 +166,18 @@
     
     userInputFormData = [[NSMutableDictionary alloc] init];
         
-    int nColumns = 9;
-    NSArray *sigTableHeaders = [NSArray arrayWithObjects:@"Entry Time", @"Exit Time", @"Signal", @"Entry Price", @"Exit Price", @"Signal Gain", @"Time Up", @"Potential Loss", @"Potential Gain", nil];
-    NSArray *sigTableIds = [NSArray arrayWithObjects:@"ENTRYTIME", @"EXITTIME",@"SIGNAL" , @"ENTRYPRICE", @"EXITPRICE",  @"SIGNAL GAIN", @"UPTIME", @"POTLOSS", @"POTGAIN", nil];
+    //int nColumns = 9;
+    //NSArray *sigTableHeaders = [NSArray arrayWithObjects:@"Entry Time", @"Exit Time", @"Signal", @"Entry Price", @"Exit Price", @"Signal Gain", @"Time Up", @"Potential Loss", @"Potential Gain", nil];
+    //NSArray *sigTableIds = [NSArray arrayWithObjects:@"ENTRYTIME", @"EXITTIME",@"SIGNAL" , @"ENTRYPRICE", @"EXITPRICE",  @"SIGNAL GAIN", @"UPTIME", @"POTLOSS", @"POTGAIN", nil];
     
-    float columnWidths[9] = {120.0, 50.0, 50.0, 75.0, 75.0, 75.0, 70.0, 70.0, 70.0}; 
+    //float columnWidths[9] = {120.0, 50.0, 50.0, 75.0, 75.0, 75.0, 70.0, 70.0, 70.0}; 
+    
+    int nColumns = 6;
+    NSArray *sigTableHeaders = [NSArray arrayWithObjects:@"Entry Time", @"Exit Time", @"Signal", @"Entry Price", @"Exit Price", @"Signal Gain", nil];
+    
+    NSArray *sigTableIds = [NSArray arrayWithObjects:@"ENTRYTIME", @"EXITTIME",@"SIGNAL" , @"ENTRYPRICE", @"EXITPRICE",  @"SIGNAL GAIN", nil];
+    
+    float columnWidths[6] = {120.0, 50.0, 50.0, 75.0, 75.0, 75.0, }; 
     
     for (int i = 0; i < nColumns; i++)
     {
@@ -871,16 +881,16 @@
     long startDateTime = [[userInput objectForKey:START_TIME] longValue];
     long endDateTime = [[userInput objectForKey:END_TIME] longValue];
     long samplingRate = [[userInput objectForKey:SAMPLE_SECS] longValue];
-    NSString *extraFields = [userInput objectForKey:STRATEGY_FIELDS];
+    NSString *strategyFields = [userInput objectForKey:STRATEGY_FIELDS];
     BOOL userDataGiven = [[userInput objectForKey:@"USERDATAGIVEN"] boolValue];
     NSArray *userData = [userInput objectForKey:@"USERDATA"];
     NSString *userDataFilename = [userInput objectForKey:@"USERDATAFILE"];
-    
-    
+    SignalSystem *newSigSystem;
+    NSArray *extraRequiredVariables; 
     //DataSeries *dataForPanel1Plot;
     
-    if(![extraFields isEqualToString:@""]){
-        success = [panel1DataController strategyUnderstood:extraFields];
+    if(![strategyFields isEqualToString:@""]){
+        success = [panel1DataController strategyUnderstood:strategyFields];
         if(!success){
             NSMutableDictionary *alertInfo = [[NSMutableDictionary alloc] init];
             [alertInfo setValue: @"Problem setting up the data" forKey:@"TITLE"];
@@ -891,7 +901,14 @@
             }else{
                 [self showAlertPanelWithInfo:alertInfo];
             }
+        }else{
+            newSigSystem = [[SignalSystem alloc] initWithString:strategyFields];
+            extraRequiredVariables = [SimulationController derivedVariablesForSignal:newSigSystem 
+                                                                      AndPositioning:Nil AndRules:Nil];
+            [self setSignalSystem:newSigSystem];
         }
+    }else{
+        extraRequiredVariables = [[NSArray alloc] init];
     }
     
     if(success){
@@ -900,8 +917,11 @@
             currentProgressIndicator = panel1ProgressBar;
             [self performSelectorOnMainThread:@selector(progressBarOn) withObject:nil waitUntilDone:YES];
         }
-        success = [panel1DataController setupDataSeriesForName:selectedPair 
-                                         AndStrategy:extraFields];
+        success = [panel1DataController setupDataSeriesForName:selectedPair];
+        
+        extraRequiredVariables = [SimulationController derivedVariablesForSignal: newSigSystem 
+                                                                  AndPositioning: Nil 
+                                                                        AndRules: Nil];
     }
     
     if(success){
@@ -917,12 +937,16 @@
         if(doThreads){
             [panel1DataController setDataForStartDateTime: startDateTime 
                                            AndEndDateTime: endDateTime 
+                                        AndExtraVariables: extraRequiredVariables
+                                          AndSignalSystem: Nil
                                           AndSamplingRate: samplingRate
                                               WithSuccess:&successAsInt
                                                AndUpdateUI:YES];
         }else{
             [panel1DataController setDataForStartDateTime: startDateTime 
                                            AndEndDateTime: endDateTime 
+                                        AndExtraVariables: extraRequiredVariables
+                                          AndSignalSystem: Nil
                                           AndSamplingRate: samplingRate
                                               WithSuccess:&successAsInt
                                                AndUpdateUI:NO];
@@ -1045,7 +1069,7 @@
     long startDateTime = [[userInput objectForKey:START_TIME] longValue];
     long endDateTime = [[userInput objectForKey:END_TIME] longValue];
     NSString *samplingRate = [userInput objectForKey:SAMPLE_SECS_INPUT];
-    NSString *extraFields = [userInput objectForKey:STRATEGY_FIELDS];
+    NSString *strategyFields = [userInput objectForKey:STRATEGY_FIELDS];
     
     [panel1PairLabel setStringValue:selectedPair];
     [panel2PairLabel setStringValue:selectedPair];
@@ -1054,7 +1078,7 @@
     
     [panel1FromLabel setStringValue:[EpochTime stringDateWithTime:startDateTime]];
     [panel1ToLabel setStringValue:[EpochTime stringDateWithTime:endDateTime]];
-    [panel1ExtraFieldsLabel setStringValue:extraFields];
+    [panel1ExtraFieldsLabel setStringValue:strategyFields];
     [panel1SamplingRateLabel setStringValue:samplingRate];
     
     for(int i =0; i < [hideObjectsOnStartup count];i++){
@@ -1067,6 +1091,7 @@
     BOOL success = YES; 
     DataSeries *plot1Data, *plot2Data;
     DataView *plot1ZoomView;
+    NSArray *extraVariables;
     
     long minDateTime, maxDateTime;
     long samplingRate;
@@ -1094,8 +1119,7 @@
             [self performSelectorOnMainThread:@selector(progressBarOn) withObject:nil waitUntilDone:YES];
         }
         
-        success = [panel2DataController setupDataSeriesForName:[plot1Data name] 
-                                                   AndStrategy:[plot1Data strategy]];
+        success = [panel2DataController setupDataSeriesForName: [plot1Data name]];
         
         if([panel1DataController fileDataAdded])
         {
@@ -1105,17 +1129,24 @@
         
         if(success){
             if(doThreads){
-                [panel2DataController setDataForStartDateTime:minDateTime 
-                                               AndEndDateTime:maxDateTime 
-                                              AndSamplingRate:samplingRate
-                                                  WithSuccess:&dataBaseSuccess
-                                                  AndUpdateUI:YES];
+                extraVariables = [SimulationController derivedVariablesForSignal:[self signalSystem] 
+                                                                  AndPositioning: Nil 
+                                                                        AndRules: Nil];
+                [panel2DataController setDataForStartDateTime: minDateTime 
+                                               AndEndDateTime: maxDateTime 
+                                            AndExtraVariables: extraVariables
+                                              AndSignalSystem: [self signalSystem]
+                                              AndSamplingRate: samplingRate
+                                                  WithSuccess: &dataBaseSuccess
+                                                  AndUpdateUI: YES];
             }else{
-                [panel2DataController setDataForStartDateTime:minDateTime 
-                                                AndEndDateTime:maxDateTime 
-                                              AndSamplingRate:samplingRate
-                                                  WithSuccess:&dataBaseSuccess
-                                                  AndUpdateUI:NO];
+                [panel2DataController setDataForStartDateTime: minDateTime 
+                                               AndEndDateTime: maxDateTime 
+                                            AndExtraVariables: extraVariables
+                                              AndSignalSystem: [self signalSystem]
+                                              AndSamplingRate: samplingRate
+                                                  WithSuccess: &dataBaseSuccess
+                                                  AndUpdateUI: NO];
             }
             if(dataBaseSuccess == 0){
                 success = NO;
@@ -1242,8 +1273,21 @@
     long samplingRate = [[parameters objectForKey:SAMPLE_SECS] longValue];
     BOOL updateUI = [[parameters objectForKey:UPDATE_UI] boolValue];
     int success; 
+    NSArray *extraVariables;
+    
+    if([self signalSystem] == Nil){
+        extraVariables = [[NSArray alloc] init];
+    }else{
+        extraVariables = [SimulationController derivedVariablesForSignal: [self signalSystem] 
+                                                          AndPositioning: Nil 
+                                                                AndRules: Nil];
+    }
+    
+    
     [panel2DataController setDataForStartDateTime:startDateTime 
                                    AndEndDateTime:endDateTime 
+                                AndExtraVariables: extraVariables
+                                  AndSignalSystem: [self signalSystem]
                                   AndSamplingRate:samplingRate 
                                       WithSuccess:&success 
                                       AndUpdateUI:updateUI];
@@ -1729,7 +1773,7 @@
 
 #pragma mark -
 #pragma mark Properties
-
+@synthesize signalSystem = _signalSystem;
 @synthesize panel1PlotButton;
 @synthesize panel1SetupButton;
 @synthesize panel1ImportDataTableView;

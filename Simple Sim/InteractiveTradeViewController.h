@@ -10,6 +10,8 @@
 #import "SeriesPlot.h"
 #import "DataController.h"
 
+@class SignalSystem;
+
 @interface InteractiveTradeViewController : NSViewController<NSTableViewDataSource, NSTableViewDelegate, NSTabViewDelegate>{
     id delegate;
     
@@ -21,6 +23,7 @@
     SeriesPlot *panel3Plot;
     NSArray *importDataArray;
     NSString *importDataFilename;
+    SignalSystem *_signalSystem;
     
     BOOL doingSetup;
     BOOL doThreads;
@@ -155,7 +158,7 @@
 - (void) viewChosenFromMainMenu;
 
 
-
+@property (retain) SignalSystem *signalSystem;
 @property (retain) NSDictionary *fxPairsAndDbIds;
 @property (retain) NSArray *coloursForPlots;
 @property (retain) NSMutableArray *panel1TimeSeries; 

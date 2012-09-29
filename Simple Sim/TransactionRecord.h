@@ -16,7 +16,7 @@
     double _spread;
     double _spreadInAccCurrency;
     long _signalDateTime;
-    int _signalIndex;     
+    //int _signalIndex;     
 }
 
 - (id) initWithAmount:(int) amount
@@ -25,8 +25,7 @@
  AndResultingExposure: (int) resultingExposure
             AndSpread: (double) spread
 AndSpreadInAccCurrency: (double) spreadInAccCurrency
-    AndSignalDateTime: (long) signalDateTime
-       AndSignalIndex: (int) signalIndex;
+    AndSignalDateTime: (long) signalDateTime;
 
 
 @property (readonly) int amount;        

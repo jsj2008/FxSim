@@ -18,7 +18,7 @@
             AndSpread: (double) spread
 AndSpreadInAccCurrency: (double) spreadInAccCurrency
     AndSignalDateTime: (long) signalDateTime
-       AndSignalIndex: (int) signalIndex{
+      {
     self = [super init];
     if(self){
         _amount = amount;
@@ -28,7 +28,6 @@ AndSpreadInAccCurrency: (double) spreadInAccCurrency
         _spread = spread;
         _spreadInAccCurrency = spreadInAccCurrency;
         _signalDateTime = signalDateTime;
-        _signalIndex = signalIndex;
     }
     return self;
 }

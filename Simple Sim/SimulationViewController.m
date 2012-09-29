@@ -28,6 +28,10 @@
 @end
 
 @implementation SimulationViewController
+@synthesize simulationSignalSelectedTimeSeriesTableView;
+@synthesize simulationTimeSeriesSelectedTableView;
+@synthesize setupRulesTextField;
+@synthesize setupDataWarmUpTextField;
 @synthesize simPlotBox;
 @synthesize signalAnalysisPlotBox;
 @synthesize fullScreenBox;
@@ -85,9 +89,15 @@
     [simulationColourColumn setDataCell:simulationColourDropDownCell];
     [simulationTimeSeriesTableView setDataSource:self];
     
+    [simulationTimeSeriesSelectedTableView setDataSource:self];
+    [simulationTimeSeriesSelectedTableView setDelegate:self];
+    
     [signalAnalysisColourDropDownCell addItemsWithTitles:coloursForPlots];
     [signalAnalysisColourColumn setDataCell:simulationColourDropDownCell];
     [simulationSignalTimeSeriesTableView setDataSource:self];
+    
+    [simulationSignalSelectedTimeSeriesTableView setDataSource:self];
+    [simulationSignalSelectedTimeSeriesTableView setDelegate:self];
     
     //Popup sheet stuff
     [setupTradingPairPopup removeAllItems];
@@ -163,11 +173,31 @@
     [centreTabView removeTabViewItem:reportTab];
     [centreTabView removeTabViewItem:signalsTab];
     
-    hideObjectsOnStartup = [NSArray arrayWithObjects: aboutSimNameLabel, aboutTradingPairLabel, aboutAccountCurrencyLabel, aboutSimStartTimeLabel,aboutSimEndTimeLabel, aboutSimSamplingRateLabel, aboutSimTradingLagLabel, aboutSimTradingWindowStartLabel, aboutSimTradingWindowEndLabel, aboutSimParametersLabel, tradingPairLabel, accountCurrencyLabel, startLabel, endLabel, samplingRateLabel, tradingLagLabel, tradingDayStartLabel, tradingDayEndLabel,descriptionLabel, nil];
+    hideObjectsOnStartup = [NSArray arrayWithObjects: aboutSimNameLabel, aboutTradingPairLabel, aboutAccountCurrencyLabel, aboutSimStartTimeLabel,aboutSimEndTimeLabel, tradingPairLabel, accountCurrencyLabel, startLabel, endLabel, samplingRateLabel, tradingLagLabel, tradingDayStartLabel, tradingDayEndLabel,descriptionLabel, nil];
     
     
     for(int i =0; i < [hideObjectsOnStartup count];i++){
         [[hideObjectsOnStartup objectAtIndex:i] setHidden:YES];
+    }
+    
+    int nColumns = 6;
+    NSArray *sigTableHeaders = [NSArray arrayWithObjects:@"Entry Time", @"Exit Time", @"Signal", @"Entry Price", @"Exit Price", @"Signal Gain", nil];
+    
+    NSArray *sigTableIds = [NSArray arrayWithObjects:@"ENTRYTIME", @"EXITTIME",@"SIGNAL" , @"ENTRYPRICE", @"EXITPRICE",  @"SIGNALGAIN", nil];
+    
+    float columnWidths[6] = {150.0, 150.0, 75.0, 75.0, 75.0, 75.0, }; 
+    
+    for (int i = 0; i < nColumns; i++)
+    {
+        NSTableColumn *newColumn = [[NSTableColumn alloc] initWithIdentifier:[sigTableIds objectAtIndex:i]];
+        [newColumn setWidth:columnWidths[i]];
+        
+        [[newColumn headerCell] setStringValue:[sigTableHeaders objectAtIndex:i]];
+        if(i > 1){
+            NSCell *dataCell = [newColumn dataCell];
+                [dataCell setAlignment:NSRightTextAlignment];
+         }
+        [simulationSignalTableView addTableColumn:newColumn];
     }
     
     [simulationRunScrollView setFrame:CGRectMake(18.0f, 59.0f, 650.0f, 417.0f)];
@@ -175,8 +205,11 @@
     [rightSideTabView selectTabViewItemWithIdentifier:@"SETUP"];
     
     [simulationSignalTimeSeriesTableView setDelegate:self];
+    
     [simulationTimeSeriesTableView setDelegate:self];
     initialSetupComplete = NO;
+    
+    
 }
 
 - (void) setDelegate:(id)del
@@ -289,6 +322,8 @@
                                                AndColour:lineColour];
         [self addToTableView:simulationTimeSeriesTableView   TimeSeriesLine:tsl];
     }
+    [simulationTimeSeriesTableView reloadData];
+    [simulationTimeSeriesSelectedTableView reloadData];
     [simulationResultsPlot setHostingView:simulationResultGraphHostingView];
     [simulationResultsPlot setData:analysisDataSeries WithViewName:@"ALL"];
     [simulationResultsPlot renderPlotWithFields:simulationTimeSeries];
@@ -397,22 +432,12 @@
                      AndAccountCurrency: (NSString *) accCurrency
                         AndSimStartTime: (NSString *) simStartTime
                           AndSimEndTime: (NSString *) simEndTime
-                        AndSamplingRate: (NSString *) samplingRate
-                          AndTradingLag: (NSString *) tradingLag
-                  AndTradingWindowStart: (NSString *) tradingStartTime
-                    AndTradingWindowEnd: (NSString *) tradingEndTime
-                       AndSimParameters: (NSString *) parameters
 {   
     [aboutSimNameLabel setStringValue:simName];
     [aboutTradingPairLabel setStringValue:fxPair];
     [aboutAccountCurrencyLabel setStringValue:accCurrency];
     [aboutSimStartTimeLabel setStringValue:simStartTime];
     [aboutSimEndTimeLabel setStringValue:simEndTime];
-    [aboutSimSamplingRateLabel setStringValue:samplingRate];
-    [aboutSimTradingLagLabel setStringValue:tradingLag];
-    [aboutSimTradingWindowStartLabel setStringValue:tradingStartTime];
-    [aboutSimTradingWindowEndLabel setStringValue:tradingEndTime];
-    [aboutSimParametersLabel setStringValue:parameters];
 }
 
 - (void) viewChosenFromMainMenu
@@ -978,10 +1003,26 @@
         }
     }
     
-    if(![SimulationController positioningUnderstood:[setupPositioningTextField stringValue]])
+    NSString *signalString = [[setupParameterTextField stringValue] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]]; 
+    NSString *positioningString = [[setupPositioningTextField stringValue] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+    NSString *rulesString = [[setupRulesTextField stringValue] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+    
+    if(![SimulationController positioningUnderstood:positioningString])
     {
         basicCheckOk = NO;
         userMessage = @"Positioning not understood";
+    }
+    if(![SimulationController signalingUnderstood:signalString])
+    {
+        basicCheckOk = NO;
+        userMessage = @"Signal not understood";
+    }
+    if([rulesString length] > 0){
+        if(![SimulationController rulesUnderstood:rulesString])
+        {
+            basicCheckOk = NO;
+            userMessage = @"Rules not understood";
+        }
     }
     
     long tradingStartDateTime = [EpochTime epochTimeAtZeroHour:startDateTime] + tradingDayStartTime;
@@ -992,10 +1033,12 @@
     {
         [parameters setObject:[setupSimulationName stringValue] 
                        forKey:@"SIMNAME"];
-        [parameters setObject:[setupParameterTextField stringValue] 
+        [parameters setObject:signalString 
                        forKey:@"SIMTYPE"];
-        [parameters setObject:[setupPositioningTextField stringValue] 
+        [parameters setObject:positioningString
                        forKey:@"POSTYPE"];
+        [parameters setObject:rulesString 
+                       forKey:@"RULES"];
         [parameters setObject:[tradingPair substringToIndex:3] 
                        forKey:@"BASECODE"];
         [parameters setObject:[tradingPair substringFromIndex:3] 
@@ -1020,7 +1063,7 @@
                        forKey:@"WEEKENDTRADING"]; 
         [parameters setObject:[NSNumber numberWithInt:[setupTradingLagTextField intValue]*60] 
                        forKey:@"TRADINGLAG"];
-        [parameters setObject:[NSNumber numberWithLong:(28*DAY_SECONDS)] 
+        [parameters setObject:[NSNumber numberWithLong:[setupDataWarmUpTextField intValue]*DAY_SECONDS] 
                        forKey:@"WARMUPDATA"];
         
         
@@ -1080,9 +1123,33 @@
 #pragma mark TableView Methods
 
 - (NSInteger)numberOfRowsInTableView:(NSTableView *)tableView{
-   if([[tableView identifier] isEqualToString:@"SIMTSTV"]){
+    if([[tableView identifier] isEqualToString:@"SIMTSTV"]){
         return [simulationTimeSeries count]; 
     }
+    
+    if([[tableView identifier] isEqualToString:@"SIMSELTSTV"]){
+        int numberSelected = 0;
+        for(TimeSeriesLine *tsl in simulationTimeSeries)
+        {
+            if([tsl layerIndex] != -1){
+                numberSelected++;
+            }
+        }
+        return numberSelected; 
+    }
+    
+    if([[tableView identifier] isEqualToString:@"SIGSELTSTV"]){
+        int numberSelected = 0;
+        for(TimeSeriesLine *tsl in simulationSignalTimeSeries)
+        {
+            if([tsl layerIndex] != -1){
+                numberSelected++;
+            }
+        }
+        return numberSelected; 
+    }
+    
+    
     
     if([[tableView identifier] isEqualToString:@"SIGTSTV"]){
         return [simulationSignalTimeSeries count]; 
@@ -1135,6 +1202,40 @@
         }else{
             return [tsl valueForKey:columnId];
         }
+    }
+    
+    
+    if([[tableView identifier] isEqualToString:@"SIMSELTSTV"]){
+        int numberSelected = 0;
+        for(int tslIndex = 0; tslIndex < [simulationTimeSeries count]; tslIndex++)
+        {
+            tsl = [simulationTimeSeries objectAtIndex:tslIndex];
+            if([tsl layerIndex] != -1){
+                if(numberSelected == row){
+                    return [tsl valueForKey:columnId];
+                }else{
+                    numberSelected++;
+                }
+            }
+            
+        }
+        return @"Err"; 
+    }
+    
+    if([[tableView identifier] isEqualToString:@"SIGSELTSTV"]){
+        int numberSelected = 0;
+        for(int tslIndex = 0; tslIndex < [simulationSignalTimeSeries count]; tslIndex++)
+        {
+            tsl = [simulationSignalTimeSeries objectAtIndex:tslIndex];
+            if([tsl layerIndex] != -1){
+                if(numberSelected == row){
+                    return [tsl valueForKey:columnId];
+                }else{
+                    numberSelected++;
+                }
+            }
+        }
+        return @"Err"; 
     }
     
     if([[tableView identifier] isEqualToString:@"SIGTSTV"]){
@@ -1193,11 +1294,12 @@
         DataSeries* simData = [[simulationController currentSimulation] analysisDataSeries];
         if([[tableColumn identifier] isEqualToString:@"DATETIME"]){
             long dateTimeNumber = [[[simData xData] sampleValue:row] longValue];
-            NSString *dateTime = [EpochTime stringDateWithTime:dateTimeNumber];
+            //NSString *dateTime = [EpochTime stringDateWithTime:dateTimeNumber];
+            NSString *dateTime = [NSString stringWithFormat:@"%ld",dateTimeNumber];
             return dateTime;
         }else{
             NSString *identiferString = [tableColumn identifier];
-            if([identiferString isEqualToString:@"DATETIME"] || [identiferString isEqualToString:@"POS_PNL"] || [identiferString isEqualToString:@"NAV"] )
+            if([identiferString isEqualToString:@"POS_PNL"] || [identiferString isEqualToString:@"NAV"] )
             {
                 double dataValue = [[[[simData yData] objectForKey:identiferString] sampleValue:row] doubleValue];
                 return [NSString stringWithFormat:@"%5.2f",dataValue];
@@ -1283,7 +1385,10 @@
     return nil;
 }
 
-- (void)tableView:(NSTableView *)tableView setObjectValue:(id) obj forTableColumn:(NSTableColumn *)tableColumn row:(NSInteger)row
+- (void)tableView:(NSTableView *)tableView 
+   setObjectValue:(id) obj 
+   forTableColumn:(NSTableColumn *)tableColumn 
+              row:(NSInteger)row
 {
     TimeSeriesLine *tsl;
     SeriesPlot *plot;
@@ -1323,24 +1428,42 @@
     }
     [plot plotLineUpdated];
     [tableView reloadData];
+    
+    //the tableview which shows the selected is set up
+    if([[tableView identifier] isEqualToString:@"SIMTSTV"]){
+        [simulationTimeSeriesSelectedTableView reloadData];
+    }
+    if([[tableView identifier] isEqualToString:@"SIGTSTV"]){
+        [simulationSignalSelectedTimeSeriesTableView reloadData];
+    }
 }
 
 -(void)clearTSTableView:(NSTableView *)tableView
 {
+    BOOL found = NO;
     if([[tableView identifier] isEqualToString:@"SIMTSTV"]){
         [simulationTimeSeries removeAllObjects];
         [simulationTimeSeriesTableView reloadData];
+        [simulationTimeSeriesSelectedTableView reloadData];
+        found = YES;
     }
+    
     
     if([[tableView identifier] isEqualToString:@"SIMDATATV"]){
          [simulationTimeSeriesTableView reloadData];
+        [simulationTimeSeriesSelectedTableView reloadData];
+        found = YES;
     } 
     
     if([[tableView identifier] isEqualToString:@"SIGTSTV"]){
         [simulationSignalTimeSeries removeAllObjects];
         [simulationSignalTimeSeriesTableView reloadData];
+        [simulationSignalSelectedTimeSeriesTableView reloadData];
+        found = YES;
     }
-
+    if(!found){
+        [NSException raise:@"clearTSTableView failure" format:@"Parameter %@ not handled",[tableView identifier]];
+    }
 }
 
 -(void)addToTableView:(NSTableView *)tableView TimeSeriesLine: (TimeSeriesLine *)TSLine
@@ -1353,6 +1476,9 @@
         [simulationSignalTimeSeries addObject:TSLine];
     }
     [tableView reloadData];
+    if([[tableView identifier] isEqualToString:@"SIMTSTV"]){
+        [simulationTimeSeriesSelectedTableView reloadData];
+    }
 }
 
 -(void)tableViewSelectionDidChange:(NSNotification *)notification
@@ -1361,16 +1487,39 @@
     
     if([[signalAnalysisTableView identifier] isEqualToString:@"SIGANALTV"]){
         NSInteger selectedRow = [signalAnalysisTableView selectedRow];
+        
         if(selectedRow > -1){
-            selectedRow = [[signalTableViewOrdering objectAtIndex:selectedRow] intValue];
             NSDictionary *signalInfo;
-            signalInfo = [[simulationController currentSimulation] detailsOfSignalAtIndex:selectedRow];
+            long startDateTime, endDateTime;
             int tradingLag = [[simulationController currentSimulation] tradingLag];
             
-            long startDateTime = [[signalInfo objectForKey:@"ENTRYTIME"] longValue];
-            startDateTime = startDateTime - ([signalAnalysisPlotLeadHours intValue] * 60*60);
-            long endDateTime = [[signalInfo objectForKey:@"EXITTIME"] longValue] + 2*tradingLag;
-        
+            if([signalAnalysisTableView numberOfSelectedRows] > 1){
+                NSLog(@"%ld : %ld",selectedRow,[signalAnalysisTableView numberOfSelectedRows]);
+                NSIndexSet *selectedIndexes = [signalAnalysisTableView selectedRowIndexes];
+                int minSelected, maxSelected;
+                if([selectedIndexes firstIndex] <= [selectedIndexes lastIndex])
+                {
+                    minSelected = [selectedIndexes firstIndex];
+                    maxSelected = [selectedIndexes lastIndex];
+                }else{
+                    minSelected = [selectedIndexes lastIndex];
+                    maxSelected = [selectedIndexes firstIndex]; 
+                }
+                selectedRow = [[signalTableViewOrdering objectAtIndex:minSelected] intValue];
+                signalInfo = [[simulationController currentSimulation] detailsOfSignalAtIndex:selectedRow];
+                startDateTime = [[signalInfo objectForKey:@"ENTRYTIME"] longValue];
+                startDateTime = startDateTime - ([signalAnalysisPlotLeadHours intValue] * 60*60);
+
+                selectedRow = [[signalTableViewOrdering objectAtIndex:maxSelected] intValue];
+                signalInfo = [[simulationController currentSimulation] detailsOfSignalAtIndex:selectedRow];
+                endDateTime = [[signalInfo objectForKey:@"EXITTIME"] longValue] + 2*tradingLag;
+            }else{
+                selectedRow = [[signalTableViewOrdering objectAtIndex:selectedRow] intValue];
+                signalInfo = [[simulationController currentSimulation] detailsOfSignalAtIndex:selectedRow];
+                startDateTime = [[signalInfo objectForKey:@"ENTRYTIME"] longValue];
+                startDateTime = startDateTime - ([signalAnalysisPlotLeadHours intValue] * 60*60);
+                endDateTime = [[signalInfo objectForKey:@"EXITTIME"] longValue] + 2*tradingLag;
+            }
             [self plotSignalDataFrom:startDateTime To:endDateTime];
         }
     }
@@ -1451,6 +1600,60 @@
     }
 }
 
+- (void)tableView:(NSTableView *)aTableView 
+  willDisplayCell:(id)aCell 
+   forTableColumn:(NSTableColumn *)aTableColumn 
+              row:(NSInteger)rowIndex {
+    NSArray *timeSeriesArray;
+    NSTextFieldCell *cell = aCell;
+    NSColor *lineColour = [NSColor blackColor];
+    NSString *lineColourName = @"BLACK";
+    BOOL found = NO, doColour = NO;
+    TimeSeriesLine *tsl;
+    
+    
+    if([[aTableView identifier] isEqualToString:@"SIMSELTSTV"]){
+        timeSeriesArray = simulationTimeSeries;
+        doColour = YES;
+    }
+    if([[aTableView identifier] isEqualToString:@"SIGSELTSTV"]){
+        timeSeriesArray = simulationSignalTimeSeries;
+        doColour = YES;
+    }
+    
+    
+    if(doColour){
+        int numberSelected = 0;
+        for(int tslIndex = 0; tslIndex < [timeSeriesArray count]; tslIndex++)
+        {
+            tsl = [timeSeriesArray objectAtIndex:tslIndex];
+            if([tsl layerIndex] != -1){
+                if(numberSelected == rowIndex){
+                    lineColour = [tsl nsColour];
+                    lineColourName = [tsl colour];
+                    found = YES;
+                    break;
+                }else{
+                    numberSelected++;
+                }
+            }
+        }
+        if(found){
+            if([lineColourName isEqualToString:@"White"]){
+                [cell setDrawsBackground:YES];
+                [cell setBackgroundColor:[NSColor grayColor]];
+                
+            }else{
+                [cell setDrawsBackground:NO];
+            }
+            [cell setTextColor:lineColour];
+        }
+    }
+}
+
+
+
+
 #pragma mark -
 #pragma mark Delegate Methods
 
@@ -1521,7 +1724,7 @@
         [centreTabView addTabViewItem:reportTab];
         [centreTabView addTabViewItem:signalsTab];
     }
-    [simulationRunScrollView setFrame:CGRectMake(18.0f, 59.0f, 650.0f, 229.0f)];
+    [simulationRunScrollView setFrame:CGRectMake(18.0f, 59.0f, 650.0f, 306.0f)];
 }
 
 -(void)showAlertPanelWithInfo: (NSDictionary *) alertInfo
@@ -1624,11 +1827,6 @@
 @synthesize simulationCashFlowsTableView;
 @synthesize simulationTradesTableView;
 @synthesize setUpSheetCancelButton;
-@synthesize aboutSimTradingWindowEndLabel;
-@synthesize aboutSimTradingWindowStartLabel;
-@synthesize aboutSimParametersLabel;
-@synthesize aboutSimTradingLagLabel;
-@synthesize aboutSimSamplingRateLabel;
 @synthesize aboutSimEndTimeLabel;
 @synthesize aboutSimStartTimeLabel;
 @synthesize aboutAccountCurrencyLabel;
@@ -1664,11 +1862,7 @@
 @synthesize coloursForPlots;
 @synthesize simulationRunScrollView;
 @synthesize accountCurrencyLabel;
-@synthesize samplingRateLabel;
-@synthesize descriptionLabel;
-@synthesize tradingDayEndLabel;
-@synthesize tradingDayStartLabel;
-@synthesize tradingLagLabel;
+
 @synthesize endLabel;
 @synthesize startLabel;
 @synthesize tradingPairLabel;

@@ -15,6 +15,7 @@
 #import "DataSeriesValue.h"
 #import "UtilityFunctions.h"
 #import "DataProcessor.h"
+#import "SignalSystem.h"
 
 #define DATABASE_GRANULARITY_SECONDS 1
 //30*24*60*60 
@@ -42,15 +43,15 @@ FMDatabase *db;
     self = [super init];
     if(self){
         db = [FMDatabase databaseWithPath:dbPath];
-        delegate = nil;
+        _delegate = nil;
         doThreads = NO;
-        adhocDataAdded = NO;
+        _adhocDataAdded = NO;
         _fileDataAdded = NO;
         if (![db open]) {
             db = nil;
-            connected = NO;
+            _connected = NO;
         }else{
-            connected = YES;
+            _connected = YES;
             [self setupListofPairs];
             [self setupListofDataFields];
         }
@@ -72,7 +73,9 @@ FMDatabase *db;
 }
 
 - (BOOL) setupDataSeriesForName: (NSString *) dataSeriesName 
-                    AndStrategy: (NSString *) strategyString
+//                AndSignalSystem: (SignalSystem *) sigSystem
+//              AndPositionSystem: (PositioningSystem *) posSystem
+//                  AndRuleSystem: (RulesSystem *) ruleSystem
 {
     BOOL success = YES;
     double pipSize;
@@ -95,10 +98,9 @@ FMDatabase *db;
     }
     if(success){
         
-        dataSeries = [[DataSeries alloc] initWithName:seriesName 
-                                             AndDbTag:dbid 
-                                           AndPipSize:pipSize 
-                                          AndStrategy:strategyString];
+        [self setDataSeries:[[DataSeries alloc] initWithName: seriesName 
+                                                    AndDbTag: dbid 
+                                                  AndPipSize: pipSize]];
     }
     return success;
 }
@@ -107,16 +109,6 @@ FMDatabase *db;
 -(int)dataGranularity
 {
     return DATABASE_GRANULARITY_SECONDS;
-}
-
--(void)setDelegate:(id)del
-{
-    delegate = del;
-}
-
--(id)delegate 
-{ 
-    return delegate;
 }
 
 - (BOOL) doThreads
@@ -131,10 +123,10 @@ FMDatabase *db;
 
 - (void) readingRecordSetsProgress:(NSNumber *) progressFraction;
 {
-    if(delegate != nil){
-        if([delegate respondsToSelector:@selector(readingRecordSetsProgress:)])
+    if([self delegate] != nil){
+        if([[self delegate] respondsToSelector:@selector(readingRecordSetsProgress:)])
         {
-            [delegate readingRecordSetsProgress:progressFraction];
+            [[self delegate] readingRecordSetsProgress:progressFraction];
         }else{
             NSLog(@"Delegate does not respond to \'readingRecordSetsProgress:\'");
         }
@@ -143,10 +135,10 @@ FMDatabase *db;
 
 -(void) progressAsFraction:(NSNumber *) progressValue
 {
-    if(delegate != nil){
-        if([delegate respondsToSelector:@selector(progressAsFraction:)])
+    if([self delegate] != nil){
+        if([[self delegate] respondsToSelector:@selector(progressAsFraction:)])
         {
-            [delegate progressAsFraction:progressValue];
+            [[self delegate] progressAsFraction:progressValue];
         }else{
             NSLog(@"Delegate does not respond to \'progressAsFraction:\'");
         }
@@ -155,15 +147,15 @@ FMDatabase *db;
 
 -(long)getDataSeriesLength
 {
-    return [dataSeries length];
+    return [[self dataSeries] length];
 }
 
 -(long)getMinDateTimeForLoadedData
 {
     long minDateTime = 0;
-    if(dataSeries != nil)
+    if([self dataSeries] != nil)
     {
-        minDateTime = [dataSeries minDateTime];
+        minDateTime = [[self dataSeries] minDateTime];
     }
     return minDateTime; 
 }
@@ -171,22 +163,34 @@ FMDatabase *db;
 -(long)getMaxDateTimeForLoadedData
 {
     long maxDateTime = 0;
-    if(dataSeries != nil)
+    if([self dataSeries] != nil)
     {
-        maxDateTime = [dataSeries maxDateTime];
+        maxDateTime = [[self dataSeries] maxDateTime];
     }
     return maxDateTime; 
 }
 
 -(NSArray *)getFieldNames
 {
-    return [dataSeries getFieldNames];
+    return [[self dataSeries] getFieldNames];
 }
 
 - (BOOL) strategyUnderstood:(NSString *) strategyString
 {
     return [DataProcessor strategyUnderstood:strategyString];
 }
+
+- (long) leadTimeRequired:(NSString *) strategyString
+{
+    return [DataProcessor leadTimeRequired:strategyString];
+}
+
+- (long) leadTicsRequired:(NSString *) strategyString
+{
+    return [DataProcessor leadTicsRequired:strategyString];
+}
+
+
 
 - (void) setupListofPairs{
     NSMutableDictionary *retrievedPairs = [[NSMutableDictionary alloc]init];
@@ -211,11 +215,21 @@ FMDatabase *db;
     maxDateTimes = dataMaxDateTimes;
 }
 
-- (NSDictionary *) getValuesForFields:(NSArray *) fieldNames 
-                           AtDateTime: (long) dateTime
+- (NSDictionary *) getValues:(NSArray *) fieldNames 
+                  AtDateTime: (long) dateTime
 {
-    return [dataSeries getValues:fieldNames 
-                       AtDateTime:dateTime];
+    return [[self dataSeries] getValues:fieldNames 
+                             AtDateTime:dateTime];
+}
+
+-(NSDictionary *)getValues:(NSArray *) fieldNames 
+                AtDateTime: (long) dateTime 
+             WithTicOffset: (long) numberOfTics
+{
+    return [[self dataSeries] getValues:fieldNames 
+                             AtDateTime:dateTime 
+                          WithTicOffset:numberOfTics];
+    
 }
 
 - (void) setupListofDataFields
@@ -346,23 +360,28 @@ FMDatabase *db;
 
 - (void) setDataForStartDateTime: (long) requestedStartDate 
                   AndEndDateTime: (long) requestedEndDate 
+               AndExtraVariables: (NSArray *) extraVariables
+                 AndSignalSystem: (SignalSystem *) signalSystem
                  AndSamplingRate: (long) samplingRate
                      WithSuccess: (int *) successAsInt
                      AndUpdateUI: (BOOL) doUpdateUI
-                  
 {
     DataSeries *retrievedData;
     retrievedData = [self retrieveDataForStartDateTime: requestedStartDate 
                                         AndEndDateTime: requestedEndDate 
+                                     AndExtraVariables: extraVariables
+                                       AndSignalSystem: signalSystem
                                        AndSamplingRate: samplingRate
                                            WithSuccess: successAsInt
                                            AndUpdateUI: doUpdateUI];
-    dataSeries = retrievedData;
+    [self setDataSeries:retrievedData];
 }
 
 
 - (DataSeries *) retrieveDataForStartDateTime: (long) requestedStartDate 
                                AndEndDateTime: (long) requestedEndDate 
+                            AndExtraVariables: (NSArray *) extraVariables
+                              AndSignalSystem: (SignalSystem *) signalSystem
                               AndSamplingRate: (long) samplingRate
                                   WithSuccess: (int *) successAsInt
                                   AndUpdateUI: (BOOL) doUpdateUI
@@ -401,12 +420,15 @@ FMDatabase *db;
     
     success = [self getMoreDataForStartDateTime: requestedStartDate 
                                  AndEndDateTime: requestedEndDate
+                              AndExtraVariables: extraVariables
+                                AndSignalSystem: signalSystem
                          AndReturningStatsArray: statsArray
+                          IncludePrecedingTicks: 0
                        WithRequestTruncatedFlag: &requestTruncated]; 
     
     if(success && !cancelProcedure){
         if(doUpdateUI){
-            progressAmount = [NSNumber numberWithDouble:(double)([dataSeries maxDateTime]-requestedStartDate)/(requestedEndDate-requestedStartDate)];
+            progressAmount = [NSNumber numberWithDouble:(double)([[self dataSeries] maxDateTime]-requestedStartDate)/(requestedEndDate-requestedStartDate)];
             [self performSelectorOnMainThread:@selector(progressAsFraction:) 
                                    withObject:progressAmount 
                                 waitUntilDone:NO];
@@ -416,9 +438,9 @@ FMDatabase *db;
     }
     
     if(success && !cancelProcedure){
-        oldDataLength = [dataSeries length];
+        oldDataLength = [[self dataSeries] length];
     
-        fieldNames = [dataSeries getFieldNames];
+        fieldNames = [[self dataSeries] getFieldNames];
         numberOfFields = [fieldNames count];
     
         maxData = (requestedEndDate- requestedStartDate)/samplingRate;
@@ -445,9 +467,9 @@ FMDatabase *db;
             arrayOfDataArraysData = [[NSMutableData alloc] initWithLength:numberOfFields * sizeof(double*)];
             arrayOfDataArrays = (double **)[arrayOfDataArraysData mutableBytes];
     
-            dateTimeArray = (long *)[[dataSeries xData] bytes]; 
+            dateTimeArray = (long *)[[[self dataSeries] xData] bytes]; 
             for(dataFieldIndex = 0; dataFieldIndex < numberOfFields; dataFieldIndex++){
-                dataArray =  [[dataSeries yData] objectForKey:[fieldNames objectAtIndex:dataFieldIndex]];
+                dataArray =  [[[self dataSeries] yData] objectForKey:[fieldNames objectAtIndex:dataFieldIndex]];
                 arrayOfDataArrays[dataFieldIndex] = (double *)[dataArray bytes];
             }
         }else{
@@ -501,7 +523,10 @@ FMDatabase *db;
                         requestedStartDate = dateTimeArray[oldDataIndex]; 
                         success = [self getMoreDataForStartDateTime: requestedStartDate 
                                                      AndEndDateTime: requestedEndDate
+                                                  AndExtraVariables: extraVariables
+                                                    AndSignalSystem: signalSystem
                                              AndReturningStatsArray: statsArray
+                                              IncludePrecedingTicks: 0
                                            WithRequestTruncatedFlag: &requestTruncated]; 
                         
                         if(!success || cancelProcedure){
@@ -511,18 +536,18 @@ FMDatabase *db;
                             }
                         }else{
                             if(doUpdateUI){
-                                progressAmount = [NSNumber numberWithDouble:(double)([dataSeries maxDateTime]-requestedStartDate)/(requestedEndDate - requestedStartDate)];
+                                progressAmount = [NSNumber numberWithDouble:(double)([[self dataSeries] maxDateTime]-requestedStartDate)/(requestedEndDate - requestedStartDate)];
                             
                                 [self performSelectorOnMainThread:@selector(progressAsFraction:) 
                                                        withObject:progressAmount 
                                                     waitUntilDone:NO];
                             }
-                            dateTimeArray = (long *)[[dataSeries xData] bytes]; 
+                            dateTimeArray = (long *)[[[self dataSeries] xData] bytes]; 
                             for(dataFieldIndex = 0; dataFieldIndex < numberOfFields; dataFieldIndex++){
-                                dataArray =  [[dataSeries yData] objectForKey:[fieldNames objectAtIndex: dataFieldIndex]];
+                                dataArray =  [[[self dataSeries] yData] objectForKey:[fieldNames objectAtIndex: dataFieldIndex]];
                                 arrayOfDataArrays[dataFieldIndex] = (double *)[dataArray bytes];
                             }
-                            oldDataLength = [dataSeries length];
+                            oldDataLength = [[self dataSeries] length];
                             oldDataIndex = 0;
                         }
                     }
@@ -586,7 +611,7 @@ FMDatabase *db;
         }
         
         if(!cancelProcedure){
-            newDataSeries = [dataSeries getCopyOfStaticData];
+            newDataSeries = [[self dataSeries] getCopyOfStaticData];
             CPTNumericData *dateTimeCPTData; 
             dateTimeCPTData = [CPTNumericData numericDataWithData:dateTimesData 
                                                          dataType:CPTDataType(CPTIntegerDataType,sizeof(long),CFByteOrderGetCurrent()) shape:nil];
@@ -621,12 +646,15 @@ FMDatabase *db;
 
 -(BOOL) getMoreDataForStartDateTime: (long) requestedStartDate 
                      AndEndDateTime: (long) requestedEndDate
+                  AndExtraVariables: (NSArray *) extraVariables
+                    AndSignalSystem: (SignalSystem *) signalSystem
              AndReturningStatsArray: (NSMutableArray *) statsArray
-           WithRequestTruncatedFlag: (int *) requestTrucated   
+              IncludePrecedingTicks: (long) numberOfPrecedingData
+           WithRequestTruncatedFlag: (int *) requestTrucated
 {
     //We always get the BID and ASK and calculate a MID, other options added as per strategy requirements
     BOOL success = YES;
-    BOOL useOldData, useNewData, strategyVariables;
+    BOOL useOldData, useNewData;
     //int newStartSampleCount, newEndSampleCount;
     long oldStart, oldEnd;
     NSMutableData *newDateLongsTempData;
@@ -636,18 +664,12 @@ FMDatabase *db;
     double *newBidDoublesTemp, *newAskDoublesTemp;
     double progress = 0.0, progressUpdate = 0.0;
     
-    if([[dataSeries strategy] isEqualToString:@""] || [[dataSeries strategy] isEqualToString:@"BAM"]){
-        strategyVariables = NO;
-    }else{
-        strategyVariables = YES;
-    }
-    
     adjustedStartDate = requestedStartDate;
     adjustedEndDate = requestedEndDate;
     
-    if([dataSeries length] != 0){
-        oldStart = [dataSeries minDateTime];
-        oldEnd = [dataSeries maxDateTime];
+    if([[self dataSeries] length] != 0){
+        oldStart = [[self dataSeries] minDateTime];
+        oldEnd = [[self dataSeries] maxDateTime];
         //If the day is nearly overlapping make it overlap
         if(adjustedStartDate > oldEnd && (adjustedStartDate - oldEnd) <= (7 * DAY_SECONDS)){
             adjustedStartDate = oldEnd;
@@ -663,11 +685,11 @@ FMDatabase *db;
         *requestTrucated = 0;
     }
     
-    if([dataSeries length]==0 ){
+    if([[self dataSeries] length]==0 ){
         useOldData = NO;
         useNewData = YES;
     }else{
-        if(!([dataSeries sampleRate]== 0 || [dataSeries sampleRate] != DATABASE_GRANULARITY_SECONDS)){
+        if(!([[self dataSeries] sampleRate]== 0 || [[self dataSeries] sampleRate] != DATABASE_GRANULARITY_SECONDS)){
             useOldData = NO;
             useNewData = YES;
         }else{
@@ -697,27 +719,28 @@ FMDatabase *db;
     
     if(useOldData){
         //Get a handle on the original data
-        oldDateData = [dataSeries xData];
-        oldBidData = [[dataSeries yData] objectForKey:@"BID"];
-        oldAskData = [[dataSeries yData] objectForKey:@"ASK"];
-        midData = [[dataSeries yData] objectForKey:@"MID"];
+        oldDateData = [[self dataSeries] xData];
+        oldBidData = [[[self dataSeries] yData] objectForKey:@"BID"];
+        oldAskData = [[[self dataSeries] yData] objectForKey:@"ASK"];
+        midData = [[[self dataSeries] yData] objectForKey:@"MID"];
         oldDateLongs = (long *)[oldDateData bytes];
         oldBidDoubles = (double *)[oldBidData bytes];
         oldAskDoubles = (double *)[oldAskData bytes];
         oldMidDoubles = (double *)[midData bytes];
     }
     
-    long oldDataStartIndex = [dataSeries length] - 1;
+    long oldDataStartIndex = [[self dataSeries] length] - 1;
     if(useOldData){
-        while(oldDateLongs[oldDataStartIndex] > adjustedStartDate && oldDataStartIndex > 0){ 
+        do{ 
             oldDataStartIndex--;
-        }
-        if(oldDateLongs[oldDataStartIndex] < adjustedStartDate && oldDataStartIndex < [dataSeries length] - 1 ){
-            oldDataStartIndex++;
-        }
-        if(oldDataStartIndex >= [dataSeries length]){
-            useOldData = NO;
-        }
+        }while(oldDateLongs[oldDataStartIndex] > adjustedStartDate && oldDataStartIndex > 0);
+        
+//        if(oldDateLongs[oldDataStartIndex] < adjustedStartDate && oldDataStartIndex < [dataSeries length] - 1 ){
+//            oldDataStartIndex++;
+//        }
+//        if(oldDataStartIndex >= [dataSeries length]){
+//            useOldData = NO;
+//        }
     }
       
     FMResultSet *rs;
@@ -731,19 +754,19 @@ FMDatabase *db;
                 // as it is part of the old data 
                 queryStart = oldEnd;
                 
-                queryEnd = [db longForQuery:[NSString stringWithFormat:@"SELECT TimeDate FROM DataSeries WHERE SeriesId = %d AND DataTypeId = %d AND TimeDate >= %ld ORDER BY TimeDate ASC LIMIT 1",[dataSeries dbId],1,adjustedEndDate]];
+                queryEnd = [db longForQuery:[NSString stringWithFormat:@"SELECT TimeDate FROM DataSeries WHERE SeriesId = %d AND DataTypeId = %d AND TimeDate >= %ld ORDER BY TimeDate ASC LIMIT 1",[[self dataSeries] dbId],1,adjustedEndDate]];
                 
-                resultCount = [db intForQuery:[NSString stringWithFormat:@"SELECT COUNT(*) FROM DataSeries WHERE SeriesId = %d AND DataTypeId = %d AND TimeDate > %ld AND TimeDate <= %ld",[dataSeries dbId],1,queryStart,queryEnd]];
+                resultCount = [db intForQuery:[NSString stringWithFormat:@"SELECT COUNT(*) FROM DataSeries WHERE SeriesId = %d AND DataTypeId = %d AND TimeDate > %ld AND TimeDate <= %ld",[[self dataSeries] dbId],1,queryStart,queryEnd]];
                 
-                queryString = [NSString stringWithFormat:@"SELECT DS1.TimeDate, DS1.Value, DS2.Value FROM DataSeries DS1 INNER JOIN DataSeries DS2 ON DS1.TimeDate = DS2.TimeDate AND DS1.SeriesId = DS2.SeriesId  WHERE DS1.SeriesId = %d AND DS1.DataTypeId = %d AND DS2.DataTypeId = %d AND DS1.TimeDate > %ld AND DS1.TimeDate <= %ld ORDER BY DS1.TimeDate ASC", [dataSeries dbId],1,2,queryStart,queryEnd];
+                queryString = [NSString stringWithFormat:@"SELECT DS1.TimeDate, DS1.Value, DS2.Value FROM DataSeries DS1 INNER JOIN DataSeries DS2 ON DS1.TimeDate = DS2.TimeDate AND DS1.SeriesId = DS2.SeriesId  WHERE DS1.SeriesId = %d AND DS1.DataTypeId = %d AND DS2.DataTypeId = %d AND DS1.TimeDate > %ld AND DS1.TimeDate <= %ld ORDER BY DS1.TimeDate ASC", [[self dataSeries] dbId],1,2,queryStart,queryEnd];
             }else{
-                queryStart = [db longForQuery:[NSString stringWithFormat:@"SELECT TimeDate FROM DataSeries WHERE SeriesId = %d AND DataTypeId = %d AND TimeDate <= %ld ORDER BY TimeDate DESC LIMIT 1",[dataSeries dbId],1,adjustedStartDate]];
+                queryStart = [db longForQuery:[NSString stringWithFormat:@"SELECT TimeDate FROM DataSeries WHERE SeriesId = %d AND DataTypeId = %d AND TimeDate <= %ld ORDER BY TimeDate DESC LIMIT 1",[[self dataSeries] dbId],1,adjustedStartDate]];
                 
-                queryEnd = [db longForQuery:[NSString stringWithFormat:@"SELECT TimeDate FROM DataSeries WHERE SeriesId = %d AND DataTypeId = %d AND TimeDate >= %ld ORDER BY TimeDate ASC LIMIT 1",[dataSeries dbId],1,adjustedEndDate]];
+                queryEnd = [db longForQuery:[NSString stringWithFormat:@"SELECT TimeDate FROM DataSeries WHERE SeriesId = %d AND DataTypeId = %d AND TimeDate >= %ld ORDER BY TimeDate ASC LIMIT 1",[[self dataSeries] dbId],1,adjustedEndDate]];
                 
-                resultCount = [db intForQuery:[NSString stringWithFormat:@"SELECT COUNT(*) FROM DataSeries WHERE SeriesId = %d AND DataTypeId = %d AND TimeDate >= %ld AND TimeDate <= %ld",[dataSeries dbId],1,queryStart,queryEnd]];
+                resultCount = [db intForQuery:[NSString stringWithFormat:@"SELECT COUNT(*) FROM DataSeries WHERE SeriesId = %d AND DataTypeId = %d AND TimeDate >= %ld AND TimeDate <= %ld",[[self dataSeries] dbId],1,queryStart,queryEnd]];
                 
-                queryString = [NSString stringWithFormat:@"SELECT DS1.TimeDate, DS1.Value, DS2.Value FROM DataSeries DS1 INNER JOIN DataSeries DS2 ON DS1.TimeDate = DS2.TimeDate AND DS1.SeriesId = DS2.SeriesId  WHERE DS1.SeriesId = %d AND DS1.DataTypeId = %d AND DS2.DataTypeId = %d AND DS1.TimeDate >= %ld AND DS1.TimeDate <= %ld ORDER BY DS1.TimeDate ASC", [dataSeries dbId],1,2,queryStart,queryEnd];
+                queryString = [NSString stringWithFormat:@"SELECT DS1.TimeDate, DS1.Value, DS2.Value FROM DataSeries DS1 INNER JOIN DataSeries DS2 ON DS1.TimeDate = DS2.TimeDate AND DS1.SeriesId = DS2.SeriesId  WHERE DS1.SeriesId = %d AND DS1.DataTypeId = %d AND DS2.DataTypeId = %d AND DS1.TimeDate >= %ld AND DS1.TimeDate <= %ld ORDER BY DS1.TimeDate ASC", [[self dataSeries] dbId],1,2,queryStart,queryEnd];
                 
             }
             newDateLongsTempData = [[NSMutableData alloc] initWithLength:resultCount * sizeof(long)];
@@ -798,7 +821,7 @@ FMDatabase *db;
     if(success && !cancelProcedure){
         if(useOldData){
             //One of which will be zero
-            newDataLength = [dataSeries length] - oldDataStartIndex;
+            newDataLength = [[self dataSeries] length] - oldDataStartIndex;
         }
         if(useNewData){
             newDataLength = newDataLength + resultCount;
@@ -815,7 +838,7 @@ FMDatabase *db;
         newMidDoubles = [newMidData mutableBytes];
     
         if(useOldData){
-            for(int i = oldDataStartIndex; i < [dataSeries length];i++){
+            for(int i = oldDataStartIndex; i < [[self dataSeries] length];i++){
                 newDateLongs[indexOnNew] =  oldDateLongs[i];
                 newBidDoubles[indexOnNew] = oldBidDoubles[i];
                 newAskDoubles[indexOnNew] = oldAskDoubles[i];
@@ -893,11 +916,13 @@ FMDatabase *db;
     NSArray *derivedDataNames;
     NSData *derivedData;
     CPTNumericData *derivedCPTData;
+    
     NSMutableArray *overriddenNames = [[NSMutableArray alloc] init];
     if(success && !cancelProcedure){    
         // If we need extra dervied data fields get them here.
-        if(strategyVariables){
-            NSMutableDictionary *newData = [[NSMutableDictionary alloc] init];
+        
+        if([extraVariables count]>0){
+            NSMutableDictionary *newDataDictionary = [[NSMutableDictionary alloc] init];
             NSMutableDictionary *parameters = [[NSMutableDictionary alloc] init];
             
             if(useOldData){
@@ -906,30 +931,36 @@ FMDatabase *db;
                 [parameters setObject:[NSNumber numberWithBool:YES] forKey:@"ALLNEWDATA"];
             }
             
-            [newData setObject:newDateData forKey:@"DATETIME"];
-            [newData setObject:newBidData forKey:@"BID"];
-            [newData setObject:newAskData forKey:@"ASK"];
-            [newData setObject:newMidData forKey:@"MID"];
+            [newDataDictionary setObject:newDateData forKey:@"DATETIME"];
+            [newDataDictionary setObject:newBidData forKey:@"BID"];
+            [newDataDictionary setObject:newAskData forKey:@"ASK"];
+            [newDataDictionary setObject:newMidData forKey:@"MID"];
             
             if(useOldData){
-                [parameters setObject:[dataSeries yData] forKey:@"OLDDATA"];
-                [parameters setObject:[dataSeries xData] forKey:@"OLDDATETIME"];
+                [parameters setObject:[[self dataSeries] yData] forKey:@"OLDDATA"];
+                [parameters setObject:[[self dataSeries] xData] forKey:@"OLDDATETIME"];
                 [parameters setObject:[NSNumber numberWithInt:oldDataStartIndex] forKey:@"OVERLAPINDEX"];
             }
             
-            derivedDataDictionary = [DataProcessor processWithDataSeries: newData
-                                                             AndStrategy: [dataSeries strategy]
-                                                          AndProcessInfo: parameters
-                                                       AndReturningStats: statsArray];
+//            derivedDataDictionary = [DataProcessor processWithDataSeries: newData
+//                                                               AndSignal: [dataSeries strategy]
+//                                                          AndProcessInfo: parameters
+//                                                       AndReturningStats: statsArray];
+            
+            derivedDataDictionary =  [DataProcessor addToDataSeries: newDataDictionary
+                                                   DerivedVariables: extraVariables
+                                                   WithTrailingData: parameters
+                                                    AndSignalSystem: signalSystem];
             
             if([derivedDataDictionary objectForKey:@"SUCCESS"] != nil){
                 if(![[derivedDataDictionary objectForKey:@"SUCCESS"] boolValue]){
                     success = NO; 
-                    NSLog(@"No success in creating derived data");
+                    [NSException raise:@"No success in creating derived data" 
+                                format:@""];
                 }
             }else{
                 success = NO;
-                NSLog(@"Something wrong creating derived data, cannot find the success variable");
+                [NSException raise:@"Something wrong creating derived data, cannot find the success variable"           format:@""];
             }
         }
         
@@ -969,11 +1000,11 @@ FMDatabase *db;
                                                                   CFByteOrderGetCurrent()) 
                                                        shape:nil]; 
         
-        [dataSeries setXData:dateCPTData];
-        [[dataSeries yData] removeAllObjects];
-        [[dataSeries yData] setObject:bidCPTData forKey:@"BID"];
-        [[dataSeries yData] setObject:askCPTData forKey:@"ASK"];
-        [[dataSeries yData] setObject:midCPTData forKey:@"MID"];
+        [[self dataSeries] setXData:dateCPTData];
+        [[[self dataSeries] yData] removeAllObjects];
+        [[[self dataSeries] yData] setObject:bidCPTData forKey:@"BID"];
+        [[[self dataSeries] yData] setObject:askCPTData forKey:@"ASK"];
+        [[[self dataSeries] yData] setObject:midCPTData forKey:@"MID"];
             
         for(int i = 0; i < [derivedDataNames count]; i++){
             if(![[derivedDataNames objectAtIndex:i] isEqualToString:@"SUCCESS"]){
@@ -991,9 +1022,9 @@ FMDatabase *db;
                              crossCheckedKey = [NSString stringWithFormat:@"%@**",crossCheckedKey];
                          }
                      }
-                     [[dataSeries yData] setObject:derivedCPTData forKey:crossCheckedKey];
+                     [[[self dataSeries] yData] setObject:derivedCPTData forKey:crossCheckedKey];
                  }else{
-                     [[dataSeries yData] setObject:derivedCPTData forKey:[derivedDataNames objectAtIndex:i]];
+                     [[[self dataSeries] yData] setObject:derivedCPTData forKey:[derivedDataNames objectAtIndex:i]];
                  }
             }
         }
@@ -1008,12 +1039,12 @@ FMDatabase *db;
                                                                               sizeof(double), 
                                                                               CFByteOrderGetCurrent())
                                                             shape:nil];
-                [[dataSeries yData] setObject:fileCPTData forKey:[fileDataFieldNames objectAtIndex:fileDataIndex+1]];               
+                [[[self dataSeries] yData] setObject:fileCPTData forKey:[fileDataFieldNames objectAtIndex:fileDataIndex+1]];               
             }
         }
         
-        [[dataSeries dataViews] removeAllObjects];
-        [dataSeries setPlotViewWithName:@"ALL" AndStartDateTime:newDateLongs[0] AndEndDateTime:newDateLongs[indexOnNew-1]];
+        [[[self dataSeries] dataViews] removeAllObjects];
+        [[self dataSeries] setPlotViewWithName:@"ALL" AndStartDateTime:newDateLongs[0] AndEndDateTime:newDateLongs[indexOnNew-1]];
     }
     
     return success;
@@ -1062,7 +1093,7 @@ FMDatabase *db;
                               AndSampleRate:(long)newSampleRate
 {
     DataSeries *newDataSeries;
-    newDataSeries = [dataSeries getCopyOfStaticData];
+    newDataSeries = [[self dataSeries] getCopyOfStaticData];
     NSArray *fieldNames = [dataValues allKeys];
     
     CPTNumericData *dateTimeData; 
@@ -1103,8 +1134,9 @@ FMDatabase *db;
 #pragma mark -
 #pragma mark Properties
 
-@synthesize connected;
-@synthesize dataSeries;
+@synthesize connected = _connected;
+@synthesize dataSeries = _dataSeries;
+@synthesize delegate = _delegate;
 @synthesize fxPairs;
 @synthesize dataFields;
 @synthesize minDateTimes;

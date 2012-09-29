@@ -9,7 +9,10 @@
 /* Begin PBXBuildFile section */
 		5B01B0C914C026C10032A301 /* SeriesPlot.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B01B0C814C026C00032A301 /* SeriesPlot.m */; };
 		5B01B0D514C130150032A301 /* DataController.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B01B0D414C130150032A301 /* DataController.m */; };
+		5B147E74160AB59B0016C04A /* RulesSystem.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B147E73160AB59B0016C04A /* RulesSystem.m */; };
 		5B2EDCC014CD979600EC26B8 /* OCR2.icns in Resources */ = {isa = PBXBuildFile; fileRef = 5B2EDCBF14CD979600EC26B8 /* OCR2.icns */; };
+		5B7B774A15DDFC9C003911FB /* PositioningSystem.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B7B774915DDFC9C003911FB /* PositioningSystem.m */; };
+		5B85EFD615EC557C004B5381 /* SignalSystem.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B85EFD515EC557C004B5381 /* SignalSystem.m */; };
 		5B88332314BAC44000352C83 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5B88332214BAC44000352C83 /* QuartzCore.framework */; };
 		5B8A0E38150B02B200B52F74 /* CorePlot.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5B8A0E34150B026700B52F74 /* CorePlot.framework */; };
 		5B8C03DD149ECEC60071189F /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5B8C03DC149ECEC60071189F /* Cocoa.framework */; };
@@ -87,7 +90,13 @@
 		5B01B0C814C026C00032A301 /* SeriesPlot.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SeriesPlot.m; sourceTree = "<group>"; };
 		5B01B0D314C130150032A301 /* DataController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DataController.h; sourceTree = "<group>"; };
 		5B01B0D414C130150032A301 /* DataController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DataController.m; sourceTree = "<group>"; };
+		5B147E72160AB59B0016C04A /* RulesSystem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RulesSystem.h; sourceTree = "<group>"; };
+		5B147E73160AB59B0016C04A /* RulesSystem.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RulesSystem.m; sourceTree = "<group>"; };
 		5B2EDCBF14CD979600EC26B8 /* OCR2.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = OCR2.icns; path = ../OCR2.icns; sourceTree = "<group>"; };
+		5B7B774815DDFC9C003911FB /* PositioningSystem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PositioningSystem.h; sourceTree = "<group>"; };
+		5B7B774915DDFC9C003911FB /* PositioningSystem.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PositioningSystem.m; sourceTree = "<group>"; };
+		5B85EFD415EC557C004B5381 /* SignalSystem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SignalSystem.h; sourceTree = "<group>"; };
+		5B85EFD515EC557C004B5381 /* SignalSystem.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SignalSystem.m; sourceTree = "<group>"; };
 		5B88332214BAC44000352C83 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
 		5B8A0D30150B026600B52F74 /* CorePlot-CocoaTouch.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "CorePlot-CocoaTouch.h"; sourceTree = "<group>"; };
 		5B8A0D31150B026600B52F74 /* CorePlot-CocoaTouch.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = "CorePlot-CocoaTouch.xcodeproj"; sourceTree = "<group>"; };
@@ -839,6 +848,12 @@
 				5BC52991158D9A0F00FDFAF0 /* CashFlowRecord.m */,
 				5BE5093B158EB5BA00AB4026 /* SignalRecord.h */,
 				5BE5093C158EB5BA00AB4026 /* SignalRecord.m */,
+				5B7B774815DDFC9C003911FB /* PositioningSystem.h */,
+				5B7B774915DDFC9C003911FB /* PositioningSystem.m */,
+				5B85EFD415EC557C004B5381 /* SignalSystem.h */,
+				5B85EFD515EC557C004B5381 /* SignalSystem.m */,
+				5B147E72160AB59B0016C04A /* RulesSystem.h */,
+				5B147E73160AB59B0016C04A /* RulesSystem.m */,
 			);
 			name = Simulation;
 			sourceTree = "<group>";
@@ -984,6 +999,9 @@
 				5BC52995158D9B0700FDFAF0 /* TransactionRecord.m in Sources */,
 				5BC52998158D9ECB00FDFAF0 /* PositionRecord.m in Sources */,
 				5BE5093D158EB5BA00AB4026 /* SignalRecord.m in Sources */,
+				5B7B774A15DDFC9C003911FB /* PositioningSystem.m in Sources */,
+				5B85EFD615EC557C004B5381 /* SignalSystem.m in Sources */,
+				5B147E74160AB59B0016C04A /* RulesSystem.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

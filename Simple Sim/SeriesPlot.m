@@ -17,6 +17,7 @@
 - (void) zoomOut;
 - (void) addHorizontalLineAt:(double) yValue 
                 ForPlotspace:(CPTXYPlotSpace *) plotSpace;
+- (double) niceNumber: (double) x withRounding:(BOOL) doRounding;
 @end
 
 @implementation SeriesPlot
@@ -623,7 +624,7 @@
 - (void) fixUpYAxisForLayerIndex: (int) layerIndex;
 {
     double minYrangeForPlot, maxYrangeForPlot;
-    double majorIntervalForY;
+    //double majorIntervalForY;
     CPTXYPlotSpace *plotSpace;
     CPTXYAxis *yAxis;
     switch(layerIndex){
@@ -647,6 +648,21 @@
             break;
     }
     
+    int nTicks = 10;
+    double range = [self niceNumber:  maxYrangeForPlot-minYrangeForPlot
+                       withRounding:NO];
+    double d = [self niceNumber:range/(nTicks - 1) 
+                   withRounding:YES];
+    double axisMin = floor(minYrangeForPlot/d)*d;
+    double axisMax = ceil(maxYrangeForPlot/d)*d;
+    int nfrac = -floor(log10(d));
+    if(nfrac < 0){
+        nfrac = 0;
+    }
+    
+    
+    
+    
     if(layerIndex==0){
          // Grid line styles
         CPTMutableLineStyle *majorGridLineStyle = [CPTMutableLineStyle lineStyle];
@@ -664,30 +680,31 @@
     CPTMutableLineStyle *axisLineStyle =  [CPTMutableLineStyle lineStyle];
     axisLineStyle.lineWidth = 0.5;
     axisLineStyle.lineColor = [[CPTColor whiteColor] colorWithAlphaComponent:0.5];
-     
-    if(((maxYrangeForPlot-minYrangeForPlot)/[plotData pipSize])>10000)
-    {
-        // If the range of the data is not related to pipsize then forget about pipsize 
-        // just go for about 10 intervals
-        //This needs to be fixed
-        int yRangeAsInt = (int)(maxYrangeForPlot-minYrangeForPlot);
-        int factor = 1;
-        while(yRangeAsInt < 10){
-            yRangeAsInt = yRangeAsInt * 10;
-            factor++;
-        }
-        majorIntervalForY = (yRangeAsInt)/pow(10,factor);
-        
-    }else{
-        majorIntervalForY = 10 * [plotData pipSize];
-    }
-    while(((maxYrangeForPlot-minYrangeForPlot)/majorIntervalForY)>10){
-        majorIntervalForY = majorIntervalForY * 2;
-    }
-    
+//     
+//    if(((maxYrangeForPlot-minYrangeForPlot)/[plotData pipSize])>10000)
+//    {
+//        // If the range of the data is not related to pipsize then forget about pipsize 
+//        // just go for about 10 intervals
+//        //This needs to be fixed
+//        int yRangeAsInt = (int)(maxYrangeForPlot-minYrangeForPlot);
+//        int factor = 1;
+//        while(yRangeAsInt < 10){
+//            yRangeAsInt = yRangeAsInt * 10;
+//            factor++;
+//        }
+//        majorIntervalForY = (yRangeAsInt)/pow(10,factor);
+//        
+//    }else{
+//        majorIntervalForY = 10 * [plotData pipSize];
+//    }
+//    while(((maxYrangeForPlot-minYrangeForPlot)/majorIntervalForY)>10){
+//        majorIntervalForY = majorIntervalForY * 2;
+//    }
+//    
     [yAxis setLabelOffset:5.0];
     
-    [yAxis setMajorIntervalLength:CPTDecimalFromDouble(majorIntervalForY)];
+    //[yAxis setMajorIntervalLength:CPTDecimalFromDouble(majorIntervalForY)];
+    [yAxis setMajorIntervalLength:CPTDecimalFromDouble(d)];
     [yAxis setMinorTicksPerInterval:1];
      
     [yAxis setAxisLineStyle:axisLineStyle];
@@ -708,16 +725,19 @@
      
     NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];
     [numberFormatter setNumberStyle:NSNumberFormatterDecimalStyle];
-    if([plotData pipSize] <= 0.001){
-        [numberFormatter setMinimumFractionDigits:3];
-    }else{
-        [numberFormatter setMinimumFractionDigits:1];
-    }
+//    if([plotData pipSize] <= 0.001){
+//        [numberFormatter setMinimumFractionDigits:3];
+//    }else{
+//        [numberFormatter setMinimumFractionDigits:1];
+//    }
+    [numberFormatter setMinimumFractionDigits:nfrac];
     yAxis.labelFormatter = numberFormatter;
     
-    CPTMutablePlotRange *yRange = [CPTMutablePlotRange plotRangeWithLocation:CPTDecimalFromDouble(minYrangeForPlot)
-                                                                      length:CPTDecimalFromDouble(ceil( (maxYrangeForPlot - minYrangeForPlot) / majorIntervalForY ) * majorIntervalForY)];
-    [yRange expandRangeByFactor:CPTDecimalFromDouble(1.2)];
+//    CPTMutablePlotRange *yRange = [CPTMutablePlotRange plotRangeWithLocation:CPTDecimalFromDouble(minYrangeForPlot)
+//                                                                      length:CPTDecimalFromDouble(ceil( (maxYrangeForPlot - minYrangeForPlot) / majorIntervalForY ) * majorIntervalForY)];
+    CPTMutablePlotRange *yRange = [CPTMutablePlotRange plotRangeWithLocation:CPTDecimalFromDouble(axisMin)
+                                                                      length:CPTDecimalFromDouble((axisMax-axisMin)+(0.5*d))];
+    //[yRange expandRangeByFactor:CPTDecimalFromDouble(1.2)];
     
     [plotSpace setYRange:yRange];
     switch(layerIndex){
@@ -732,6 +752,120 @@
             break;
     }
 }
+
+//- (void) fixUpYAxisForLayerIndex: (int) layerIndex;
+//{
+//    double minYrangeForPlot, maxYrangeForPlot;
+//    double majorIntervalForY;
+//    CPTXYPlotSpace *plotSpace;
+//    CPTXYAxis *yAxis;
+//    switch(layerIndex){
+//        case 0:
+//            minYrangeForPlot = minYrangeForPlot0;
+//            maxYrangeForPlot = maxYrangeForPlot0;
+//            plotSpace = plotSpace0;
+//            yAxis = yAxis0;
+//            break;
+//        case 1:
+//            minYrangeForPlot = minYrangeForPlot1;
+//            maxYrangeForPlot = maxYrangeForPlot1;
+//            plotSpace = plotSpace1;
+//            yAxis = yAxis1;
+//            break;
+//        case 2:
+//            minYrangeForPlot = minYrangeForPlot2;
+//            maxYrangeForPlot = maxYrangeForPlot2;
+//            plotSpace = plotSpace2;
+//            yAxis = yAxis2;
+//            break;
+//    }
+//    
+//    if(layerIndex==0){
+//        // Grid line styles
+//        CPTMutableLineStyle *majorGridLineStyle = [CPTMutableLineStyle lineStyle];
+//        majorGridLineStyle.lineWidth = 0.75;
+//        majorGridLineStyle.lineColor = [[CPTColor colorWithGenericGray:0.2] colorWithAlphaComponent:0.75];
+//        
+//        CPTMutableLineStyle *minorGridLineStyle = [CPTMutableLineStyle lineStyle];
+//        minorGridLineStyle.lineWidth = 0.25;
+//        minorGridLineStyle.lineColor = [[CPTColor whiteColor] colorWithAlphaComponent:0.1];
+//        
+//        yAxis.majorGridLineStyle		  = majorGridLineStyle;
+//        yAxis.minorGridLineStyle		  = minorGridLineStyle;
+//    }     
+//    
+//    CPTMutableLineStyle *axisLineStyle =  [CPTMutableLineStyle lineStyle];
+//    axisLineStyle.lineWidth = 0.5;
+//    axisLineStyle.lineColor = [[CPTColor whiteColor] colorWithAlphaComponent:0.5];
+//    
+//    if(((maxYrangeForPlot-minYrangeForPlot)/[plotData pipSize])>10000)
+//    {
+//        // If the range of the data is not related to pipsize then forget about pipsize 
+//        // just go for about 10 intervals
+//        //This needs to be fixed
+//        int yRangeAsInt = (int)(maxYrangeForPlot-minYrangeForPlot);
+//        int factor = 1;
+//        while(yRangeAsInt < 10){
+//            yRangeAsInt = yRangeAsInt * 10;
+//            factor++;
+//        }
+//        majorIntervalForY = (yRangeAsInt)/pow(10,factor);
+//        
+//    }else{
+//        majorIntervalForY = 10 * [plotData pipSize];
+//    }
+//    while(((maxYrangeForPlot-minYrangeForPlot)/majorIntervalForY)>10){
+//        majorIntervalForY = majorIntervalForY * 2;
+//    }
+//    
+//    [yAxis setLabelOffset:5.0];
+//    
+//    [yAxis setMajorIntervalLength:CPTDecimalFromDouble(majorIntervalForY)];
+//    [yAxis setMinorTicksPerInterval:1];
+//    
+//    [yAxis setAxisLineStyle:axisLineStyle];
+//    switch(layerIndex){
+//        case 0:
+//            [yAxis setTickDirection:CPTSignNegative]; 
+//            [yAxis setAxisConstraints:[CPTConstraints constraintWithLowerOffset:0.0]];
+//            break;
+//        case 1:
+//            [yAxis setTickDirection:CPTSignPositive]; 
+//            [yAxis setAxisConstraints:[CPTConstraints constraintWithLowerOffset:0.0]];
+//            break;
+//        case 2:
+//            [yAxis setTickDirection:CPTSignNegative]; 
+//            [yAxis setAxisConstraints:[CPTConstraints constraintWithUpperOffset:0.0]];
+//            break;
+//    }
+//    
+//    NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];
+//    [numberFormatter setNumberStyle:NSNumberFormatterDecimalStyle];
+//    if([plotData pipSize] <= 0.001){
+//        [numberFormatter setMinimumFractionDigits:3];
+//    }else{
+//        [numberFormatter setMinimumFractionDigits:1];
+//    }
+//    yAxis.labelFormatter = numberFormatter;
+//    
+//    CPTMutablePlotRange *yRange = [CPTMutablePlotRange plotRangeWithLocation:CPTDecimalFromDouble(minYrangeForPlot)
+//                                                                      length:CPTDecimalFromDouble(ceil( (maxYrangeForPlot - minYrangeForPlot) / majorIntervalForY ) * majorIntervalForY)];
+//    [yRange expandRangeByFactor:CPTDecimalFromDouble(1.2)];
+//    
+//    [plotSpace setYRange:yRange];
+//    switch(layerIndex){
+//        case 0:
+//            yRange0ZoomOut = yRange;
+//            break;
+//        case 1:
+//            yRange1ZoomOut = yRange;
+//            break;
+//        case 2:
+//            yRange2ZoomOut = yRange;
+//            break;
+//    }
+//}
+
 
 - (void) plotLineUpdated
 {
@@ -932,6 +1066,39 @@
 	[graph.plotAreaFrame.plotArea addAnnotation:lineAnnotation];
     [lineAnnotationArray addObject:lineAnnotation];
     [lineAnnotationLevelArray addObject:[NSNumber numberWithDouble:yValue]];
+}
+
+#pragma mark -
+#pragma mark Nice numbers Methods
+
+-(double) niceNumber: (double) x withRounding:(BOOL) doRounding
+{
+    double niceNumber, f, nf;
+    int exp;
+    exp = floor(log10(x));
+    f = x/pow(10.0,exp);
+    if(doRounding){
+        if(f < 1.5)
+            nf = 1;
+        else if(f < 3)
+            nf  = 2;
+        else if(f < 7)
+            nf = 5;
+        else
+            nf = 10;
+    }else{
+        if(f <= 1)
+            nf = 1;
+        else if(f <= 2)
+            nf = 2;
+        else if(f <= 5)
+            nf = 5;
+        else {
+            nf = 10;
+        }
+    }
+    niceNumber = nf*pow(10, exp);
+    return niceNumber;
 }
 
 

@@ -23,12 +23,5 @@
                             AndFxPair:(NSString *) fxPair
                    AndAccountCurrency:(NSString *) accCurrency
                       AndSimStartTime: (NSString *) simStartTime
-                        AndSimEndTime: (NSString *) simEndTime
-                      AndSamplingRate: (NSString *) samplingRate
-                        AndTradingLag: (NSString *) tradingLag
-                AndTradingWindowStart:(NSString *) tradingStartTime
-                  AndTradingWindowEnd:(NSString *) tradingEndTime
-                     AndSimParameters:(NSString *) parameters;
-
-
+                        AndSimEndTime: (NSString *) simEndTime;
 @end

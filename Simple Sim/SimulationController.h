@@ -10,6 +10,9 @@
 #import "SimulationOutput.h"
 @class Simulation;
 @class DataController;
+@class SignalSystem;
+@class PositioningSystem;
+@class RulesSystem;
 
 typedef enum {
     BID = -1,
@@ -19,21 +22,26 @@ typedef enum {
     
 @interface SimulationController : NSObject {
     BOOL doThreads;
-    DataController *simData;
+    DataController *simDataController;
     NSMutableDictionary *interestRates;
     NSMutableDictionary *allSimulations;
     BOOL simulationDone;
+    //int signalIndex;
+    double cashPosition;
 
     //long controllerDateTime;
     id<SimulationOutput> delegate;
 }
 
-
 @property BOOL cancelProcedure;
 @property (retain) Simulation* currentSimulation;
 
 + (BOOL) positioningUnderstood:(NSString *) positioningString;
-
++ (BOOL) signalingUnderstood: (NSString *) signalString;
++ (BOOL) rulesUnderstood:(NSString *) rulesString;
++ (NSArray *) derivedVariablesForSignal: (SignalSystem *) signalSystem
+                        AndPositioning: (PositioningSystem *) positionSystem
+                              AndRules: (NSArray *) rulesSystem;
 - (id) init;
 - (void) setDelegate:(id)del;
 - (BOOL) doThreads;
@@ -44,12 +52,12 @@ typedef enum {
              AtTime:(long) dateTime 
         WithSuccess:(BOOL *) success;
 
--(double) setExposureToUnits:(int) exposureAmount 
+- (double) setExposureToUnits:(int) exposureAmount 
                   AtTimeDate:(long) currentDateTime
                ForSimulation: (Simulation *) simulation
-              AndSignalIndex: (int) signalIndex;
+               ForSignalAtTime: (long) timeOfSignal;
 
--(double) calculateInterestForSimulation: (Simulation *) simulation 
+- (double) calculateInterestForSimulation: (Simulation *) simulation 
                               ToDateTime: (long) endDateTime;
 
 - (void) askSimulationToCancel;

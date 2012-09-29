@@ -13,6 +13,9 @@
 #import "TransactionRecord.h"
 #import "CashFlowRecord.h"
 #import "SignalRecord.h"
+#import "PositioningSystem.h"
+#import "SignalSystem.h"
+#import "RulesSystem.h"
 
 @interface Simulation()
 -(int) resultingExposureForTradeAtIndex: (NSUInteger) index;
@@ -43,7 +46,7 @@
         reportDataFieldsArray = [[NSMutableArray alloc] init];
         //spreadCrossingCostInBaseCurrency = 0.0;
         currentOpenPositionAmount = 0;
-        
+        rulesSystem = [[NSMutableArray alloc] init];
         simulationResults = [[NSMutableDictionary alloc] init ];
         
         accCode = ISOcode;
@@ -54,13 +57,25 @@
         if(startingBalance > 0){
             [self addBalanceAdjustmentWithAmount:startingBalance AndDateTime:startDateTime AndReason:TRANSFER];
         }
-        reportDataFieldsArray = [NSArray arrayWithObjects:@"NAME", @"TRADINGPAIR",@"ACCOUNTCURRENCY",@"BLANK",@"--RESULTS--", @"CASHTRANSFERS", @"FINALNAV", @"TRADE PNL", @"INTEREST",  @"BIGGESTDRAWDOWN",@"DRAWDOWNTIME",  @"NUMBEROFTRADES", @"SPREADCOST", @"BLANK", @"--PARAMETERS--",@"STARTTIME", @"ENDTIME", @"STRATEGY",@"POSITIONING",@"MAXLEVERAGE", @"TIMESTEP", @"TRADINGLAG",@"TRADINGDAYSTART",@"TRADINGDAYEND",@"USERADDEDDATA", nil]; 
+        reportDataFieldsArray = [NSArray arrayWithObjects:@"NAME", @"TRADINGPAIR",@"ACCOUNTCURRENCY",@"BLANK",@"--RESULTS--", @"CASHTRANSFERS", @"FINALNAV", @"TRADE PNL", @"INTEREST",  @"BIGGESTDRAWDOWN", @"DRAWDOWNTIME", @"NUMBEROFTRADES", @"SPREADCOST", @"BLANK", @"--PARAMETERS--",@"STARTTIME", @"ENDTIME", @"STRATEGY",@"POSITIONING", @"RULES", @"MAXLEVERAGE", @"TIMESTEP", @"TRADINGLAG", @"TRADINGDAYSTART",@"TRADINGDAYEND", @"USERADDEDDATA", nil]; 
     }
     
     return self;
 }
 
+-(long)leadTimeRequired
+{
+    long leadTimeRequired = 0;
+    
+    return leadTimeRequired;
+}
 
+-(long)leadTicsRequired
+{
+    long leadTicsRequired = 0;
+    
+    return leadTicsRequired;
+}
 
 -(void) printAccDetails: (long) dateTime
 {
@@ -114,13 +129,25 @@
         return [EpochTime stringDateWithTime:[self endDate]];
     }
     if([dataFieldIdentifier isEqualToString:@"STRATEGY"]){
-        return signalParameters;
+        return [signalSystem type];
     }
     if([dataFieldIdentifier isEqualToString:@"POSITIONING"]){
-        return positioningType;
+        return [positionSystem positioningString];
     } 
+    if([dataFieldIdentifier isEqualToString:@"RULES"]){
+        NSString *allRules = [[NSString alloc] init];
+        for(int i = 0; i < [rulesSystem count]; i++){
+            if(i==0){
+                allRules = [[rulesSystem objectAtIndex:i] ruleString];
+            }else{
+                allRules = [NSString stringWithFormat:@"%@;%@",allRules,[[rulesSystem objectAtIndex:i] ruleString]];
+            }
+        }
+        return allRules;
+    } 
+    
     if([dataFieldIdentifier isEqualToString:@"MAXLEVERAGE"]){
-        return [NSString stringWithFormat:@"%5.1",maxLeverage];    
+        return [NSString stringWithFormat:@"%5.0f",maxLeverage];    
     } 
     if([dataFieldIdentifier isEqualToString:@"TIMESTEP"]){
         return [NSString stringWithFormat:@"%d seconds",samplingRate];    
@@ -196,27 +223,44 @@
     [accBalanceArray addObject:cashFlowRecord];
 }
 
+//- (int) addSignalStatisticsWithSignal: (double) signal
+//                       AndEntryTime: (long) entryTime
+//                        AndExitTime: (long) exitTime
+//                      AndEntryPrice: (double)entryPrice
+//                       AndExitPrice: (double) exitPrice
+//                    AndTimeInProfit: (double) timeInProfit
+//              AndMaxPotentialProfit: (double) potentialProfit
+//                AndMaxPotentialLoss: (double) potentialLoss
+//{
+//    SignalRecord *signalRecord;
+//    signalRecord = [[SignalRecord alloc] initWithSignal:signal 
+//                                           AndStartTime:entryTime 
+//                                             AndEndTime:exitTime 
+//                                          AndEntryPrice:entryPrice 
+//                                           AndExitPrice:exitPrice 
+//                                        AndTimeInProfit:timeInProfit 
+//                                  AndMaxPotentialProfit:potentialProfit 
+//                                    AndMaxPotentialLoss:potentialLoss];
+//    [signalInfoArray addObject:signalRecord];
+//    return [signalInfoArray count] - 1;
+//}
+
 - (int) addSignalStatisticsWithSignal: (double) signal
-                       AndEntryTime: (long) entryTime
-                        AndExitTime: (long) exitTime
-                      AndEntryPrice: (double)entryPrice
-                       AndExitPrice: (double) exitPrice
-                    AndTimeInProfit: (double) timeInProfit
-              AndMaxPotentialProfit: (double) potentialProfit
-                AndMaxPotentialLoss: (double) potentialLoss
+                         AndEntryTime: (long) entryTime
+                          AndExitTime: (long) exitTime
+                        AndEntryPrice: (double)entryPrice
+                         AndExitPrice: (double) exitPrice
 {
     SignalRecord *signalRecord;
     signalRecord = [[SignalRecord alloc] initWithSignal:signal 
                                            AndStartTime:entryTime 
                                              AndEndTime:exitTime 
                                           AndEntryPrice:entryPrice 
-                                           AndExitPrice:exitPrice 
-                                        AndTimeInProfit:timeInProfit 
-                                  AndMaxPotentialProfit:potentialProfit 
-                                    AndMaxPotentialLoss:potentialLoss];
+                                           AndExitPrice:exitPrice];
     [signalInfoArray addObject:signalRecord];
     return [signalInfoArray count] - 1;
 }
+
 
 - (double) currentBalance
 {
@@ -282,7 +326,7 @@
          AndAccQuoteAskPrice: (double) accQuoteAskPrice
         AndBaseQuoteBidPrice: (double) baseQuoteBidPrice
         AndBaseQuoteAskPrice: (double) baseQuoteAskPrice
-              AndSignalIndex: (int) signalIndex
+               AndSignalTime: (long) timeOfSignal
 {
     double realisedPnl = 0.0;
     //adjust the positions as nessesary. If there are opposite position these will be closed oldest first
@@ -363,7 +407,7 @@
     newTrade = [[TransactionRecord alloc] initWithAmount:tradeAmount 
                                              AndDateTime:tradeDateTime 
                                                 AndPrice:tradePrice AndResultingExposure:[self currentExposure] 
-                                               AndSpread:baseQuoteAskPrice-baseQuoteBidPrice AndSpreadInAccCurrency:spreadInAccountCurrency AndSignalDateTime:0 AndSignalIndex:signalIndex];
+                                               AndSpread:baseQuoteAskPrice-baseQuoteBidPrice AndSpreadInAccCurrency:spreadInAccountCurrency AndSignalDateTime:timeOfSignal ];
     [tradesArray addObject:newTrade];
     return realisedPnl;
 }
@@ -385,7 +429,7 @@
     for(int positionIndex = 0; positionIndex < [openPositionsArray count];positionIndex++){
         PositionRecord *openPosition;
         openPosition = [openPositionsArray objectAtIndex:positionIndex];
-        wgtCost = [openPosition amount] * [openPosition price];
+        wgtCost = wgtCost + [openPosition amount] * [openPosition price];
         positionSize = positionSize + [openPosition amount]; 
     }
     if(positionSize != 0)
@@ -734,9 +778,9 @@
     [signalInfoDetails setObject:[NSNumber numberWithLong:[signalRecord endTime]] forKey:@"EXITTIME"]; 
     [signalInfoDetails setObject:[NSNumber numberWithDouble:[signalRecord entryPrice]] forKey:@"ENTRYPRICE"];
     [signalInfoDetails setObject:[NSNumber numberWithDouble:[signalRecord exitPrice]] forKey:@"EXITPRICE"];
-    [signalInfoDetails setObject:[NSNumber numberWithDouble:[signalRecord maxPotentialLoss]] forKey:@"POTLOSS"];
-    [signalInfoDetails setObject:[NSNumber numberWithDouble:[signalRecord maxPotentialProfit]] forKey:@"POTGAIN"];
-    [signalInfoDetails setObject:[NSNumber numberWithDouble:[signalRecord timeInProfit]] forKey:@"UPTIME"]; 
+//    [signalInfoDetails setObject:[NSNumber numberWithDouble:[signalRecord maxPotentialLoss]] forKey:@"POTLOSS"];
+//    [signalInfoDetails setObject:[NSNumber numberWithDouble:[signalRecord maxPotentialProfit]] forKey:@"POTGAIN"];
+//    [signalInfoDetails setObject:[NSNumber numberWithDouble:[signalRecord timeInProfit]] forKey:@"UPTIME"]; 
     return signalInfoDetails;
 }
 
@@ -800,6 +844,20 @@
     return perfAttrib;
 }
 
+-(BOOL) addTradingRule: (NSString *) ruleString
+{
+    BOOL allOk = YES;
+    RulesSystem *newRule;
+    allOk = [RulesSystem basicCheck:ruleString];
+    if(allOk){
+        newRule = [[RulesSystem alloc] initWithString:ruleString];
+        [rulesSystem addObject:newRule];
+    }
+    return allOk;
+}
+
+
+
 #pragma mark -
 #pragma mark Properties
 
@@ -810,8 +868,10 @@
 @synthesize baseCode;
 @synthesize quoteCode;
 @synthesize maxLeverage;
-@synthesize signalParameters;
-@synthesize positioningType;
+//@synthesize signalParameters;
+@synthesize positionSystem;
+@synthesize signalSystem;
+@synthesize rulesSystem;
 @synthesize simulationDataSeries;
 @synthesize analysisDataSeries;
 @synthesize longPeriods;
@@ -823,6 +883,6 @@
 @synthesize tradingDayEnd;
 @synthesize reportDataFieldsArray;
 @synthesize userAddedData;
-
+@synthesize currentCashBalance;
 
 @end

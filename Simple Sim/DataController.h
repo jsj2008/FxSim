@@ -9,23 +9,27 @@
 #import <Foundation/Foundation.h>
 @class DataSeries;
 @class DataSeriesValue;
+@class SignalSystem;
+//@class PositioningSystem;
+//@class RulesSystem;
 
 @interface DataController : NSObject{
-    BOOL connected;
+    BOOL _connected;
     BOOL doThreads;
     BOOL cancelProcedure;
-    BOOL adhocDataAdded;
-    id delegate;
+    BOOL _adhocDataAdded;
+    id _delegate;
     
     BOOL _fileDataAdded;
     NSString *fileDataFileName;
     NSArray *fileData;
+    DataSeries *_dataSeries;
     //NSArray *fileDataFieldNames;
     //long *fileDataDateTimes;
     //double **fileDataValues;
 }
 @property(readonly) BOOL connected;
-@property(readonly) DataSeries *dataSeries;
+@property DataSeries *dataSeries;
 @property(readonly, retain) NSDictionary *fxPairs;
 @property(readonly, retain) NSDictionary *dataFields;
 @property(readonly, retain) NSDictionary *minDateTimes;
@@ -33,9 +37,8 @@
 @property(readonly) NSString *fileDataFileName;
 @property(readonly) NSArray *fileData;
 @property BOOL fileDataAdded;
-
-
 @property(retain) NSArray *signalStats;
+@property id delegate;
 
 
 - (id) init;
@@ -43,8 +46,12 @@
 - (BOOL) doThreads;
 - (void) setDoThreads:(BOOL)doThreadedProcedures;
 - (BOOL) strategyUnderstood:(NSString *) strategyString;
-- (BOOL) setupDataSeriesForName: (NSString *) dataSeriesName 
-                  AndStrategy: (NSString *) strategyString;
+- (long) leadTimeRequired:(NSString *) strategyString;
+- (long) leadTicsRequired:(NSString *) strategyString;
+- (BOOL) setupDataSeriesForName: (NSString *) dataSeriesName; 
+//                AndSignalSystem: (SignalSystem *) sigSystem
+//              AndPositionSystem: (PositioningSystem *) posSystem
+//                  AndRuleSystem: (RulesSystem *) ruleSystem;
 - (long) getMinDateTimeForLoadedData;
 - (long) getMaxDateTimeForLoadedData;
 - (long) getMinDateTimeForFullData;
@@ -54,38 +61,43 @@
         FromFile: (NSString *) filename;
 //- (void) addUserData:(NSArray *) userData WithFileName:(NSString *) userDataFileName;
 
+- (DataSeries *) retrieveDataForStartDateTime: (long) requestedStartDate 
+                               AndEndDateTime: (long) requestedEndDate 
+                            AndExtraVariables: (NSArray *) extraVariables
+                              AndSignalSystem: (SignalSystem *) signalSystem
+                              AndSamplingRate: (long) samplingRate
+                                  WithSuccess: (int *) successAsInt
+                                  AndUpdateUI: (BOOL) doUpdateUI;
 
-- (DataSeries *) retrieveDataForStartDateTime: (long)requestedStartDate 
-                               AndEndDateTime: (long)requestedEndDate 
-                              AndSamplingRate: (long)samplingRate
-                                  WithSuccess: (int *)successAsInt
-                                  AndUpdateUI: (BOOL)doUpdateUI;
+-(BOOL) getMoreDataForStartDateTime: (long) requestedStartDate 
+                     AndEndDateTime: (long) requestedEndDate
+                  AndExtraVariables: (NSArray *) extraVariables
+                    AndSignalSystem: (SignalSystem *) signalSystem
+             AndReturningStatsArray: (NSMutableArray *) statsArray
+              IncludePrecedingTicks: (long) numberOfPrecedingData
+           WithRequestTruncatedFlag: (int *) requestTrucated;
 
-- (BOOL) getMoreDataForStartDateTime: (long) newStart 
-                      AndEndDateTime: (long) newEnd
-              AndReturningStatsArray: (NSMutableArray *) statsArray
-            WithRequestTruncatedFlag: (int *) requestTrucated;
-
-
-- (void) setDataForStartDateTime: (long)requestedStartDate 
-                  AndEndDateTime: (long)requestedEndDate 
-                 AndSamplingRate: (long)samplingRate
-                     WithSuccess: (int *)successAsInt
+- (void) setDataForStartDateTime: (long) requestedStartDate 
+                  AndEndDateTime: (long) requestedEndDate 
+               AndExtraVariables: (NSArray *) extraVariables
+                 AndSignalSystem: (SignalSystem *) signalSystem
+                 AndSamplingRate: (long) samplingRate
+                     WithSuccess: (int *) successAsInt
                      AndUpdateUI: (BOOL) doUpdateUI;
 
 - (int) dataGranularity;
-
 - (long) getMinDataDateTimeForPair:(NSString *) fxPairName;
 - (long) getMaxDataDateTimeForPair:(NSString *) fxPairName;
-- (NSDictionary *) getValuesForFields:(NSArray *) fieldNames 
-                           AtDateTime: (long) dateTime;
+- (NSDictionary *) getValues:(NSArray *) fieldNames 
+                AtDateTime: (long) dateTime;
+- (NSDictionary *) getValues:(NSArray *) fieldNames 
+                  AtDateTime: (long) dateTime 
+               WithTicOffset: (long) numberOfTics;
 - (DataSeriesValue *) valueFromDataBaseForFxPair: (NSString *) name 
                                      AndDateTime: (long) dateTime 
                                         AndField: (NSString *) field;
-
 -(NSArray *) getAllInterestRatesForCurrency: (NSString *) currencyCode 
                                    AndField: (NSString *) bidOrAsk;
-
 -(DataSeries *) createNewDataSeriesWithXData: (NSMutableData *) dateTimes 
                                     AndYData: (NSDictionary *) dataValues 
                                AndSampleRate: (long) newSampleRate;
