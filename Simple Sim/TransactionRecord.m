@@ -32,6 +32,40 @@ AndSpreadInAccCurrency: (double) spreadInAccCurrency
     return self;
 }
 
+
+- (void) encodeWithCoder:(NSCoder*)encoder
+{
+    [encoder encodeObject:[NSNumber numberWithDouble:_amount] forKey:@"AMOUNT"];
+    [encoder encodeObject:[NSNumber numberWithLong:_dateTime] forKey:@"DATETIME"];
+    [encoder encodeObject:[NSNumber numberWithDouble:_price] forKey:@"PRICE"];
+    [encoder encodeObject:[NSNumber numberWithInt:_resultingMarketExposure] forKey:@"MKTEXPOSURE"];
+    [encoder encodeObject:[NSNumber numberWithDouble:_spread] forKey:@"SPREAD"];
+    [encoder encodeObject:[NSNumber numberWithDouble:_spreadInAccCurrency] forKey:@"SPREADINACCCURRENCY"];
+     [encoder encodeObject:[NSNumber numberWithLong:_signalDateTime] forKey:@"SIGNALDATETIME"];
+    
+}
+- (id) initWithCoder:(NSCoder*)decoder
+{
+    if (self = [super init]) {
+        // If parent class also adopts NSCoding, replace [super init]
+        // with [super initWithCoder:decoder] to properly initialize.
+        
+        // NOTE: Decoded objects are auto-released and must be retained
+        _amount = [[decoder decodeObjectForKey:@"AMOUNT"] doubleValue];
+        _dateTime = [[decoder decodeObjectForKey:@"DATETIME"] longValue];
+        _price = [[decoder decodeObjectForKey:@"PRICE"] doubleValue];
+        _resultingMarketExposure = [[decoder decodeObjectForKey:@"MKTEXPOSURE"] intValue];
+        _spread = [[decoder decodeObjectForKey:@"SPREAD"] doubleValue];
+        _spreadInAccCurrency  = [[decoder decodeObjectForKey:@"SPREADINACCCURRENCY"] doubleValue];
+        _signalDateTime =  [[decoder decodeObjectForKey:@"SIGNALDATETIME"] longValue];
+    }
+    return self;   
+}
+
+
+
+
+
 @synthesize amount = _amount;        
 @synthesize dateTime = _dateTime;
 @synthesize price = _price;

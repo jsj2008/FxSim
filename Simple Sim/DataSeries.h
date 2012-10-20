@@ -13,30 +13,24 @@
 //@class PositioningSystem;
 //@class RulesSystem;
 
-@interface DataSeries: NSObject{
+@interface DataSeries: NSObject<NSCoding>{
     NSString *_name;
-    int _databaseId;
+    NSUInteger _databaseId;
     double _pipSize;
     CPTNumericData *_xData; 
     NSMutableDictionary *_yData; 
     NSMutableDictionary *_dataViews;
-    int _sampleRate;
-    //SignalSystem *_signalSystem;
-    //PositioningSystem *_positioningSystem;
+    long _sampleRate;
 }
 
 @property (retain) NSString *name;
-@property (assign) int dbId;
+@property (assign) NSUInteger dbId;
+@property (assign) double pipSize; 
 @property (nonatomic, retain) CPTNumericData * xData; 
 @property (atomic, retain) NSMutableDictionary * yData;
 @property (atomic, retain) NSMutableDictionary * dataViews;  
-@property (assign) int sampleRate;  
-@property (assign) double pipSize;  
-//@property SignalSystem *signalSystem; 
-//@property PositioningSystem *positioningSystem;
-//@property RulesSystem *rulesSystem; 
-
-//@property (retain)            NSString *strategy;
+@property (assign) long sampleRate;
+ 
 
 
 - (id)init;
@@ -44,9 +38,9 @@
 - (id)  initWithName: (NSString *)seriesName 
             AndDbTag: (NSUInteger) databaseId 
           AndPipSize: (double) quotePipSize; 
-//     AndSignalSystem: (SignalSystem *) signalSystem
-//   AndPositionSystem: (PositioningSystem *) positionSystem
-//AndRulesSystem: (RulesSystem *) rulesSystem;
+
+- (void) encodeWithCoder:(NSCoder*)encoder;
+- (id) initWithCoder:(NSCoder*)decoder;
 
 - (NSString *)description;
 
@@ -65,9 +59,9 @@
 - (NSDictionary *) getValues: (NSArray *) fieldNames 
                   AtDateTime: (long) dateTime;
 
--(NSDictionary *)getValues:(NSArray *) fieldNames 
-                AtDateTime: (long) dateTime 
-                WithTicOffset: (long) numberOfTics;
+- (NSDictionary *)getValues:(NSArray *) fieldNames 
+                 AtDateTime: (long) dateTime 
+              WithTicOffset: (long) numberOfTics;
 
 - (NSNumber *) getDateTimeAtIndex: (long) dataIndex;
 
@@ -87,10 +81,6 @@
 - (NSArray *) getFieldNames;
 
 - (BOOL) writeDataSeriesToFile: (NSURL *) fileNameAndPath;
-
-//- (NSArray *) derivedVariables;
-
-
 
 @end 
 

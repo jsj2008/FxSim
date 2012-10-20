@@ -16,9 +16,9 @@
 
 +(int) signOfInt: (int) n;
 
-+(void) calcSortIndexForDoubleArray:(double *) arrayToSort 
-                     WithStartIndex:(int) startIndex 
-                        AndEndIndex:(int) endIndex
-              AndReturningSortIndex:(int *) sortIndexArray;
++(void) calcSortIndexForDoubleArray: (double *) arrayToSort
+                     WithStartIndex: (NSUInteger) startIndex
+                        AndEndIndex: (NSUInteger) endIndex
+              AndReturningSortIndex: (int *) sortIndexArray;
 
 @end

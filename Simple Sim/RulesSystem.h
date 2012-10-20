@@ -18,7 +18,8 @@
 
 - (id) initWithString: (NSString *) ruleString;
 + (BOOL) basicCheck: (NSString *) rulesString;
--(NSArray *) variablesNeeded;
++ (NSString *) combinedRulesString: (NSArray *)rulesArray;
+- (NSArray *) variablesNeeded;
 
 @property (readonly) NSString *ruleString;
 @property (readonly) NSString *type;

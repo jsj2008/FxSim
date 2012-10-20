@@ -181,7 +181,7 @@
         dateTimeArray = (long *)[dateTimeData bytes];
         long *oldDataTimeArray;
         long oldDataLength;
-        int dataOverlapIndex;
+        long dataOverlapIndex;
         
         
         
@@ -198,7 +198,7 @@
                     oldDataTimeArray = (long *) [oldDateTimeData bytes];
                     oldDataLength = [oldDateTimeData length]/sizeof(long);
                     
-                    for(int i = dataOverlapIndex ; i < oldDataLength; i++){
+                    for(long i = dataOverlapIndex ; i < oldDataLength; i++){
                         if(dateTimeArray[i-dataOverlapIndex] != oldDataTimeArray[i]){
                             success = NO;
                             NSLog(@"Problem with overlapping periods, times don't match");
@@ -224,10 +224,10 @@
                     }else{
                         oldData = [oldDataDictionary objectForKey:seriesName];
                         oldArray = (double *)[oldData bytes];
-                        for(int i = dataOverlapIndex ; i <= oldDataLength; i++){
+                        for(long i = dataOverlapIndex ; i <= oldDataLength; i++){
                             emaArray[i-dataOverlapIndex] = oldArray[i];
                         }
-                        for(int i = oldDataLength - dataOverlapIndex; i < dataLength; i++){
+                        for(long i = oldDataLength - dataOverlapIndex; i < dataLength; i++){
                             emaArray[i] = (parameter*midArray[i]) + ((1-parameter) * emaArray[i-1]);
                         }
                         [returnData setObject:emaData forKey:seriesName];
@@ -258,10 +258,10 @@
                     }else{
                         oldData = [oldDataDictionary objectForKey:@"SPREAD"];
                         oldArray = (double *)[oldData bytes];
-                        for(int i = dataOverlapIndex ; i <= oldDataLength; i++){
+                        for(long i = dataOverlapIndex ; i <= oldDataLength; i++){
                             spreadArray[i-dataOverlapIndex] = oldArray[i];
                         }
-                        for(int i = oldDataLength - dataOverlapIndex; i < dataLength; i++){
+                        for(long i = oldDataLength - dataOverlapIndex; i < dataLength; i++){
                             spreadArray[i] = askArray[i] - bidArray[i];
                         }
                         [returnData setObject:spreadData forKey:@"SPREAD"];
@@ -297,10 +297,10 @@
                 if(!useAllNewData){
                     oldData = [oldDataDictionary objectForKey:@"SIGNAL"];
                     oldArray = (double *)[oldData bytes];
-                    for(int i = dataOverlapIndex ; i <= oldDataLength; i++){
+                    for(long i = dataOverlapIndex ; i < oldDataLength; i++){
                         signalArray[i-dataOverlapIndex] = oldArray[i];
                     }
-                    for(int i = oldDataLength - dataOverlapIndex; i < dataLength; i++){
+                    for(long i = oldDataLength - dataOverlapIndex; i < dataLength; i++){
                         signalArray[i] = fastArray[i] - slowArray[i];
                     }
                 }else{

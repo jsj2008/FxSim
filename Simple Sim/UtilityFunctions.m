@@ -58,13 +58,13 @@
 }
 
 +(void) calcSortIndexForDoubleArray:(double *) arrayToSort 
-                     WithStartIndex:(int) startIndex 
-                        AndEndIndex:(int) endIndex
+                     WithStartIndex:(NSUInteger) startIndex
+                        AndEndIndex:(NSUInteger) endIndex
                  AndReturningSortIndex:(int *) sortIndexArray
 {
     double pivotValue = arrayToSort[startIndex]; 
-    int leftIndex = startIndex + 1; 
-    int rightIndex = endIndex;
+    NSUInteger leftIndex = startIndex + 1;
+    NSUInteger rightIndex = endIndex;
     
     if (endIndex > startIndex + 1)
     {

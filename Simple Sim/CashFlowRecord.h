@@ -8,7 +8,7 @@
 
 #import <Foundation/Foundation.h>
 
-@interface CashFlowRecord : NSObject{
+@interface CashFlowRecord : NSObject<NSCoding>{
     double _amount;
     double _resultingBalance;
     long  _dateTime;
@@ -19,6 +19,11 @@
   AndResultingBalance: (double) resultingBalance
           AndDateTime: (long) datetime
             AndReason: (int) reason;
+
+- (void) encodeWithCoder:(NSCoder*)encoder;
+- (id) initWithCoder:(NSCoder*)decoder;
+
+- (NSString *)description;
 
 @property (readonly) double amount;
 @property (readonly) double resultingBalance;

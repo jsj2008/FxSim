@@ -27,10 +27,10 @@
 @property (readonly) double positionCushion;
 @property (readonly) int perfSmoothParam;
 
--(id) init;
--(id) initWithString: (NSString *) initString;
--(long) leadTimeRequired;
--(long) leadTicsRequired;
-+(BOOL) basicCheck: (NSString *) positioningString;
--(NSArray *) variablesNeeded;
+- (id) init;
+- (id) initWithString: (NSString *) initString;
+- (long) leadTimeRequired;
+- (long) leadTicsRequired;
++ (BOOL) basicCheck: (NSString *) positioningString;
+- (NSArray *) variablesNeeded;
 @end

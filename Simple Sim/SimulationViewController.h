@@ -11,33 +11,22 @@
 
 @class DataController;
 @class SimulationController;
+@class Simulation;
 
-@interface SimulationViewController : NSViewController<SimulationOutput, NSTableViewDataSource, NSTableViewDelegate, NSTabViewDelegate, NSWindowDelegate>{
+
+@interface SimulationViewController : NSViewController<NSTableViewDataSource, NSTableViewDelegate, NSTabViewDelegate, NSWindowDelegate>{
     __weak id delegate;
     NSWindowController *fullScreenWindowController;
-    NSMutableArray *simulationTimeSeries;
-    NSMutableArray *simulationSignalTimeSeries;
-    NSArray *importDataArray;
-    NSString *importDataFilename;
-    DataSeries *simulationDataSeries;
-    SeriesPlot *simulationResultsPlot;
-    SeriesPlot *signalAnalysisPlot;
-    SimulationController *simulationController;
-    NSArray *hideObjectsOnStartup;
+    
+    BOOL _doThreads;
+    BOOL _firstTimeSetup;
+    NSArray *_coloursForPlots;
+    
     NSTabViewItem *setupTab;
     NSTabViewItem *plotTab;
     NSTabViewItem *dataTab;
     NSTabViewItem *reportTab;
     NSTabViewItem *signalsTab;
-    BOOL doingSetup;
-    BOOL cancelProcedure;
-    BOOL initialSetupComplete;
-    BOOL doThreads;
-    NSMutableArray *signalTableViewOrdering;
-    BOOL signalTableViewSortedAscending;
-    NSString *signalTableViewSortColumn;
-    
-    BOOL longShortIndicatorOn;
        
     __weak NSScrollView *simulationRunScrollView;
     __weak NSButton *performSimulationButton;
@@ -55,7 +44,6 @@
     
     __weak NSTableView *simulationSignalSelectedTimeSeriesTableView;
     __weak NSTableView *simulationTimeSeriesSelectedTableView;
-    
     
     __weak CPTGraphHostingView *simulationSignalGraphHostingView;
     __weak CPTGraphHostingView *simulationResultGraphHostingView;
@@ -128,10 +116,17 @@
 @property (retain) NSArray *coloursForPlots;
 @property (retain) NSDictionary *fxPairsAndDbIds;
 @property (retain) DataController *dataControllerForUI;
+//@property (retain) NSMutableDictionary *_allSimulations;
+//@property (retain) NSArray *hideObjectsOnStartup;
+//@property (retain) NSMutableArray *signalTableViewOrdering;
+//@property BOOL initialSetupComplete;
+@property BOOL doThreads;
+@property BOOL firstTimeSetup;
 
 @property (weak) IBOutlet NSButton *performSimulationButton;
 @property (weak) IBOutlet NSTableView *simulationTimeSeriesTableView;
 @property (weak) IBOutlet CPTGraphHostingView *simulationResultGraphHostingView;
+@property (weak) IBOutlet CPTGraphHostingView *simulationSignalGraphHostingView;
 @property (weak) IBOutlet NSTableView *simulationNumbersTableView;
 @property (unsafe_unretained) IBOutlet NSTextView *simulationMessagesTextView;
 @property (weak) IBOutlet NSTextField *performSimulationStatusLabel;
@@ -154,6 +149,16 @@
 @property (weak) IBOutlet NSTextField *endDateDoWLabel;
 @property (weak) IBOutlet NSTextField *setupTradingLagTextField;
 @property (weak) IBOutlet NSTableView *reportTableView;
+@property (weak) IBOutlet NSTableView *registeredSimsTableView;
+@property (weak) IBOutlet NSTableView *registeredSimsTableView1;
+@property (weak) IBOutlet NSTableView *registeredSimsTableView2;
+@property (weak) IBOutlet NSTableView *registeredSimsTableView3;
+@property (weak) IBOutlet NSTableView *registeredSimsTableView5;
+@property (weak) IBOutlet NSButton *importSimulationButton;
+@property (weak) IBOutlet NSButton *removeSimulationButton;
+@property (weak) IBOutlet NSScrollView *registeredSimsScrollView1;
+@property (weak) IBOutlet NSButton *exportSimulationButton;
+
 
 - (IBAction)changeSelectedTradingPair:(id)sender;
 - (IBAction)showSetupSheet:(id)sender;
@@ -178,28 +183,11 @@
 - (IBAction)signalAnalysisPlotReload:(id)sender;
 - (IBAction)signalAnalysisPlotFullScreen:(id)sender;
 - (IBAction)simPlotFullScreen:(id)sender;
+- (IBAction)saveWorkingSimulation:(id)sender;
+- (IBAction)importSimulation:(id)sender;
+- (IBAction)removeWorkingSimulation:(id)sender;
 
 
-
-
-- (void) setDelegate:(id)del;
-- (void) addSimInfoToAboutPanelWithName: (NSString *) simName
-                              AndFxPair: (NSString *) fxPair
-                     AndAccountCurrency: (NSString *) accCurrency
-                        AndSimStartTime: (NSString *) simStartTime
-                          AndSimEndTime: (NSString *) simEndTime;
-- (void) addSimulationDataToResultsTableView: (DataSeries *) analysisDataSeries;
-- (void) simulationEnded;
-- (void) initialiseSignalTableView;
-- (void) prepareForSimulationReport;
-- (void) setupResultsReport;
-- (BOOL) doThreads;
-- (void) setDoThreads:(BOOL)doThreadedProcedures;
-- (void) readingRecordSetsProgress: (NSNumber *) progressFraction;
-- (void) progressAsFraction:(NSNumber *) progressValue;
-- (void) progressBarOn;
-- (void) progressBarOff;
-- (void) viewChosenFromMainMenu;
 
 @property (weak) IBOutlet NSProgressIndicator *performSimulationProgressBar;
 @property (weak) IBOutlet NSTextField *aboutSimNameLabel;
@@ -211,11 +199,13 @@
 @property (weak) IBOutlet NSTableView *simulationTradesTableView;
 @property (weak) IBOutlet NSTableView *simulationCashFlowsTableView;
 @property (weak) IBOutlet NSTableView *simulationSignalTableView;
-@property (weak) IBOutlet CPTGraphHostingView *simulationSignalGraphHostingView;
+
 @property (weak) IBOutlet NSTextField *signalAnalysisPlotLeadHours;
 @property (weak) IBOutlet NSTableView *simulationSignalTimeSeriesTableView;
 @property (weak) IBOutlet NSButton *setupTradingWeekendYesNo;
 @property (weak) IBOutlet NSTextField *tradingPairLabel;
+@property (weak) IBOutlet NSTextField *simulationNameLabel;
+
 @property (weak) IBOutlet NSTextField *startLabel;
 @property (weak) IBOutlet NSTextField *endLabel;
 @property (weak) IBOutlet NSTextField *accountCurrencyLabel;
@@ -235,4 +225,15 @@
 @property (weak) IBOutlet NSTextField *setupRulesTextField;
 @property (weak) IBOutlet NSTableView *simulationTimeSeriesSelectedTableView;
 @property (weak) IBOutlet NSTableView *simulationSignalSelectedTimeSeriesTableView;
+
+- (void) setDelegate:(id)del;
+- (void) simulationEnded;
+//- (void) prepareForSimulationReport;
+- (void) setupResultsReport;
+- (void) readingRecordSetsProgress: (NSNumber *) progressFraction;
+- (void) progressAsFraction:(NSNumber *) progressValue;
+- (void) progressBarOn;
+- (void) progressBarOff;
+- (void) viewChosenFromMainMenu;
+
 @end

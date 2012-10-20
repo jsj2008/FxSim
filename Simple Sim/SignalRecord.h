@@ -14,28 +14,16 @@
     long _endTime;
     double _entryPrice;
     double _exitPrice;
-//    double _timeInProfit;
-//    double _maxPotentialProfit;
-//    double _maxPotentialLoss;
 }
-
-//- (id) initWithSignal:(double) signal
-//         AndStartTime: (long) startTime
-//           AndEndTime: (long) endTime
-//        AndEntryPrice: (double) entryPrice
-//         AndExitPrice: (double) exitPrice
-//      AndTimeInProfit: (double) timeInProfit
-//AndMaxPotentialProfit: (double) maxPotentialProfit
-//  AndMaxPotentialLoss: (double) maxPotentialLoss;
 
 - (id) initWithSignal:(double) signal
          AndStartTime: (long) startTime
            AndEndTime: (long) endTime
         AndEntryPrice: (double) entryPrice
          AndExitPrice: (double) exitPrice;
-//      AndTimeInProfit: (double) timeInProfit
-//AndMaxPotentialProfit: (double) maxPotentialProfit
-//  AndMaxPotentialLoss: (double) maxPotentialLoss;
+
+- (void) encodeWithCoder:(NSCoder*)encoder;
+- (id) initWithCoder:(NSCoder*)decoder;
 
 
 @property    double signal;
@@ -43,9 +31,5 @@
 @property    long   endTime;
 @property    double entryPrice;
 @property    double exitPrice;
-//@property    double timeInProfit;
-//@property    double maxPotentialProfit;
-//@property    double maxPotentialLoss;
-
 
 @end

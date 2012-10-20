@@ -8,7 +8,7 @@
 
 #import <Foundation/Foundation.h>
 
-@interface PositionRecord : NSObject{
+@interface PositionRecord : NSObject<NSCoding>{
     int     _amount;        
     long    _dateTime;
     double  _price;
@@ -21,6 +21,9 @@
              AndPrice: (double) price
   AndInterestDateTime: (long) interestDateTime
    AndInterestAccrued: (double) interestAccrued;
+
+- (void) encodeWithCoder:(NSCoder*)encoder;
+- (id) initWithCoder:(NSCoder*)decoder;
 
 
 @property int    amount;        

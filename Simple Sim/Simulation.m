@@ -16,201 +16,324 @@
 #import "PositioningSystem.h"
 #import "SignalSystem.h"
 #import "RulesSystem.h"
+#import "BasicParameters.h"
 
 @interface Simulation()
--(int) resultingExposureForTradeAtIndex: (NSUInteger) index;
--(void) addBalanceAdjustmentWithAmount: (double) amount
-                          AndDateTime: (long) dateTime
-                            AndReason:(BalAdjType) reasonCode;
+- (void) addBalanceAdjustmentWithAmount: (double) amount
+                            AndDateTime: (long) dateTime
+                              AndReason: (BalAdjType) reasonCode;
 @end
 
 @implementation Simulation
 
-
--(id)initWithName: (NSString *) accountName 
-          AndDate: (long) startDateTime 
-       AndBalance: (double) startingBalance 
-      AndCurrency: (NSString *) ISOcode
-   AndTradingPair: (NSString *) codeForTradingPair
-   AndMaxLeverage: (double) leverage
+-(id)  initWithName: (NSString *) accountName 
+       AndStartDate: (long) accStartDate 
+         AndEndDate: (long) accEndDate
+         AndBalance: (double) startingBalance 
+        AndCurrency: (NSString *) ISOcode
+     AndTradingPair: (NSString *) codeForTradingPair
+     AndMaxLeverage: (double) maxLeverage
+    AndSamplingRate: (NSUInteger) dataSamplingRate
+      AndTradingLag: (NSUInteger) signalToTradeLag
+AndTradingTimeStart: (int) tradingTimeStart
+  AndTradingTimeEnd: (int) tradingTimeEnd
 {
     self = [super init];
     if(self){
-        name = accountName;
-        startDate = startDateTime;
-        maxLeverage = leverage;
-        accBalanceArray = [[NSMutableArray alloc] init];
-        tradesArray = [[NSMutableArray alloc] init];
-        signalInfoArray= [[NSMutableArray alloc] init]; 
-        openPositionsArray = [[NSMutableArray alloc] init];
-        reportDataFieldsArray = [[NSMutableArray alloc] init];
-        //spreadCrossingCostInBaseCurrency = 0.0;
-        currentOpenPositionAmount = 0;
-        rulesSystem = [[NSMutableArray alloc] init];
-        simulationResults = [[NSMutableDictionary alloc] init ];
+        _basicParameters = [[BasicParameters alloc] initWithName: accountName 
+                                                      AndAccCode: ISOcode
+                                                     AndBaseCode: [codeForTradingPair substringToIndex:3]
+                                                    AndQuoteCode: [codeForTradingPair substringFromIndex:3]
+                                                    AndStartDate: accStartDate
+                                                      AndEndDate: accEndDate      
+                                                  AndMaxLeverage: maxLeverage
+                                                 AndSamplingRate: dataSamplingRate
+                                                   AndTradingLag: signalToTradeLag
+                                              AndTradingDayStart: tradingTimeStart
+                                                AndTradingDayEnd: tradingTimeEnd];
         
-        accCode = ISOcode;
-        baseCode = [codeForTradingPair substringToIndex:3];
-        quoteCode = [codeForTradingPair substringFromIndex:3];
-        userAddedData = @"None";
+        _accBalanceArray = [[NSMutableArray alloc] init];
+        _tradesArray = [[NSMutableArray alloc] init];
+        _signalInfoArray= [[NSMutableArray alloc] init]; 
+        _openPositionsArray = [[NSMutableArray alloc] init];
+
+        _rulesSystem = [[NSMutableArray alloc] init];
+        _simulationResults = [[NSMutableDictionary alloc] init ];
+        
+        _simulationRunOutput = [[NSTextStorage alloc] init];
+        
+        _userAddedData = @"None";
         
         if(startingBalance > 0){
-            [self addBalanceAdjustmentWithAmount:startingBalance AndDateTime:startDateTime AndReason:TRANSFER];
+            [self addBalanceAdjustmentWithAmount:startingBalance AndDateTime:accStartDate AndReason:TRANSFER];
         }
-        reportDataFieldsArray = [NSArray arrayWithObjects:@"NAME", @"TRADINGPAIR",@"ACCOUNTCURRENCY",@"BLANK",@"--RESULTS--", @"CASHTRANSFERS", @"FINALNAV", @"TRADE PNL", @"INTEREST",  @"BIGGESTDRAWDOWN", @"DRAWDOWNTIME", @"NUMBEROFTRADES", @"SPREADCOST", @"BLANK", @"--PARAMETERS--",@"STARTTIME", @"ENDTIME", @"STRATEGY",@"POSITIONING", @"RULES", @"MAXLEVERAGE", @"TIMESTEP", @"TRADINGLAG", @"TRADINGDAYSTART",@"TRADINGDAYEND", @"USERADDEDDATA", nil]; 
+        _reportDataFieldsArray = [Simulation getReportFields];
+        _isAnalysed = NO;
+         
     }
     
     return self;
 }
 
--(long)leadTimeRequired
+-(void) encodeWithCoder:(NSCoder *)aCoder
 {
-    long leadTimeRequired = 0;
+    [aCoder encodeObject:_accBalanceArray forKey:@"ACCBALANCEARRAY"];
+    [aCoder encodeObject:_tradesArray forKey:@"TRADESARRAY"];
+    [aCoder encodeObject:_signalInfoArray forKey:@"SIGNALINFOARRAY"];
+    [aCoder encodeObject:_simulationResults forKey:@"SIMULATIONRESULTS"];
+    [aCoder encodeObject:_openPositionsArray forKey:@"OPENPOSITIONARRAY"];
+    [aCoder encodeObject:_userAddedData forKey:@"USERDATAADDED"];
+    [aCoder encodeObject:_simulationDataSeries forKey:@"SIMULATIONDATASERIES"];
+    [aCoder encodeObject:_analysisDataSeries forKey:@"ANALYSISDATASERIES"];
+    [aCoder encodeObject:[NSNumber numberWithLong:_dataStartDateTime] forKey:@"DATASTARTDATE"];
     
-    return leadTimeRequired;
-}
-
--(long)leadTicsRequired
-{
-    long leadTicsRequired = 0;
     
-    return leadTicsRequired;
-}
-
--(void) printAccDetails: (long) dateTime
-{
-    NSLog(@"This account has a balance of %5.2f in %@",[self currentBalance],[self accCode]);
-    NSLog(@"This account started on %@",[[NSDate dateWithTimeIntervalSince1970:[self startDate]]descriptionWithCalendarFormat:@"%a %Y-%m-%d" timeZone:[NSTimeZone timeZoneWithName:@"GMT"] locale:nil]);
-    NSLog(@"This account trades %@%@",[self baseCode],[self quoteCode]);
-}
-
--(int) getNumberOfReportDataFields
-{
-    return [reportDataFieldsArray count];
-}
-
--(NSString *)getReportNameFieldAtIndex:(int) nameFieldIndex
-{
-    NSString *fieldName = [reportDataFieldsArray objectAtIndex:nameFieldIndex];
-    if([fieldName isEqualToString:@"BLANK"]){
-        return @"";
-    }else{
-        return fieldName;
-    }
-}
-
--(NSString *)getReportDataFieldAtIndex:(int) dataFieldIndex
-{
-    NSString *dataFieldIdentifier =  [reportDataFieldsArray objectAtIndex:dataFieldIndex];
+    [aCoder encodeObject:[RulesSystem combinedRulesString:[self rulesSystem]] forKey:@"RULESSYSTEMSTRING"];
     
-    if([dataFieldIdentifier isEqualToString:@"BLANK"]){
-        return @"";
-    }
-    if([dataFieldIdentifier isEqualToString:@"--PARAMETERS--"]){
-        return @"";
-    }
-    if([dataFieldIdentifier isEqualToString:@"--RESULTS--"]){
-        return @"";
-    }
-    if([dataFieldIdentifier isEqualToString:@"NAME"]){
-        return [self name];
-    }
-    if([dataFieldIdentifier isEqualToString:@"TRADINGPAIR"]){
-        return [NSString stringWithFormat:@"%@%@", [self baseCode], [self quoteCode]];
-    }
-    if([dataFieldIdentifier isEqualToString:@"ACCOUNTCURRENCY"]){
-        return [self accCode];
-    }
+    [aCoder encodeObject:_basicParameters forKey:@"BASICPARAMETERS"];
+    [aCoder encodeObject:[[self positionSystem] positioningString] forKey:@"POSITIONSYSTEMSTRING"];
+    [aCoder encodeObject:[[self signalSystem] signalString] forKey:@"SIGNALSYSTEMSTRING"];
     
-    if([dataFieldIdentifier isEqualToString:@"STARTTIME"]){
-        return [EpochTime stringDateWithTime:[self startDate]];
+    [aCoder encodeObject:[NSNumber numberWithBool:_isAnalysed] forKey:@"ISANALYSED"];
+    [aCoder encodeObject:_simulationRunOutput forKey:@"SIMULATIONRUNOUTPUT"];
+}
+
+- (id) initWithCoder:(NSCoder *)aDecoder
+{
+    if (self = [super init]) {
+        // If parent class also adopts NSCoding, replace [super init]
+        // with [super initWithCoder:decoder] to properly initialize.
+        
+        // NOTE: Decoded objects are auto-released and must be retained
+        _accBalanceArray = [aDecoder decodeObjectForKey:@"ACCBALANCEARRAY"];
+        _tradesArray = [aDecoder decodeObjectForKey:@"TRADESARRAY"];
+        _signalInfoArray = [aDecoder decodeObjectForKey:@"SIGNALINFOARRAY"];
+        _simulationResults = [aDecoder decodeObjectForKey:@"SIMULATIONRESULTS"];
+        _openPositionsArray = [aDecoder decodeObjectForKey:@"OPENPOSITIONARRAY"]; 
+        _userAddedData = [aDecoder decodeObjectForKey:@"USERDATAADDED"];
+        _simulationDataSeries = [aDecoder decodeObjectForKey:@"SIMULATIONDATASERIES"];
+        _analysisDataSeries = [aDecoder decodeObjectForKey:@"ANALYSISDATASERIES"];
+        _dataStartDateTime = [[aDecoder decodeObjectForKey:@"DATASTARTDATE"] longValue];
+        _basicParameters =  [aDecoder decodeObjectForKey:@"BASICPARAMETERS"];
+                             
+        NSString *rulesString = [aDecoder decodeObjectForKey:@"RULESSYSTEMSTRING"];
+        _rulesSystem = [[NSMutableArray alloc] init]; 
+        BOOL check;
+        check = [self addTradingRules:rulesString];
+        
+        NSString *positioningString = [aDecoder decodeObjectForKey:@"POSITIONSYSTEMSTRING"];
+        _positionSystem = [[PositioningSystem alloc] initWithString:positioningString];
+        NSString *signalString = [aDecoder decodeObjectForKey:@"SIGNALSYSTEMSTRING"];
+        _signalSystem = [[SignalSystem alloc] initWithString:signalString];
+        
+        _reportDataFieldsArray = [Simulation getReportFields];
+        _isAnalysed = [[aDecoder decodeObjectForKey:@"ISANALYSED"] boolValue];
+        _simulationRunOutput = [aDecoder decodeObjectForKey:@"SIMULATIONRUNOUTPUT"];
+        
+        
+        if(check == NO || _positionSystem == Nil || _signalSystem == Nil){
+            NSLog(@"Problem recreating simulation");
+            self = Nil;
+        }
+        
     }
-    if([dataFieldIdentifier isEqualToString:@"ENDTIME"]){
-        return [EpochTime stringDateWithTime:[self endDate]];
-    }
-    if([dataFieldIdentifier isEqualToString:@"STRATEGY"]){
-        return [signalSystem type];
-    }
-    if([dataFieldIdentifier isEqualToString:@"POSITIONING"]){
-        return [positionSystem positioningString];
-    } 
-    if([dataFieldIdentifier isEqualToString:@"RULES"]){
-        NSString *allRules = [[NSString alloc] init];
-        for(int i = 0; i < [rulesSystem count]; i++){
-            if(i==0){
-                allRules = [[rulesSystem objectAtIndex:i] ruleString];
+    return self;
+}
+
++(NSArray *)getReportFields
+{
+    NSArray *reportFields = [NSArray arrayWithObjects:@"NAME", @"TRADINGPAIR",@"ACCOUNTCURRENCY",@"BLANK",@"--RESULTS--", @"CASHTRANSFERS", @"FINALNAV", @"TRADE PNL", @"INTEREST",  @"BIGGESTDRAWDOWN", @"DRAWDOWNTIME", @"NUMBEROFTRADES", @"SPREADCOST", @"BLANK", @"--PARAMETERS--",@"STARTTIME", @"ENDTIME", @"STRATEGY",@"POSITIONING", @"RULES", @"MAXLEVERAGE", @"TIMESTEP", @"TRADINGLAG", @"TRADINGDAYSTART",@"TRADINGDAYEND", @"USERADDEDDATA", nil];
+    return reportFields;
+}
+
+- (BOOL) addTradingRules: (NSString *) rulesString
+{
+    BOOL allOk = YES; 
+    NSString *trimmedRulesString = [rulesString stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+    if([trimmedRulesString length] > 0)
+    {
+        NSString *singleRuleString;
+        RulesSystem *newRule;
+        NSArray *separatedRules  = [trimmedRulesString componentsSeparatedByString:@";"];
+        
+        for(int i = 0; i < [separatedRules count]; i++){
+            singleRuleString = [separatedRules objectAtIndex:i];
+            allOk = [RulesSystem basicCheck:singleRuleString];
+            if(allOk){
+                newRule = [[RulesSystem alloc] initWithString:singleRuleString];
+                if(newRule == Nil){
+                    allOk = NO;
+                }else{
+                    [[self rulesSystem] addObject:newRule];
+                }
             }else{
-                allRules = [NSString stringWithFormat:@"%@;%@",allRules,[[rulesSystem objectAtIndex:i] ruleString]];
+                break;
             }
+            
         }
-        return allRules;
-    } 
-    
-    if([dataFieldIdentifier isEqualToString:@"MAXLEVERAGE"]){
-        return [NSString stringWithFormat:@"%5.0f",maxLeverage];    
-    } 
-    if([dataFieldIdentifier isEqualToString:@"TIMESTEP"]){
-        return [NSString stringWithFormat:@"%d seconds",samplingRate];    
     }
-    if([dataFieldIdentifier isEqualToString:@"TRADINGDAYSTART"]){
-        return [EpochTime stringOfDateTimeForTime:tradingDayStart WithFormat:@"%H:%M"];    
-    }
-    if([dataFieldIdentifier isEqualToString:@"TRADINGDAYEND"]){
-        return [EpochTime stringOfDateTimeForTime:tradingDayEnd WithFormat:@"%H:%M"];    
-    }
-    if([dataFieldIdentifier isEqualToString:@"TRADINGLAG"]){
-        return [NSString stringWithFormat:@"%d seconds",tradingLag];    
-    }
-    if([dataFieldIdentifier isEqualToString:@"USERADDEDDATA"]){
-        return userAddedData;
-    }
-    
-    
-    id returnData = [simulationResults objectForKey:dataFieldIdentifier];
-    if(returnData != nil){
-        if([dataFieldIdentifier isEqualToString:@"DRAWDOWNTIME"]){
-            returnData = [EpochTime stringDateWithTime:[returnData longValue]];
-            return returnData;
-        }
-        
-        if([dataFieldIdentifier isEqualToString:@"PNLUPTIME"] || [dataFieldIdentifier isEqualToString:@"PNLDOWNTIME"]){
-            returnData = [NSString stringWithFormat:@"%d hours",[returnData longValue]/(60*60)];
-        }
-        returnData = [NSString stringWithFormat:@"%5.2f",[returnData floatValue]];
-        
-        return returnData;
-    }
-    
-    
-    return @"Data not found";
+    return allOk;
 }
 
--(void) clearSimulationResults{
-    [simulationResults removeAllObjects];
-}
-
--(void) addObjectToSimulationResults:(id) datum ForKey:(NSString *) key
+-(void) addObjectToSimulationResults:(id) datum 
+                              ForKey:(NSString *) key
 {
-    [simulationResults setObject:datum forKey:key];
+    [[self simulationResults] setObject:datum forKey:key];
 }
 
--(void)addCashTransferWithAmount: (double) amount
-                     AndDateTime: (long) dateTime
+- (double) currentBalance
 {
-    [self addBalanceAdjustmentWithAmount:amount  
-                             AndDateTime:dateTime
-                               AndReason:TRANSFER];
+    double balance;
+    if([[self accBalanceArray] count]>0){
+        CashFlowRecord *cashFlowRecord;
+        cashFlowRecord = [[self accBalanceArray] objectAtIndex:[[self accBalanceArray] count]-1];
+        balance = [cashFlowRecord resultingBalance];
+    }else{
+        balance = 0.0;
+    }
+    return balance;
 }
+
+
+- (int) currentExposure
+{
+    long positionIndex = 0;
+    PositionRecord *openPosition;
+    int currentExposure = 0;
+    if([[self openPositionsArray] count]>0)
+    {
+        while(positionIndex < [[self openPositionsArray] count])
+        {
+            openPosition = [[self openPositionsArray] objectAtIndex:positionIndex]; 
+            currentExposure = currentExposure + [openPosition amount];
+            positionIndex++;
+        }
+    }
+    return currentExposure;
+}
+
+- (NSDictionary *) getPerformanceAttribution
+{
+    NSDictionary * perfAttrib = [[NSMutableDictionary alloc] init];
+    double transferAmounts = 0.0;
+    double tradePnl = 0.0;
+    double interestAccrued = 0.0;
+    double other = 0.0;
+    BOOL unIdentified = NO;
+    CashFlowRecord *balAdj;
+    
+    for(int balAdjIndex = 0;balAdjIndex < [[self accBalanceArray] count]; balAdjIndex++)
+    {
+        balAdj = [[self accBalanceArray] objectAtIndex:balAdjIndex];
+    
+        switch([balAdj reason]){
+        case(TRANSFER):
+            transferAmounts = transferAmounts + [balAdj amount];
+            break;
+        case(TRADE_PNL):
+            tradePnl = tradePnl + [balAdj amount];
+            break;
+        case(INTEREST):
+            interestAccrued = interestAccrued + [balAdj amount];
+            break;
+        default:
+            other = other + [balAdj amount];
+            unIdentified = YES;
+            break;
+        }
+    }
+    [perfAttrib  setValue:[NSNumber numberWithDouble:transferAmounts] forKey:@"TRANSFER"];  
+    [perfAttrib setValue:[NSNumber numberWithDouble:tradePnl] forKey:@"TRADEPNL"];
+    [perfAttrib setValue:[NSNumber numberWithDouble:interestAccrued] forKey:@"INTEREST"];
+    if(unIdentified){
+        [perfAttrib setValue:[NSNumber numberWithDouble:other] forKey:@"UNKNOWN"];
+    }
+    return perfAttrib;
+}
+
+#pragma mark -
+#pragma mark General Methods, About Positions
+
+-(NSUInteger) numberOfPositions
+{
+    return [[self openPositionsArray] count];
+}
+
+-(double) wgtAverageCostOfPosition
+{
+    double wgtCost = 0.0;
+    int positionSize = 0;
+    for(int positionIndex = 0; positionIndex < [[self openPositionsArray] count];positionIndex++){
+        PositionRecord *openPosition;
+        openPosition = [[self openPositionsArray] objectAtIndex:positionIndex];
+        wgtCost = wgtCost + [openPosition amount] * [openPosition price];
+        positionSize = positionSize + [openPosition amount]; 
+    }
+    if(positionSize != 0)
+    {
+        return wgtCost/positionSize;
+    }else{
+        return 0.0;
+    }
+}
+
+- (NSDictionary *) detailsOfPositionAtIndex:(int)positionIndex
+{
+    NSMutableDictionary *positionDetails = [[NSMutableDictionary alloc] init];
+    PositionRecord *openPosition;
+    openPosition = [[self openPositionsArray] objectAtIndex:positionIndex];
+    [positionDetails setObject:[NSNumber numberWithInt:openPosition.amount ] forKey:@"AMOUNT"];
+    [positionDetails setObject:[NSNumber numberWithLong:openPosition.dateTime ] forKey:@"DATETIME"];
+    [positionDetails setObject:[NSNumber numberWithDouble:openPosition.price] forKey:@"PRICE"];
+    [positionDetails setObject:[NSNumber numberWithInt:openPosition.interestAccrued] forKey:@"INTERESTACCURED"];
+    [positionDetails setObject:[NSNumber numberWithDouble:openPosition.interestAccruedDateTime] forKey:@"INTERESTTIMEDATE"];
+    return positionDetails;
+    
+}
+
+- (int) sizeOfPositionAtIndex:(int) positionIndex{
+    PositionRecord *openPosition;
+    openPosition = [[self openPositionsArray] objectAtIndex:positionIndex];
+    return [openPosition amount];
+}
+
+- (double) entryPriceOfPositionAtIndex:(int) positionIndex{
+    PositionRecord *openPosition;
+    openPosition = [[self openPositionsArray] objectAtIndex:positionIndex];
+    return [openPosition price];
+}
+
+
+- (long) dateTimeOfInterestForPositionAtIndex:(int) positionIndex{
+    PositionRecord *openPosition;
+    openPosition = [[self openPositionsArray] objectAtIndex:positionIndex];
+    return [openPosition interestAccruedDateTime];
+}
+
+- (long) timeDateOfEarliestPosition
+{
+    if([[self openPositionsArray] count] >0)
+    {
+        PositionRecord *openPosition;
+        openPosition = [[self openPositionsArray] objectAtIndex:0];
+        return [openPosition dateTime];
+    }else{
+        return 0;
+    }
+}
+
+#pragma mark -
+#pragma mark General Methods, About Balance Adjustments
 
 -(void)addBalanceAdjustmentWithAmount: (double) amount
                           AndDateTime: (long) dateTime
-                            AndReason:(BalAdjType) reasonCode
+                            AndReason: (BalAdjType) reasonCode
 {
     CashFlowRecord *cashFlowRecord;
     double newAccountBalance;
     
-    if([accBalanceArray count]>0){
-        CashFlowRecord *lastCashFlowRecord = [accBalanceArray objectAtIndex:[accBalanceArray count]-1];
+    if([[self accBalanceArray] count]>0){
+        CashFlowRecord *lastCashFlowRecord = [[self accBalanceArray] objectAtIndex:[[self accBalanceArray] count]-1];
         newAccountBalance = [lastCashFlowRecord resultingBalance] + amount;
     }else{
         newAccountBalance = amount; 
@@ -220,97 +343,125 @@
                                         AndResultingBalance:newAccountBalance 
                                                 AndDateTime:dateTime 
                                                   AndReason:reasonCode];
-    [accBalanceArray addObject:cashFlowRecord];
-}
-
-//- (int) addSignalStatisticsWithSignal: (double) signal
-//                       AndEntryTime: (long) entryTime
-//                        AndExitTime: (long) exitTime
-//                      AndEntryPrice: (double)entryPrice
-//                       AndExitPrice: (double) exitPrice
-//                    AndTimeInProfit: (double) timeInProfit
-//              AndMaxPotentialProfit: (double) potentialProfit
-//                AndMaxPotentialLoss: (double) potentialLoss
-//{
-//    SignalRecord *signalRecord;
-//    signalRecord = [[SignalRecord alloc] initWithSignal:signal 
-//                                           AndStartTime:entryTime 
-//                                             AndEndTime:exitTime 
-//                                          AndEntryPrice:entryPrice 
-//                                           AndExitPrice:exitPrice 
-//                                        AndTimeInProfit:timeInProfit 
-//                                  AndMaxPotentialProfit:potentialProfit 
-//                                    AndMaxPotentialLoss:potentialLoss];
-//    [signalInfoArray addObject:signalRecord];
-//    return [signalInfoArray count] - 1;
-//}
-
-- (int) addSignalStatisticsWithSignal: (double) signal
-                         AndEntryTime: (long) entryTime
-                          AndExitTime: (long) exitTime
-                        AndEntryPrice: (double)entryPrice
-                         AndExitPrice: (double) exitPrice
-{
-    SignalRecord *signalRecord;
-    signalRecord = [[SignalRecord alloc] initWithSignal:signal 
-                                           AndStartTime:entryTime 
-                                             AndEndTime:exitTime 
-                                          AndEntryPrice:entryPrice 
-                                           AndExitPrice:exitPrice];
-    [signalInfoArray addObject:signalRecord];
-    return [signalInfoArray count] - 1;
+    [[self accBalanceArray] addObject:cashFlowRecord];
 }
 
 
-- (double) currentBalance
+- (NSDictionary *) detailsOfBalanceAdjustmentIndex: (NSUInteger)tradeIndex
 {
-    double balance;
-    if([accBalanceArray count]>0){
-        CashFlowRecord *cashFlowRecord;
-        cashFlowRecord = [accBalanceArray objectAtIndex:[accBalanceArray count]-1];
-        balance = [cashFlowRecord resultingBalance];
-    }else{
-        balance = 0.0;
-    }
-    return balance;
-}
-
-
--(int) currentExposure
-{
-    long positionIndex = 0;
-    PositionRecord *openPosition;
-    int currentExposure = 0;
-    if([openPositionsArray count]>0)
+    NSMutableDictionary *balAdjDetails = [[NSMutableDictionary alloc] init];
+    CashFlowRecord *balAdj;
+    balAdj = [[self accBalanceArray] objectAtIndex:tradeIndex];
+    
+    [balAdjDetails setObject:[NSNumber numberWithLong:[balAdj dateTime]] forKey:@"DATETIME"];
+    [balAdjDetails setObject:[NSNumber numberWithDouble:[balAdj amount]] forKey:@"AMOUNT"];
+    
+    [balAdjDetails setObject:[NSNumber numberWithDouble:[balAdj resultingBalance]] forKey:@"ENDBAL"];
+    NSString *reasonString;
+    switch([balAdj reason])
     {
-        while(positionIndex < [openPositionsArray count])
-        {
-            openPosition = [openPositionsArray objectAtIndex:positionIndex]; 
-            currentExposure = currentExposure + [openPosition amount];
-            positionIndex++;
-        }
-    }
-    return currentExposure;
+        case TRANSFER:
+            reasonString = @"TRANSFER";
+            break;
+        case TRADE_PNL:
+            reasonString = @"TRADE PNL";
+            break;
+        case INTEREST:
+            reasonString = @"INTEREST";
+            break;
+        default:
+            reasonString = @"UNKNOWN";
+            break;
+    }   
+    
+    [balAdjDetails setObject:reasonString forKey:@"REASON"];
+    return balAdjDetails;
 }
 
--(void) printPositions
+
+- (double) getAmountForBalanceAdjustmentAtIndex:(NSUInteger) balAdjIndex
 {
-    long positionIndex = 0;
-    PositionRecord *openPosition;
-    while(positionIndex <= [openPositionsArray count])
+    CashFlowRecord *balAdj;
+    balAdj = [[self accBalanceArray] objectAtIndex:balAdjIndex];
+    return [balAdj amount];
+}
+
+- (long) getDateTimeForBalanceAdjustmentAtIndex:(NSUInteger) balAdjIndex
+{
+    CashFlowRecord *balAdj;
+    balAdj = [[self accBalanceArray] objectAtIndex:balAdjIndex];
+    return [balAdj dateTime];
+}
+
+- (double) getResultingBalanceForBalanceAdjustmentAtIndex:(NSUInteger) balAdjIndex
+{
+    CashFlowRecord *balAdj;
+    balAdj = [[self accBalanceArray] objectAtIndex:balAdjIndex];
+    return [balAdj resultingBalance];
+}
+
+- (NSString *) getReasonForBalanceAdjustmentAtIndex:(NSUInteger) balAdjIndex
+{
+    CashFlowRecord *balAdj;
+    balAdj = [[self accBalanceArray] objectAtIndex:balAdjIndex];
+    NSString *reasonString;
+    switch([balAdj reason])
     {
-        openPosition = [openPositionsArray objectAtIndex:positionIndex];
-        NSLog(@"%lu Position %d at price %5.4f" , [openPosition dateTime], [openPosition amount], [openPosition price]);
-        positionIndex++;
-    }
+        case TRANSFER:
+            reasonString = @"TRANSFER";
+            break;
+        case TRADE_PNL:
+            reasonString = @"TRADE PNL";
+            break;
+        case INTEREST:
+            reasonString = @"INTEREST";
+            break;
+        default:
+            reasonString = @"UNKNOWN";
+            break;
+    }   
+    
+    return reasonString;
 }
 
--(void) addInterestToPosition:(int) positionIndex
-                   WithAmount:(int) interestAmount 
-                       AtTime:(long) interestDateTime
+- (int) numberOfBalanceAdjustments
+{
+    return (int)[[self accBalanceArray] count];
+}
+
+- (NSString *) getBalanceDetailToPrint:(int) balAdjIndex;
+{
+    CashFlowRecord *newBalAdj; 
+    NSString *reason;
+    NSString *dateTimeString;
+    
+    newBalAdj = [[self accBalanceArray] objectAtIndex:balAdjIndex];
+    
+    switch(newBalAdj.reason){
+        case(TRANSFER):
+            reason = @"TRANSFER";
+            break;
+        case(TRADE_PNL):
+            reason = @"TRADEPNL";
+            break;
+        case(INTEREST):
+            reason = @"INTEREST";
+            break;
+        default:
+            reason = @"UNKNOWN";
+            break;
+    }
+    dateTimeString = [EpochTime stringDateWithTime:newBalAdj.dateTime];
+    
+    return [NSString stringWithFormat: @"On %@ the account was adjusted by %@ %5.2f to %5.2f because of %@ \n",dateTimeString, [self accCode],newBalAdj.amount, newBalAdj.resultingBalance, reason];
+}
+
+- (void) addInterestToPosition: (int) positionIndex
+                    WithAmount: (int) interestAmount 
+                        AtTime: (long) interestDateTime
 {
     PositionRecord *openPosition;
-    openPosition = [openPositionsArray objectAtIndex:positionIndex];
+    openPosition = [[self openPositionsArray] objectAtIndex:positionIndex];
     [openPosition setInterestAccrued:[openPosition interestAccrued] + interestAmount];
     [openPosition setInterestAccruedDateTime:interestDateTime];
     
@@ -318,6 +469,10 @@
                              AndDateTime:interestDateTime 
                                AndReason:INTEREST];
 }
+
+
+#pragma mark -
+#pragma mark General Methods, About Trades
 
 -(double) addTradeWithAmount: (int) tradeAmount 
                       AtTime: (long) tradeDateTime 
@@ -331,22 +486,22 @@
     double realisedPnl = 0.0;
     //adjust the positions as nessesary. If there are opposite position these will be closed oldest first
     
-    if([openPositionsArray count] == 0 || ([UtilityFunctions signOfInt:[self currentExposure]] == [UtilityFunctions signOfInt:tradeAmount])){
+    if([[self openPositionsArray] count] == 0 || ([UtilityFunctions signOfInt:[self currentExposure]] == [UtilityFunctions signOfInt:tradeAmount])){
         PositionRecord *newPosition; 
         newPosition = [[PositionRecord alloc] initWithAmount:tradeAmount 
                                                  AndDateTime:tradeDateTime 
                                                     AndPrice:tradePrice 
                                          AndInterestDateTime:tradeDateTime 
                                           AndInterestAccrued:0.0];
-        [openPositionsArray addObject:newPosition];
+        [[self openPositionsArray] addObject:newPosition];
     }else{
         int tradeRemainder = tradeAmount;
         int positionsToCancel = 0;
         int iPos = 0;
         PositionRecord *openPosition;
         iPos = 0;
-        while(iPos < [openPositionsArray count]  && tradeRemainder != 0){
-            openPosition = [openPositionsArray objectAtIndex:iPos];
+        while(iPos < [[self openPositionsArray] count]  && tradeRemainder != 0){
+            openPosition = [[self openPositionsArray] objectAtIndex:iPos];
             
             if([UtilityFunctions signOfInt:[openPosition amount]]*[UtilityFunctions signOfInt:tradeAmount] == -1)
             {
@@ -380,7 +535,7 @@
         }
         if(positionsToCancel >0){
             for(int i = 0; i <positionsToCancel;i++){
-                [openPositionsArray removeObjectAtIndex:0];
+                [[self openPositionsArray] removeObjectAtIndex:0];
             }
         }
         if(abs(tradeRemainder)>0){
@@ -390,117 +545,38 @@
                                                         AndPrice:tradePrice
                                              AndInterestDateTime:tradeDateTime
                                               AndInterestAccrued:0.0];
-            [openPositionsArray addObject:newPosition];
+            [[self openPositionsArray] addObject:newPosition];
         }
-               
+        
     }
     
     //Add the trade
     TransactionRecord *newTrade;
     double spreadInAccountCurrency;
-    if([accCode isEqualToString:quoteCode]){
+    if([[self accCode] isEqualToString:[self quoteCode]]){
         spreadInAccountCurrency = baseQuoteAskPrice-baseQuoteBidPrice;
     }else{
-          spreadInAccountCurrency = (baseQuoteAskPrice-baseQuoteBidPrice)/baseQuoteBidPrice;  
+        spreadInAccountCurrency = (baseQuoteAskPrice-baseQuoteBidPrice)/baseQuoteBidPrice;  
     }
     
     newTrade = [[TransactionRecord alloc] initWithAmount:tradeAmount 
                                              AndDateTime:tradeDateTime 
                                                 AndPrice:tradePrice AndResultingExposure:[self currentExposure] 
                                                AndSpread:baseQuoteAskPrice-baseQuoteBidPrice AndSpreadInAccCurrency:spreadInAccountCurrency AndSignalDateTime:timeOfSignal ];
-    [tradesArray addObject:newTrade];
+    [[self tradesArray] addObject:newTrade];
     return realisedPnl;
 }
 
--(int) resultingExposureForTradeAtIndex: (NSUInteger) tradeIndex
+- (NSUInteger) numberOfTrades
 {
-    return [[tradesArray objectAtIndex:tradeIndex] resultingMarketExposure];
+    return [[self tradesArray] count];
 }
 
--(int) numberOfPositions
-{
-    return (int)[openPositionsArray count];
-}
-
--(double) wgtAverageCostOfPosition
-{
-    double wgtCost = 0.0;
-    int positionSize = 0;
-    for(int positionIndex = 0; positionIndex < [openPositionsArray count];positionIndex++){
-        PositionRecord *openPosition;
-        openPosition = [openPositionsArray objectAtIndex:positionIndex];
-        wgtCost = wgtCost + [openPosition amount] * [openPosition price];
-        positionSize = positionSize + [openPosition amount]; 
-    }
-    if(positionSize != 0)
-    {
-        return wgtCost/positionSize;
-    }else{
-        return 0.0;
-    }
-}
-
--(NSDictionary *) detailsOfPositionAtIndex:(int)positionIndex
-{
-    NSMutableDictionary *positionDetails = [[NSMutableDictionary alloc] init];
-    PositionRecord *openPosition;
-    openPosition = [openPositionsArray objectAtIndex:positionIndex];
-    [positionDetails setObject:[NSNumber numberWithInt:openPosition.amount ] forKey:@"AMOUNT"];
-    [positionDetails setObject:[NSNumber numberWithLong:openPosition.dateTime ] forKey:@"DATETIME"];
-    [positionDetails setObject:[NSNumber numberWithDouble:openPosition.price] forKey:@"PRICE"];
-    [positionDetails setObject:[NSNumber numberWithInt:openPosition.interestAccrued] forKey:@"INTERESTACCURED"];
-    [positionDetails setObject:[NSNumber numberWithDouble:openPosition.interestAccruedDateTime] forKey:@"INTERESTTIMEDATE"];
-    return positionDetails;
-    
-}
-
--(int) sizeOfPositionAtIndex:(int) positionIndex{
-    PositionRecord *openPosition;
-    openPosition = [openPositionsArray objectAtIndex:positionIndex];
-    return [openPosition amount];
-}
-
--(long) dateTimeOfPositionAtIndex:(int) positionIndex{
-    PositionRecord *openPosition;
-    openPosition = [openPositionsArray objectAtIndex:positionIndex];
-    return [openPosition dateTime];
-}
-
--(double) entryPriceOfPositionAtIndex:(int) positionIndex{
-    PositionRecord *openPosition;
-    openPosition = [openPositionsArray objectAtIndex:positionIndex];
-    return [openPosition price];
-}
-
-
--(long) dateTimeOfInterestForPositionAtIndex:(int) positionIndex{
-    PositionRecord *openPosition;
-    openPosition = [openPositionsArray objectAtIndex:positionIndex];
-    return [openPosition interestAccruedDateTime];
-}
-
--(long)timeDateOfEarliestPosition
-{
-    if([openPositionsArray count] >0)
-    {
-        PositionRecord *openPosition;
-        openPosition = [openPositionsArray objectAtIndex:0];
-        return [openPosition dateTime];
-    }else{
-        return 0;
-    }
-}
-
--(int)numberOfTrades
-{
-    return (int)[tradesArray count];
-}
-
--(NSDictionary *)detailsOfTradeAtIndex:(int)tradeIndex
+- (NSDictionary *) detailsOfTradeAtIndex:(NSUInteger)tradeIndex
 {
     NSMutableDictionary *tradeDetails = [[NSMutableDictionary alloc] init];
     TransactionRecord *trade;
-    trade = [tradesArray objectAtIndex:tradeIndex];
+    trade = [[self tradesArray] objectAtIndex:tradeIndex];
     [tradeDetails setObject:[NSNumber numberWithInt:[trade amount] ] forKey:@"AMOUNT"];
     [tradeDetails setObject:[NSNumber numberWithLong:[trade dateTime]] forKey:@"DATETIME"];
     [tradeDetails setObject:[NSNumber numberWithDouble:[trade price]] forKey:@"PRICE"];
@@ -508,55 +584,185 @@
     [tradeDetails setObject:[NSNumber numberWithDouble:[trade spread]] forKey:@"SPREAD"];
     [tradeDetails setObject:[NSNumber numberWithLong:[trade signalDateTime]] forKey:@"SIGDATETIME"]; 
     return tradeDetails;
- }
+}
 
 
--(int)getAmountForTradeAtIndex:(int) tradeIndex
+- (int) getAmountForTradeAtIndex:(NSUInteger) tradeIndex
 {
     TransactionRecord *trade;
-    trade = [tradesArray objectAtIndex:tradeIndex];
+    trade = [[self tradesArray] objectAtIndex:tradeIndex];
     return trade.amount;
 }
 
--(long)getDateTimeForTradeAtIndex:(int) tradeIndex
+- (long) getDateTimeForTradeAtIndex:(NSUInteger) tradeIndex
 {
     TransactionRecord *trade;
-    trade = [tradesArray objectAtIndex:tradeIndex];
+    trade = [[self tradesArray] objectAtIndex:tradeIndex];
     return [trade dateTime];
 }
 
--(double)getPriceForTradeAtIndex:(int) tradeIndex
+- (double) getPriceForTradeAtIndex:(NSUInteger) tradeIndex
 {
     TransactionRecord *trade;
-    trade = [tradesArray objectAtIndex:tradeIndex];
+    trade = [[self tradesArray] objectAtIndex:tradeIndex];
     return [trade price];
 }
 
--(double)getTotalSpreadCostForTradeAtIndex:(int) tradeIndex
+- (int) getResultingMarketExposureForTradeAtIndex:(NSUInteger) tradeIndex
 {
     TransactionRecord *trade;
-    trade = [tradesArray objectAtIndex:tradeIndex];
-    return -([trade spreadInAccCurrency]*abs([trade amount]))/2;
-}
-
-
-
--(int)getResultingMarketExposureForTradeAtIndex:(int) tradeIndex
-{
-    TransactionRecord *trade;
-    trade = [tradesArray objectAtIndex:tradeIndex];
+    trade = [[self tradesArray] objectAtIndex:tradeIndex];
     return [trade resultingMarketExposure];
 }
 
--(NSString *)getTradeDetailToPrint:(int) tradeIndex;
+- (NSString *) getTradeDetailToPrint:(NSUInteger) tradeIndex;
 {
     TransactionRecord *trade;
     NSString *dateTimeString;
-    trade = [tradesArray objectAtIndex:tradeIndex];
+    trade = [[self tradesArray] objectAtIndex:tradeIndex];
     dateTimeString = [EpochTime stringDateWithTime:[trade dateTime]];
-    return [NSString stringWithFormat: @"On %@ Traded %@ %d  at Price %@ %5.2f resulting in exposure %@ %d",
-            dateTimeString, baseCode, [trade amount], quoteCode, [trade price], baseCode, [trade resultingMarketExposure]];    
+    return [NSString stringWithFormat: @"On %@ Traded %@ %d  at Price %@ %5.2f resulting in exposure %@ %d \n",
+            dateTimeString, [self baseCode], [trade amount], [self quoteCode], [trade price], [self baseCode], [trade resultingMarketExposure]];    
 }
+
+
+
+#pragma mark -
+#pragma mark General Methods, About Report Data
+
+
+-(NSUInteger) getNumberOfReportDataFields
+{
+    return [[self reportDataFieldsArray] count];
+}
+
+-(NSString *)getReportNameFieldAtIndex:(NSUInteger) nameFieldIndex
+{
+    NSString *fieldName = [[self reportDataFieldsArray] objectAtIndex:nameFieldIndex];
+    if([fieldName isEqualToString:@"BLANK"]){
+        return @"";
+    }else{
+        return fieldName;
+    }
+}
+
+-(NSString *)getReportDataFieldAtIndex:(NSUInteger) dataFieldIndex
+{
+    NSString *dataFieldIdentifier =  [[Simulation getReportFields] objectAtIndex:dataFieldIndex];
+    
+    if([dataFieldIdentifier isEqualToString:@"BLANK"]){
+        return @"";
+    }
+    if([dataFieldIdentifier isEqualToString:@"--PARAMETERS--"]){
+        return @"";
+    }
+    if([dataFieldIdentifier isEqualToString:@"--RESULTS--"]){
+        return @"";
+    }
+    if([dataFieldIdentifier isEqualToString:@"NAME"]){
+        return [self name];
+    }
+    if([dataFieldIdentifier isEqualToString:@"TRADINGPAIR"]){
+        return [NSString stringWithFormat:@"%@%@", [self baseCode], [self quoteCode]];
+    }
+    if([dataFieldIdentifier isEqualToString:@"ACCOUNTCURRENCY"]){
+        return [self accCode];
+    }
+    
+    if([dataFieldIdentifier isEqualToString:@"STARTTIME"]){
+        return [EpochTime stringDateWithTime:[self startDate]];
+    }
+    if([dataFieldIdentifier isEqualToString:@"ENDTIME"]){
+        return [EpochTime stringDateWithTime:[self endDate]];
+    }
+    if([dataFieldIdentifier isEqualToString:@"STRATEGY"]){
+        return [[self signalSystem] signalString];
+    }
+    if([dataFieldIdentifier isEqualToString:@"POSITIONING"]){
+        return [[self positionSystem] positioningString];
+    } 
+    if([dataFieldIdentifier isEqualToString:@"RULES"]){
+        return [RulesSystem combinedRulesString:[self rulesSystem]];
+    } 
+    
+    if([dataFieldIdentifier isEqualToString:@"MAXLEVERAGE"]){
+        return [NSString stringWithFormat:@"%5.0f",[self maxLeverage]];    
+    } 
+    if([dataFieldIdentifier isEqualToString:@"TIMESTEP"]){
+        return [NSString stringWithFormat:@"%ld seconds",[self samplingRate]];
+    }
+    if([dataFieldIdentifier isEqualToString:@"TRADINGDAYSTART"]){
+        return [EpochTime stringOfDateTimeForTime:[self tradingDayStart] WithFormat:@"%H:%M"];    
+    }
+    if([dataFieldIdentifier isEqualToString:@"TRADINGDAYEND"]){
+        return [EpochTime stringOfDateTimeForTime:[self tradingDayEnd] WithFormat:@"%H:%M"];    
+    }
+    if([dataFieldIdentifier isEqualToString:@"TRADINGLAG"]){
+        return [NSString stringWithFormat:@"%ld seconds",[self tradingLag]];
+    }
+    if([dataFieldIdentifier isEqualToString:@"USERADDEDDATA"]){
+        return [self userAddedData];
+    }
+    
+    
+    id returnData = [[self simulationResults] objectForKey:dataFieldIdentifier];
+    if(returnData != nil){
+        if([dataFieldIdentifier isEqualToString:@"DRAWDOWNTIME"]){
+            returnData = [EpochTime stringDateWithTime:[returnData longValue]];
+            return returnData;
+        }
+        
+        if([dataFieldIdentifier isEqualToString:@"PNLUPTIME"] || [dataFieldIdentifier isEqualToString:@"PNLDOWNTIME"]){
+            returnData = [NSString stringWithFormat:@"%ld hours",[returnData longValue]/(60*60)];
+        }
+        returnData = [NSString stringWithFormat:@"%5.2f",[returnData floatValue]];
+        
+        return returnData;
+    }
+    
+    
+    return @"Data not found";
+}
+
+#pragma mark -
+#pragma mark General Methods, About Signals
+
+- (NSUInteger) addSignalStatisticsWithSignal: (double) signal
+                         AndEntryTime: (long) entryTime
+                          AndExitTime: (long) exitTime
+                        AndEntryPrice: (double)entryPrice
+                         AndExitPrice: (double) exitPrice
+{
+    SignalRecord *signalRecord;
+    signalRecord = [[SignalRecord alloc] initWithSignal:signal 
+                                           AndStartTime:entryTime 
+                                             AndEndTime:exitTime 
+                                          AndEntryPrice:entryPrice 
+                                           AndExitPrice:exitPrice];
+    [[self signalInfoArray] addObject:signalRecord];
+    return [[self signalInfoArray] count] - 1;
+}
+
+-(NSUInteger)numberOfSignals
+{
+    return [[self signalInfoArray] count];
+}
+
+-(NSDictionary *)detailsOfSignalAtIndex:(NSUInteger)signalInfoIndex
+{
+    NSMutableDictionary *signalInfoDetails = [[NSMutableDictionary alloc] init];
+    SignalRecord *signalRecord;
+    signalRecord = [[self signalInfoArray] objectAtIndex:signalInfoIndex];
+    [signalInfoDetails setObject:[NSNumber numberWithDouble:[signalRecord signal]] forKey:@"SIGNAL"];
+    [signalInfoDetails setObject:[NSNumber numberWithLong:[signalRecord startTime]] forKey:@"ENTRYTIME"];
+    [signalInfoDetails setObject:[NSNumber numberWithLong:[signalRecord endTime]] forKey:@"EXITTIME"]; 
+    [signalInfoDetails setObject:[NSNumber numberWithDouble:[signalRecord entryPrice]] forKey:@"ENTRYPRICE"];
+    [signalInfoDetails setObject:[NSNumber numberWithDouble:[signalRecord exitPrice]] forKey:@"EXITPRICE"];
+    return signalInfoDetails;
+}
+
+#pragma mark -
+#pragma mark General Methods, Data Output
 
 -(BOOL)writeTradesToFile:(NSURL *) urlOfFile
 {
@@ -579,10 +785,10 @@
         TransactionRecord *trade;
         lineOfDataAsString = @"DATETIME, CODE, AMOUNT, PRICE, RESULTING EXPOSURE \r\n";
         [outFile writeData:[lineOfDataAsString dataUsingEncoding:NSUTF8StringEncoding]];
-        for(int tradeIndex = 0; tradeIndex < [tradesArray count];tradeIndex++){
-            trade = [tradesArray objectAtIndex:tradeIndex];
+        for(int tradeIndex = 0; tradeIndex < [[self tradesArray] count];tradeIndex++){
+            trade = [[self tradesArray] objectAtIndex:tradeIndex];
             dateTimeString = [EpochTime stringDateWithTime:[trade dateTime]];
-            lineOfDataAsString = [NSString stringWithFormat:@"%@, %@%@, %d, %5.4f, %d", dateTimeString, baseCode, quoteCode, [trade amount], [trade price], [trade resultingMarketExposure]];
+            lineOfDataAsString = [NSString stringWithFormat:@"%@, %@%@, %d, %5.4f, %d", dateTimeString, [self baseCode], [self quoteCode], [trade amount], [trade price], [trade resultingMarketExposure]];
             lineOfDataAsString = [lineOfDataAsString stringByAppendingFormat:@"\r\n"];
             [outFile writeData:[lineOfDataAsString dataUsingEncoding:NSUTF8StringEncoding]];
         }
@@ -591,6 +797,7 @@
     return allOk;
     
 }
+
 -(BOOL)writeBalanceAdjustmentsToFile:(NSURL *) urlOfFile
 {
     BOOL allOk = YES;
@@ -613,26 +820,26 @@
         CashFlowRecord *balAdj;
         lineOfDataAsString = @"DATETIME, AMOUNT, REASON, RESULTING BALANCE, CODE \r\n";
         [outFile writeData:[lineOfDataAsString dataUsingEncoding:NSUTF8StringEncoding]];
-        for(int balAdjIndex = 0; balAdjIndex < [accBalanceArray count];balAdjIndex++){
-            balAdj = [accBalanceArray objectAtIndex:balAdjIndex];
+        for(int balAdjIndex = 0; balAdjIndex < [[self accBalanceArray] count];balAdjIndex++){
+            balAdj = [[self accBalanceArray] objectAtIndex:balAdjIndex];
             dateTimeString = [EpochTime stringDateWithTime:[balAdj dateTime]];
             switch([balAdj reason])
             {
                 case TRANSFER:
-                    reasonString = [NSString stringWithString:@"TRANSFER"];
+                    reasonString = @"TRANSFER";
                     break;
                 case TRADE_PNL:
-                    reasonString = [NSString stringWithString:@"TRADE PNL"];
+                    reasonString = @"TRADE PNL";
                     break;
                 case INTEREST:
-                    reasonString = [NSString stringWithString:@"INTEREST"];
+                    reasonString = @"INTEREST";
                     break;
                 default:
-                    reasonString = [NSString stringWithString:@"UNKNOWN"];
+                    reasonString = @"UNKNOWN";
                     break;
             }   
-
-            lineOfDataAsString = [NSString stringWithFormat:@"%@, %f, %@, %f, %@", dateTimeString, [balAdj amount], reasonString, [balAdj resultingBalance], accCode];
+            
+            lineOfDataAsString = [NSString stringWithFormat:@"%@, %f, %@, %f, %@", dateTimeString, [balAdj amount], reasonString, [balAdj resultingBalance], [self accCode]];
             lineOfDataAsString = [lineOfDataAsString stringByAppendingFormat:@"\r\n"];
             [outFile writeData:[lineOfDataAsString dataUsingEncoding:NSUTF8StringEncoding]];
         }
@@ -642,247 +849,85 @@
     return allOk;
 }
 
-//Balance Adjustment Info
-- (NSDictionary *) detailsOfBalanceAdjustmentIndex:(int)tradeIndex
+
+
+#pragma mark -
+#pragma mark General Methods, Property retrieval
+
+- (NSUInteger) tradingLag
 {
-    NSMutableDictionary *balAdjDetails = [[NSMutableDictionary alloc] init];
-    CashFlowRecord *balAdj;
-    balAdj = [accBalanceArray objectAtIndex:tradeIndex];
-    
-    [balAdjDetails setObject:[NSNumber numberWithLong:[balAdj dateTime]] forKey:@"DATETIME"];
-    [balAdjDetails setObject:[NSNumber numberWithDouble:[balAdj amount]] forKey:@"AMOUNT"];
-    
-    [balAdjDetails setObject:[NSNumber numberWithDouble:[balAdj resultingBalance]] forKey:@"ENDBAL"];
-    NSString *reasonString;
-    switch([balAdj reason])
-    {
-        case TRANSFER:
-            reasonString = [NSString stringWithString:@"TRANSFER"];
-            break;
-        case TRADE_PNL:
-            reasonString = [NSString stringWithString:@"TRADE PNL"];
-            break;
-        case INTEREST:
-            reasonString = [NSString stringWithString:@"INTEREST"];
-            break;
-        default:
-            reasonString = [NSString stringWithString:@"UNKNOWN"];
-            break;
-    }   
-           
-    [balAdjDetails setObject:reasonString forKey:@"REASON"];
-    return balAdjDetails;
-}
-                        
-                              
--(double)getAmountForBalanceAdjustmentAtIndex:(int) balAdjIndex
-{
-    CashFlowRecord *balAdj;
-    balAdj = [accBalanceArray objectAtIndex:balAdjIndex];
-    return [balAdj amount];
+    return [[self basicParameters] tradingLag];
 }
 
--(long)getDateTimeForBalanceAdjustmentAtIndex:(int) balAdjIndex
+-(NSString *)name
 {
-    CashFlowRecord *balAdj;
-    balAdj = [accBalanceArray objectAtIndex:balAdjIndex];
-    return [balAdj dateTime];
+    return [[self basicParameters] name];
 }
 
--(double)getResultingBalanceForBalanceAdjustmentAtIndex:(int) balAdjIndex
+-(NSString *)accCode
 {
-    CashFlowRecord *balAdj;
-    balAdj = [accBalanceArray objectAtIndex:balAdjIndex];
-    return [balAdj resultingBalance];
+    return [[self basicParameters] accCode];
 }
 
--(NSString *)getReasonForBalanceAdjustmentAtIndex:(int) balAdjIndex
+-(NSString *)baseCode
 {
-    CashFlowRecord *balAdj;
-    balAdj = [accBalanceArray objectAtIndex:balAdjIndex];
-    NSString *reasonString;
-    switch([balAdj reason])
-    {
-        case TRANSFER:
-            reasonString = [NSString stringWithString:@"TRANSFER"];
-            break;
-        case TRADE_PNL:
-            reasonString = [NSString stringWithString:@"TRADE PNL"];
-            break;
-        case INTEREST:
-            reasonString = [NSString stringWithString:@"INTEREST"];
-            break;
-        default:
-            reasonString = [NSString stringWithString:@"UNKNOWN"];
-            break;
-    }   
-
-    return reasonString;
+    return [[self basicParameters] baseCode];
 }
 
--(BOOL)isTransferBalanceAdjustmentAtIndex:(int) balAdjIndex
+-(NSString *)quoteCode
 {
-    CashFlowRecord *balAdj;
-    balAdj = [accBalanceArray objectAtIndex:balAdjIndex];
-    if([balAdj reason] == TRANSFER){
-        return YES;
-    }else{
-        return NO;
-    }
+    return [[self basicParameters] quoteCode];
 }
 
--(int)numberOfBalanceAdjustments
+- (float) maxLeverage
 {
-    return (int)[accBalanceArray count];
+    return [[self basicParameters] maxLeverage];
 }
 
--(NSString *)getBalanceDetailToPrint:(int) balAdjIndex;
+- (NSUInteger) tradingDayStart
 {
-    CashFlowRecord *newBalAdj; 
-    NSString *reason;
-    NSString *dateTimeString;
-    
-    newBalAdj = [accBalanceArray objectAtIndex:balAdjIndex];
-    
-    switch(newBalAdj.reason){
-        case(TRANSFER):
-            reason = @"TRANSFER";
-            break;
-        case(TRADE_PNL):
-            reason = @"TRADEPNL";
-            break;
-        case(INTEREST):
-            reason = @"INTEREST";
-            break;
-        default:
-            reason = @"UNKNOWN";
-            break;
-    }
-    dateTimeString = [EpochTime stringDateWithTime:newBalAdj.dateTime];
-    
-    return [NSString stringWithFormat: @"On %@ the account was adjusted by %@ %5.2f to %5.2f because of %@",dateTimeString, accCode,newBalAdj.amount, newBalAdj.resultingBalance, reason];
+    return [[self basicParameters] tradingDayStart];
 }
 
--(int)numberOfSignals
+- (NSUInteger) tradingDayEnd
 {
-    return [signalInfoArray count];
+    return [[self basicParameters] tradingDayEnd];
 }
 
--(NSDictionary *)detailsOfSignalAtIndex:(int)signalInfoIndex
+- (long) startDate
 {
-    NSMutableDictionary *signalInfoDetails = [[NSMutableDictionary alloc] init];
-    SignalRecord *signalRecord;
-    signalRecord = [signalInfoArray objectAtIndex:signalInfoIndex];
-    [signalInfoDetails setObject:[NSNumber numberWithDouble:[signalRecord signal]] forKey:@"SIGNAL"];
-    [signalInfoDetails setObject:[NSNumber numberWithLong:[signalRecord startTime]] forKey:@"ENTRYTIME"];
-    [signalInfoDetails setObject:[NSNumber numberWithLong:[signalRecord endTime]] forKey:@"EXITTIME"]; 
-    [signalInfoDetails setObject:[NSNumber numberWithDouble:[signalRecord entryPrice]] forKey:@"ENTRYPRICE"];
-    [signalInfoDetails setObject:[NSNumber numberWithDouble:[signalRecord exitPrice]] forKey:@"EXITPRICE"];
-//    [signalInfoDetails setObject:[NSNumber numberWithDouble:[signalRecord maxPotentialLoss]] forKey:@"POTLOSS"];
-//    [signalInfoDetails setObject:[NSNumber numberWithDouble:[signalRecord maxPotentialProfit]] forKey:@"POTGAIN"];
-//    [signalInfoDetails setObject:[NSNumber numberWithDouble:[signalRecord timeInProfit]] forKey:@"UPTIME"]; 
-    return signalInfoDetails;
+    return [[self basicParameters] startDate];
 }
 
--(int)getNewSignalForChangeAtIndex:(int) signalChangeIndex
+- (long) endDate
 {
-    SignalRecord *signalRecord;
-    signalRecord = [signalInfoArray objectAtIndex:signalChangeIndex];
-    return [signalRecord signal];
+    return [[self basicParameters] endDate];
 }
 
--(long)getDateTimeStartForSignalChangeAtIndex:(int) signalChangeIndex
+- (NSUInteger) samplingRate
 {
-    SignalRecord *signalRecord;
-    signalRecord = [signalInfoArray objectAtIndex:signalChangeIndex];
-    return [signalRecord startTime];
+    return [[self basicParameters] samplingRate];
 }
-
--(long)getDateTimeEndForSignalChangeAtIndex:(int) signalChangeIndex
-{
-    SignalRecord *signalRecord;
-    signalRecord = [signalInfoArray objectAtIndex:signalChangeIndex];
-    return [signalRecord endTime];
-}
-
--(NSDictionary *)getPerformanceAttribution
-{
-    NSDictionary * perfAttrib = [[NSMutableDictionary alloc] init];
-    double transferAmounts = 0.0;
-    double tradePnl = 0.0;
-    double interestAccrued = 0.0;
-    double other = 0.0;
-    BOOL unIdentified = NO;
-    CashFlowRecord *balAdj;
-    
-    for(int balAdjIndex = 0;balAdjIndex < [accBalanceArray count]; balAdjIndex++)
-    {
-        balAdj = [accBalanceArray objectAtIndex:balAdjIndex];
-    
-        switch([balAdj reason]){
-        case(TRANSFER):
-            transferAmounts = transferAmounts + [balAdj amount];
-            break;
-        case(TRADE_PNL):
-            tradePnl = tradePnl + [balAdj amount];
-            break;
-        case(INTEREST):
-            interestAccrued = interestAccrued + [balAdj amount];
-            break;
-        default:
-            other = other + [balAdj amount];
-            unIdentified = YES;
-            break;
-        }
-    }
-    [perfAttrib  setValue:[NSNumber numberWithDouble:transferAmounts] forKey:@"TRANSFER"];  
-    [perfAttrib setValue:[NSNumber numberWithDouble:tradePnl] forKey:@"TRADEPNL"];
-    [perfAttrib setValue:[NSNumber numberWithDouble:interestAccrued] forKey:@"INTEREST"];
-    if(unIdentified){
-        [perfAttrib setValue:[NSNumber numberWithDouble:other] forKey:@"UNKNOWN"];
-    }
-    return perfAttrib;
-}
-
--(BOOL) addTradingRule: (NSString *) ruleString
-{
-    BOOL allOk = YES;
-    RulesSystem *newRule;
-    allOk = [RulesSystem basicCheck:ruleString];
-    if(allOk){
-        newRule = [[RulesSystem alloc] initWithString:ruleString];
-        [rulesSystem addObject:newRule];
-    }
-    return allOk;
-}
-
 
 
 #pragma mark -
 #pragma mark Properties
-
-@synthesize name;
-@synthesize startDate;
-@synthesize endDate;
-@synthesize accCode;
-@synthesize baseCode;
-@synthesize quoteCode;
-@synthesize maxLeverage;
-//@synthesize signalParameters;
-@synthesize positionSystem;
-@synthesize signalSystem;
-@synthesize rulesSystem;
-@synthesize simulationDataSeries;
-@synthesize analysisDataSeries;
-@synthesize longPeriods;
-@synthesize shortPeriods;
-@synthesize dataStartDateTime;
-@synthesize samplingRate;
-@synthesize tradingLag;
-@synthesize tradingDayStart;
-@synthesize tradingDayEnd;
-@synthesize reportDataFieldsArray;
-@synthesize userAddedData;
-@synthesize currentCashBalance;
+     
+@synthesize basicParameters = _basicParameters;
+@synthesize positionSystem = _positionSystem;
+@synthesize signalSystem = _signalSystem;
+@synthesize rulesSystem = _rulesSystem;
+@synthesize simulationDataSeries = _simulationDataSeries;
+@synthesize analysisDataSeries = _analysisDataSeries;
+@synthesize dataStartDateTime = _dataStartDateTime;
+@synthesize reportDataFieldsArray = _reportDataFieldsArray;
+@synthesize userAddedData = _userAddedData;
+@synthesize simulationResults = _simulationResults;
+@synthesize accBalanceArray = _accBalanceArray;
+@synthesize signalInfoArray = _signalInfoArray;
+@synthesize openPositionsArray = _openPositionsArray;
+@synthesize tradesArray = _tradesArray;
+@synthesize isAnalysed = _isAnalysed;
+@synthesize simulationRunOutput = _simulationRunOutput;
 
 @end

@@ -245,7 +245,7 @@
 - (void) gettingDataIndicatorSwitchOn
 {
     [leftPanelStatusLabel setHidden:NO];
-    [leftPanelStatusLabel setStringValue:@"Reading Recordset"];
+    [leftPanelStatusLabel setStringValue:@"Importing Data"];
     [leftSideProgressBar setHidden:NO];
     [leftSideProgressBar startAnimation:nil];
     [leftSideProgressBar2 setHidden:NO];
@@ -309,7 +309,7 @@
             [isAvailable addObject:[NSNumber numberWithBool:NO]];
         }
     }
-    for(i = [fieldNames count] - 1; i >= 0; i--){
+    for(i = (int)[fieldNames count] - 1; i >= 0 ; i--){
         if(![[isAvailable objectAtIndex:i] boolValue]){
             [fieldNames removeObjectAtIndex:i];
         }

@@ -65,6 +65,20 @@
     
 }
 
+
++ (NSString *) combinedRulesString: (NSArray *)rulesArray
+{
+    NSString *combinedRulesString = [[NSString alloc] init];
+    for(int i = 0; i < [rulesArray count]; i++){
+        if(i==0){
+            combinedRulesString = [[rulesArray objectAtIndex:i] ruleString];
+        }else{
+            combinedRulesString = [NSString stringWithFormat:@"%@;%@",combinedRulesString,[[rulesArray objectAtIndex:i] ruleString]];
+        }
+    }
+    return combinedRulesString;
+}
+
 @synthesize cutoff = _cutoff;
 @synthesize historyDays = _historyDays;
 @synthesize ruleString = _ruleString;

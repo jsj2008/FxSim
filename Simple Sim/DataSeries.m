@@ -52,9 +52,49 @@
     description = [NSString stringWithFormat:@"%@\n", [self name]]; 
     description = [NSString stringWithFormat:@"%@Start   :%@\n",description, [EpochTime stringDateWithTime:[self minDateTime]]];
     description = [NSString stringWithFormat:@"%@End     :%@\n",description, [EpochTime stringDateWithTime:[self maxDateTime]]];
-    description = [NSString stringWithFormat:@"%@Length  :%d\n",description, [self length]];
-    description = [NSString stringWithFormat:@"%@Sampling:%d",description, [self sampleRate]];
+    description = [NSString stringWithFormat:@"%@Length  :%ld\n",description, [self length]];
+    description = [NSString stringWithFormat:@"%@Sampling:%ld",description, [self sampleRate]];
     return description;
+}
+
+-(void) encodeWithCoder:(NSCoder *)aCoder
+{
+    
+    
+//    NSString *_name;
+//    int _databaseId;
+//    double _pipSize;
+//    CPTNumericData *_xData; 
+//    NSMutableDictionary *_yData; 
+//    NSMutableDictionary *_dataViews;
+//    int _sampleRate;
+    
+    
+    [aCoder encodeObject:_name forKey:@"NAME"];
+    [aCoder encodeObject:[NSNumber numberWithInteger:_databaseId] forKey:@"DATABASEID"];
+    [aCoder encodeObject:[NSNumber numberWithDouble:_pipSize] forKey:@"PIPSIZE"];
+    [aCoder encodeObject:_xData forKey:@"XDATA"];
+    [aCoder encodeObject:_yData forKey:@"YDATA"];
+    [aCoder encodeObject:_dataViews forKey:@"DATAVIEWS"];
+    [aCoder encodeObject:[NSNumber numberWithInteger:_sampleRate] forKey:@"SAMPLERATE"];
+ }
+
+- (id) initWithCoder:(NSCoder *)aDecoder
+{
+    if (self = [super init]) {
+        // If parent class also adopts NSCoding, replace [super init]
+        // with [super initWithCoder:decoder] to properly initialize.
+        
+        // NOTE: Decoded objects are auto-released and must be retained
+        _name = [aDecoder decodeObjectForKey:@"NAME"];
+        _databaseId = [[aDecoder decodeObjectForKey:@"DATABASEID"] intValue];
+        _pipSize = [[aDecoder decodeObjectForKey:@"PIPSIZE"] doubleValue];
+        _xData = [aDecoder decodeObjectForKey:@"XDATA"];
+        _yData = [aDecoder decodeObjectForKey:@"YDATA"]; 
+        _dataViews = [aDecoder decodeObjectForKey:@"DATAVIEWS"];
+        _sampleRate = [[aDecoder decodeObjectForKey:@"SAMPLERATE"] intValue]; 
+    }
+    return self;
 }
 
 
@@ -185,7 +225,7 @@
         }
         
         for(int i = 0; i < [self length]; i ++){
-            lineOfDataAsString = [NSString stringWithFormat:@"%d,%@",xDataArray[i],[EpochTime stringDateWithTime:xDataArray[i]]];
+            lineOfDataAsString = [NSString stringWithFormat:@"%ld,%@",xDataArray[i],[EpochTime stringDateWithTime:xDataArray[i]]];
             for(int j=0; j <[fieldNames count];j++){
                 lineOfDataAsString = [lineOfDataAsString stringByAppendingFormat:@", %f",yDataArray[j][i]];  
             }
@@ -700,7 +740,7 @@
 @synthesize name = _name;
 @synthesize dataViews = _dataViews;
 @synthesize pipSize = _pipSize;
-@synthesize sampleRate = sampleRate;
+@synthesize sampleRate = _sampleRate;
 //@synthesize signalSystem = _signalSystem;
 //@synthesize positioningSystem = _positioningSystem;
 //@synthesize rulesSystem = _rulesSystem;

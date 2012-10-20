@@ -80,7 +80,7 @@
         NSArray *anchorPoint = [NSArray arrayWithObjects:[NSDecimalNumber numberWithFloat:0.5],[NSDecimalNumber numberWithFloat:0.45], nil];
     
         // Add annotation
-        NSString *mainString = [NSString stringWithString:@"OCR"];
+        NSString *mainString = @"OCR";
         CPTMutableTextStyle *mainStringStyle = [CPTMutableTextStyle textStyle];
         mainStringStyle.color	= [CPTColor grayColor];
         mainStringStyle.fontSize = round(bounds.size.height / (CGFloat)5.0);
@@ -93,7 +93,7 @@
         [graph.plotAreaFrame.plotArea addAnnotation:mainTitleAnnotation];
     
     
-        NSString *subString = [NSString stringWithString:@"2012, O'Connor Research"];
+        NSString *subString = @"2012, O'Connor Research";
         CPTMutableTextStyle *subStringStyle = [CPTMutableTextStyle textStyle];
         subStringStyle.color	= [CPTColor grayColor];
         subStringStyle.fontSize = 12.0f;
@@ -223,6 +223,9 @@
                     maxYrangeForPlot0 = [[[dataView maxYvalues] valueForKey:[tsLine name]] doubleValue];
                     plot0LineFound =YES;
                 }
+                if(maxYrangeForPlot0 < minYrangeForPlot0){
+                    [NSException raise:@"Problem with Plot Range" format:@"min = %f, max = %f", minYrangeForPlot0, maxYrangeForPlot0];
+                }
                 break;
             case 1:
                 [fieldNames addObject:[tsLine name]];
@@ -237,6 +240,10 @@
                     
                 }
                 plot1LineFound = YES;
+                if(maxYrangeForPlot1 < minYrangeForPlot1){
+                    [NSException raise:@"Problem with Plot Range" format:@"min = %f, max = %f", minYrangeForPlot1, maxYrangeForPlot1];
+                }
+                
                 break;
             case 2:
                 [fieldNames addObject:[tsLine name]];
@@ -251,6 +258,9 @@
                     
                 }
                 plot2LineFound = YES;
+                if(maxYrangeForPlot2 < minYrangeForPlot2){
+                    [NSException raise:@"Problem with Plot Range" format:@"min = %f, max = %f", minYrangeForPlot2, maxYrangeForPlot2];
+                }
                 break;
             default:
                 [fieldNames addObject:[tsLine name]];
@@ -737,7 +747,7 @@
 //                                                                      length:CPTDecimalFromDouble(ceil( (maxYrangeForPlot - minYrangeForPlot) / majorIntervalForY ) * majorIntervalForY)];
     CPTMutablePlotRange *yRange = [CPTMutablePlotRange plotRangeWithLocation:CPTDecimalFromDouble(axisMin)
                                                                       length:CPTDecimalFromDouble((axisMax-axisMin)+(0.5*d))];
-    //[yRange expandRangeByFactor:CPTDecimalFromDouble(1.2)];
+    [yRange expandRangeByFactor:CPTDecimalFromDouble(1.2)];
     
     [plotSpace setYRange:yRange];
     switch(layerIndex){

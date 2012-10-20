@@ -8,7 +8,7 @@
 
 #import <Foundation/Foundation.h>
 
-@interface TransactionRecord : NSObject{
+@interface TransactionRecord : NSObject<NSCoding>{
     int _amount;        
     long   _dateTime;
     double _price;
@@ -16,7 +16,6 @@
     double _spread;
     double _spreadInAccCurrency;
     long _signalDateTime;
-    //int _signalIndex;     
 }
 
 - (id) initWithAmount:(int) amount
@@ -26,6 +25,9 @@
             AndSpread: (double) spread
 AndSpreadInAccCurrency: (double) spreadInAccCurrency
     AndSignalDateTime: (long) signalDateTime;
+
+- (void) encodeWithCoder:(NSCoder*)encoder;
+- (id) initWithCoder:(NSCoder*)decoder;
 
 
 @property (readonly) int amount;        

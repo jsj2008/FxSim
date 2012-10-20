@@ -160,7 +160,7 @@ FMDatabase *db;
     return minDateTime; 
 }
 
--(long)getMaxDateTimeForLoadedData
+-(long) getMaxDateTimeForLoadedData
 {
     long maxDateTime = 0;
     if([self dataSeries] != nil)
@@ -396,7 +396,7 @@ FMDatabase *db;
     long oldDataIndex, newDataIndex;
     long oldDataLength;
     NSArray *fieldNames;
-    int numberOfFields;
+    NSUInteger numberOfFields;
     long maxData;
     int dataFieldIndex;
     
@@ -729,7 +729,7 @@ FMDatabase *db;
         oldMidDoubles = (double *)[midData bytes];
     }
     
-    long oldDataStartIndex = [[self dataSeries] length] - 1;
+    NSInteger oldDataStartIndex = [[self dataSeries] length] - 1;
     if(useOldData){
         do{ 
             oldDataStartIndex--;
@@ -754,19 +754,32 @@ FMDatabase *db;
                 // as it is part of the old data 
                 queryStart = oldEnd;
                 
-                queryEnd = [db longForQuery:[NSString stringWithFormat:@"SELECT TimeDate FROM DataSeries WHERE SeriesId = %d AND DataTypeId = %d AND TimeDate >= %ld ORDER BY TimeDate ASC LIMIT 1",[[self dataSeries] dbId],1,adjustedEndDate]];
+                queryEnd = [db longForQuery:[NSString stringWithFormat:@"SELECT TimeDate FROM DataSeries WHERE SeriesId = %ld AND DataTypeId = %d AND TimeDate >= %ld ORDER BY TimeDate ASC LIMIT 1",[[self dataSeries] dbId],1,adjustedEndDate]];
                 
-                resultCount = [db intForQuery:[NSString stringWithFormat:@"SELECT COUNT(*) FROM DataSeries WHERE SeriesId = %d AND DataTypeId = %d AND TimeDate > %ld AND TimeDate <= %ld",[[self dataSeries] dbId],1,queryStart,queryEnd]];
+                if(queryEnd > 0){
+                    resultCount = [db intForQuery:[NSString stringWithFormat:@"SELECT COUNT(*) FROM DataSeries WHERE SeriesId = %ld AND DataTypeId = %d AND TimeDate > %ld AND TimeDate <= %ld",[[self dataSeries] dbId],1,queryStart,queryEnd]];
                 
-                queryString = [NSString stringWithFormat:@"SELECT DS1.TimeDate, DS1.Value, DS2.Value FROM DataSeries DS1 INNER JOIN DataSeries DS2 ON DS1.TimeDate = DS2.TimeDate AND DS1.SeriesId = DS2.SeriesId  WHERE DS1.SeriesId = %d AND DS1.DataTypeId = %d AND DS2.DataTypeId = %d AND DS1.TimeDate > %ld AND DS1.TimeDate <= %ld ORDER BY DS1.TimeDate ASC", [[self dataSeries] dbId],1,2,queryStart,queryEnd];
+                    queryString = [NSString stringWithFormat:@"SELECT DS1.TimeDate, DS1.Value, DS2.Value FROM DataSeries DS1 INNER JOIN DataSeries DS2 ON DS1.TimeDate = DS2.TimeDate AND DS1.SeriesId = DS2.SeriesId  WHERE DS1.SeriesId = %ld AND DS1.DataTypeId = %d AND DS2.DataTypeId = %d AND DS1.TimeDate > %ld AND DS1.TimeDate <= %ld ORDER BY DS1.TimeDate ASC", [[self dataSeries] dbId],1,2,queryStart,queryEnd];
+                }else{
+                    resultCount = [db intForQuery:[NSString stringWithFormat:@"SELECT COUNT(*) FROM DataSeries WHERE SeriesId = %ld AND DataTypeId = %d AND TimeDate > %ld",[[self dataSeries] dbId],1,queryStart]];
+                    
+                    queryString = [NSString stringWithFormat:@"SELECT DS1.TimeDate, DS1.Value, DS2.Value FROM DataSeries DS1 INNER JOIN DataSeries DS2 ON DS1.TimeDate = DS2.TimeDate AND DS1.SeriesId = DS2.SeriesId  WHERE DS1.SeriesId = %ld AND DS1.DataTypeId = %d AND DS2.DataTypeId = %d AND DS1.TimeDate > %ld ORDER BY DS1.TimeDate ASC", [[self dataSeries] dbId],1,2,queryStart];
+                }
             }else{
-                queryStart = [db longForQuery:[NSString stringWithFormat:@"SELECT TimeDate FROM DataSeries WHERE SeriesId = %d AND DataTypeId = %d AND TimeDate <= %ld ORDER BY TimeDate DESC LIMIT 1",[[self dataSeries] dbId],1,adjustedStartDate]];
+                queryStart = [db longForQuery:[NSString stringWithFormat:@"SELECT TimeDate FROM DataSeries WHERE SeriesId = %ld AND DataTypeId = %d AND TimeDate <= %ld ORDER BY TimeDate DESC LIMIT 1",[[self dataSeries] dbId],1,adjustedStartDate]];
                 
-                queryEnd = [db longForQuery:[NSString stringWithFormat:@"SELECT TimeDate FROM DataSeries WHERE SeriesId = %d AND DataTypeId = %d AND TimeDate >= %ld ORDER BY TimeDate ASC LIMIT 1",[[self dataSeries] dbId],1,adjustedEndDate]];
+                queryEnd = [db longForQuery:[NSString stringWithFormat:@"SELECT TimeDate FROM DataSeries WHERE SeriesId = %ld AND DataTypeId = %d AND TimeDate >= %ld ORDER BY TimeDate ASC LIMIT 1",[[self dataSeries] dbId],1,adjustedEndDate]];
                 
-                resultCount = [db intForQuery:[NSString stringWithFormat:@"SELECT COUNT(*) FROM DataSeries WHERE SeriesId = %d AND DataTypeId = %d AND TimeDate >= %ld AND TimeDate <= %ld",[[self dataSeries] dbId],1,queryStart,queryEnd]];
+                if(queryEnd > 0){
+                    resultCount = [db intForQuery:[NSString stringWithFormat:@"SELECT COUNT(*) FROM DataSeries WHERE SeriesId = %ld AND DataTypeId = %d AND TimeDate >= %ld AND TimeDate <= %ld",[[self dataSeries] dbId],1,queryStart,queryEnd]];
                 
-                queryString = [NSString stringWithFormat:@"SELECT DS1.TimeDate, DS1.Value, DS2.Value FROM DataSeries DS1 INNER JOIN DataSeries DS2 ON DS1.TimeDate = DS2.TimeDate AND DS1.SeriesId = DS2.SeriesId  WHERE DS1.SeriesId = %d AND DS1.DataTypeId = %d AND DS2.DataTypeId = %d AND DS1.TimeDate >= %ld AND DS1.TimeDate <= %ld ORDER BY DS1.TimeDate ASC", [[self dataSeries] dbId],1,2,queryStart,queryEnd];
+                    queryString = [NSString stringWithFormat:@"SELECT DS1.TimeDate, DS1.Value, DS2.Value FROM DataSeries DS1 INNER JOIN DataSeries DS2 ON DS1.TimeDate = DS2.TimeDate AND DS1.SeriesId = DS2.SeriesId  WHERE DS1.SeriesId = %ld AND DS1.DataTypeId = %d AND DS2.DataTypeId = %d AND DS1.TimeDate >= %ld AND DS1.TimeDate <= %ld ORDER BY DS1.TimeDate ASC", [[self dataSeries] dbId],1,2,queryStart,queryEnd];
+                }else{
+                    resultCount = [db intForQuery:[NSString stringWithFormat:@"SELECT COUNT(*) FROM DataSeries WHERE SeriesId = %ld AND DataTypeId = %d AND TimeDate >= %ld",[[self dataSeries] dbId],1,queryStart]];
+                    
+                    queryString = [NSString stringWithFormat:@"SELECT DS1.TimeDate, DS1.Value, DS2.Value FROM DataSeries DS1 INNER JOIN DataSeries DS2 ON DS1.TimeDate = DS2.TimeDate AND DS1.SeriesId = DS2.SeriesId  WHERE DS1.SeriesId = %ld AND DS1.DataTypeId = %d AND DS2.DataTypeId = %d AND DS1.TimeDate >= %ld ORDER BY DS1.TimeDate ASC", [[self dataSeries] dbId],1,2,queryStart];
+                    
+                }
                 
             }
             newDateLongsTempData = [[NSMutableData alloc] initWithLength:resultCount * sizeof(long)];
@@ -838,7 +851,7 @@ FMDatabase *db;
         newMidDoubles = [newMidData mutableBytes];
     
         if(useOldData){
-            for(int i = oldDataStartIndex; i < [[self dataSeries] length];i++){
+            for(long i = oldDataStartIndex; i < [[self dataSeries] length];i++){
                 newDateLongs[indexOnNew] =  oldDateLongs[i];
                 newBidDoubles[indexOnNew] = oldBidDoubles[i];
                 newAskDoubles[indexOnNew] = oldAskDoubles[i];
@@ -939,7 +952,7 @@ FMDatabase *db;
             if(useOldData){
                 [parameters setObject:[[self dataSeries] yData] forKey:@"OLDDATA"];
                 [parameters setObject:[[self dataSeries] xData] forKey:@"OLDDATETIME"];
-                [parameters setObject:[NSNumber numberWithInt:oldDataStartIndex] forKey:@"OVERLAPINDEX"];
+                [parameters setObject:[NSNumber numberWithInteger:oldDataStartIndex] forKey:@"OVERLAPINDEX"];
             }
             
 //            derivedDataDictionary = [DataProcessor processWithDataSeries: newData

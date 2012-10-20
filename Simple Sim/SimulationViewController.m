@@ -16,40 +16,80 @@
 #import "EpochTime.h"
 #import "UtilityFunctions.h"
 
-#define DAY_SECONDS 24*60*60
+#define DAY_SECONDS (24*60*60)
 
 @interface SimulationViewController ()
+@property (retain) SimulationController *simulationController;
+@property (retain) NSMutableArray *allSimulations;
+@property (retain) NSMutableArray *simulationTimeSeries;
+@property (retain) NSMutableArray *simulationSignalTimeSeries;
+@property (retain) NSMutableArray *signalTableViewOrdering;
+@property (retain) NSArray *hideObjectsOnStartup;
+@property (retain) NSArray *importDataArray;
+@property (retain) NSString *importDataFilename;
+@property (retain) NSString *signalTableViewSortColumn;
+@property BOOL doingSetup;
+@property BOOL cancelProcedure;
+@property BOOL initialSetupComplete;
+@property BOOL signalTableViewSortedAscending;
+@property BOOL longShortIndicatorOn;
+@property (retain) DataSeries *simulationDataSeries;
+@property (retain) SeriesPlot *simulationResultsPlot;
+@property (retain) SeriesPlot *signalAnalysisPlot;
+@property (retain) Simulation *workingSimulation;
+
+
 - (void) putFieldNamesInCorrectOrdering:(NSMutableArray *) fieldNamesFromData;
 - (void) endSetupSheet;
 - (void) updateStatus:(NSString *) statusMessage;
 - (void) showAlertPanelWithInfo: (NSDictionary *) alertInfo;
 - (NSArray *) csvDataFromURL: (NSURL *)absoluteURL;
 - (void) addPlotToFullScreenWindow: (NSView *) fullScreenView;
+- (void)makeSignalAnalysisPlot;
+
+
+- (void) clearSimulationMessage;
+- (void) outputSimulationMessage:(NSString *) message;
+- (void) gettingDataIndicatorSwitchOn;
+- (void) gettingDataIndicatorSwitchOff;
+- (void) readingRecordSetsProgress: (NSNumber *) progressFraction;
+- (void) progressAsFraction:(NSNumber *) progressValue;
+- (void) progressBarOn;
+- (void) progressBarOff;
+- (void) initialiseSignalTableView;
+- (void) setupResultsReport;
+- (void) addSimInfoToAboutPanel;
+- (void) plotSimulationData;
+- (void) addSimulationDataToResultsTableView;
+- (void) prepareForSimulationReport;
+- (void) displayWorkingSim;
+- (void) disableSimulationBrowser;
+- (void) fillSetupSheet:(NSDictionary *) parameters;
 @end
 
 @implementation SimulationViewController
-@synthesize simulationSignalSelectedTimeSeriesTableView;
-@synthesize simulationTimeSeriesSelectedTableView;
-@synthesize setupRulesTextField;
-@synthesize setupDataWarmUpTextField;
-@synthesize simPlotBox;
-@synthesize signalAnalysisPlotBox;
-@synthesize fullScreenBox;
-@synthesize setupPositioningTextField;
+
 
 
 - (id)init{
     self = [super initWithNibName:@"SimulationView" bundle:nil];
     if(self){
         [self setTitle:@"Simulation"];
+        _initialSetupComplete = YES;
+        _doingSetup = NO;
+        _cancelProcedure = NO;
+        _firstTimeSetup = YES;
         [self setDoThreads:NO];
-        initialSetupComplete = YES;
-        doingSetup = NO;
-        cancelProcedure = NO;
-        [self setDoThreads:NO];
-        simulationTimeSeries = [[NSMutableArray alloc] init];
-        simulationSignalTimeSeries = [[NSMutableArray alloc] init]; 
-        signalTableViewSortedAscending = YES;
+        _simulationTimeSeries = [[NSMutableArray alloc] init];
+        _simulationSignalTimeSeries = [[NSMutableArray alloc] init]; 
+        _signalTableViewSortedAscending = YES;
+        _allSimulations = [[NSMutableArray alloc] init];
+        
+        _simulationController = [[SimulationController alloc] init];
+        [_simulationController setDelegate:self];
+        [_simulationController setDoThreads:_doThreads];
+
+        _workingSimulation = Nil;
         
     }
     return self;
@@ -59,19 +99,6 @@
 {
     fullScreenWindowController = [[NSWindowController alloc] initWithWindow:fullScreenWindow];
     [fullScreenWindow setDelegate:self];
-        
-    simulationController = [[SimulationController alloc] init];
-    [simulationController setDelegate:self];
-    [simulationController setDoThreads:doThreads];
-    
-    simulationResultsPlot = [[SeriesPlot alloc] initWithIdentifier:@"SIMRESULTS"];
-    [simulationResultsPlot setHostingView:simulationResultGraphHostingView];
-    [simulationResultsPlot initialGraphAndAddAnnotation:NO];
-    
-    [simulationResultsPlot initialGraphAndAddAnnotation:NO];
-   
-    signalAnalysisPlot = [[SeriesPlot alloc] initWithIdentifier:@"SIGNALS"];
-    [signalAnalysisPlot setHostingView:simulationSignalGraphHostingView];
     
     NSTableColumn *simulationColourColumn =  [simulationTimeSeriesTableView tableColumnWithIdentifier:@"colourId"];
     NSTableColumn *signalAnalysisColourColumn =  [simulationSignalTimeSeriesTableView tableColumnWithIdentifier:@"colourId"];
@@ -85,23 +112,39 @@
     [signalAnalysisColourDropDownCell setBordered:NO];
     [signalAnalysisColourDropDownCell setEditable:YES];
     
-    [simulationColourDropDownCell addItemsWithTitles:coloursForPlots];
+    [simulationColourDropDownCell addItemsWithTitles:[self coloursForPlots]];
     [simulationColourColumn setDataCell:simulationColourDropDownCell];
     [simulationTimeSeriesTableView setDataSource:self];
     
     [simulationTimeSeriesSelectedTableView setDataSource:self];
     [simulationTimeSeriesSelectedTableView setDelegate:self];
     
-    [signalAnalysisColourDropDownCell addItemsWithTitles:coloursForPlots];
+    [signalAnalysisColourDropDownCell addItemsWithTitles:[self coloursForPlots]];
     [signalAnalysisColourColumn setDataCell:simulationColourDropDownCell];
     [simulationSignalTimeSeriesTableView setDataSource:self];
     
     [simulationSignalSelectedTimeSeriesTableView setDataSource:self];
     [simulationSignalSelectedTimeSeriesTableView setDelegate:self];
     
+    [registeredSimsTableView1 setDataSource:self];
+    [registeredSimsTableView1 setDelegate:self];
+    
+    [registeredSimsTableView2 setDataSource:self];
+    [registeredSimsTableView2 setDelegate:self];
+    
+    [registeredSimsTableView3 setDataSource:self];
+    [registeredSimsTableView3 setDelegate:self];
+    
+    [registeredSimsTableView setDataSource:self];
+    [registeredSimsTableView setDelegate:self];
+    
+    [registeredSimsTableView5 setDataSource:self];
+    [registeredSimsTableView5 setDelegate:self];
+    
+    
     //Popup sheet stuff
     [setupTradingPairPopup removeAllItems];
-    NSArray *fxPairs = [fxPairsAndDbIds allKeys];
+    NSArray *fxPairs = [[self fxPairsAndDbIds] allKeys];
     for (int i = 0; i < [fxPairs count];i++) {
         [setupTradingPairPopup addItemWithTitle:[fxPairs objectAtIndex:i]];
     }
@@ -114,8 +157,8 @@
     [setupAccountCurrencyPopup selectItemAtIndex:0];
     [setupAccountCurrencyLabel setStringValue:[[setupAccountCurrencyPopup selectedItem] title]];
     
-    long minDataDateTime = [dataControllerForUI getMinDateTimeForFullData];
-    long maxDataDateTime = [dataControllerForUI getMaxDateTimeForFullData];
+    long minDataDateTime = [[self dataControllerForUI] getMinDateTimeForFullData];
+    long maxDataDateTime = [[self dataControllerForUI] getMaxDateTimeForFullData];
     
     [dataAvailabilityFromLabel setStringValue:[[NSDate dateWithTimeIntervalSince1970:(NSTimeInterval) minDataDateTime] descriptionWithCalendarFormat:@"%Y-%m-%d" timeZone:[NSTimeZone timeZoneWithName:@"GMT"] locale:nil]];
     [dataAvailabilityToLabel setStringValue:[[NSDate dateWithTimeIntervalSince1970:(NSTimeInterval) maxDataDateTime] descriptionWithCalendarFormat:@"%Y-%m-%d" timeZone:[NSTimeZone timeZoneWithName:@"GMT"] locale:nil]];
@@ -155,7 +198,7 @@
     
     [setupSheetImportDataTableView setDataSource:self];
     
-    int tabIndex;
+    NSUInteger tabIndex;
     tabIndex = [centreTabView indexOfTabViewItemWithIdentifier:@"SETUP"];
     setupTab = [centreTabView tabViewItemAtIndex:tabIndex];
     tabIndex = [centreTabView indexOfTabViewItemWithIdentifier:@"PLOT"];
@@ -173,11 +216,11 @@
     [centreTabView removeTabViewItem:reportTab];
     [centreTabView removeTabViewItem:signalsTab];
     
-    hideObjectsOnStartup = [NSArray arrayWithObjects: aboutSimNameLabel, aboutTradingPairLabel, aboutAccountCurrencyLabel, aboutSimStartTimeLabel,aboutSimEndTimeLabel, tradingPairLabel, accountCurrencyLabel, startLabel, endLabel, samplingRateLabel, tradingLagLabel, tradingDayStartLabel, tradingDayEndLabel,descriptionLabel, nil];
+    [self setHideObjectsOnStartup:[NSArray arrayWithObjects: aboutSimNameLabel, aboutTradingPairLabel, aboutAccountCurrencyLabel, aboutSimStartTimeLabel,aboutSimEndTimeLabel, tradingPairLabel, accountCurrencyLabel, simulationNameLabel, startLabel, endLabel, samplingRateLabel, tradingLagLabel, tradingDayStartLabel, tradingDayEndLabel,descriptionLabel, registeredSimsScrollView1, removeSimulationButton, importSimulationButton, nil]];
     
     
-    for(int i =0; i < [hideObjectsOnStartup count];i++){
-        [[hideObjectsOnStartup objectAtIndex:i] setHidden:YES];
+    for(int i =0; i < [[self hideObjectsOnStartup] count];i++){
+        [[[self hideObjectsOnStartup] objectAtIndex:i] setHidden:YES];
     }
     
     int nColumns = 6;
@@ -207,7 +250,15 @@
     [simulationSignalTimeSeriesTableView setDelegate:self];
     
     [simulationTimeSeriesTableView setDelegate:self];
-    initialSetupComplete = NO;
+    [self setInitialSetupComplete:NO];
+    
+    _simulationResultsPlot = [[SeriesPlot alloc] initWithIdentifier:@"SIMRESULTS"];
+    [_simulationResultsPlot setHostingView:simulationResultGraphHostingView];
+    [_simulationResultsPlot initialGraphAndAddAnnotation:NO];
+    
+    _signalAnalysisPlot = [[SeriesPlot alloc] initWithIdentifier:@"SIGNALS"];
+    [_signalAnalysisPlot setHostingView:simulationSignalGraphHostingView];
+
     
     
 }
@@ -224,33 +275,35 @@
 
 - (BOOL) doThreads
 {
-    return [self doThreads];
+    return _doThreads;
 }
 
 - (void) setDoThreads:(BOOL)doThreadedProcedures
 {
-    doThreads = doThreadedProcedures;
+    _doThreads = doThreadedProcedures;
+    [[self simulationController] setDoThreads:doThreadedProcedures];
 }
 
-- (void) initialiseSignalTableView{
-    signalTableViewOrdering = [[NSMutableArray alloc] initWithCapacity:[[simulationController currentSimulation] numberOfSignals]];
+- (void) initialiseSignalTableView
+{
+    [self setSignalTableViewOrdering:[[NSMutableArray alloc] initWithCapacity:[[self workingSimulation] numberOfSignals]]];
     
-    if( [[simulationController currentSimulation] numberOfSignals]>0){
-        [signalTableViewOrdering removeAllObjects];
-        for(int i = 0; i < [[simulationController currentSimulation] numberOfSignals]; i++){
-            [signalTableViewOrdering addObject:[NSNumber numberWithInt:i]];  
+    if( [[self workingSimulation] numberOfSignals]>0){
+        [[self signalTableViewOrdering] removeAllObjects];
+        for(int i = 0; i < [[self workingSimulation] numberOfSignals]; i++){
+            [[self signalTableViewOrdering] addObject:[NSNumber numberWithInt:i]];  
         }
-        signalTableViewSortColumn = @"ENTRYTIME";
+        [self setSignalTableViewSortColumn:@"ENTRYTIME"];
         
         NSDictionary *signalInfo;
-        signalInfo = [[simulationController currentSimulation] detailsOfSignalAtIndex:0];
-        int tradingLag = [[simulationController currentSimulation] tradingLag];
+        signalInfo = [[self workingSimulation] detailsOfSignalAtIndex:0];
+        NSUInteger tradingLag = [[self workingSimulation] tradingLag];
         
         long startDateTime = [[signalInfo objectForKey:@"ENTRYTIME"] longValue];
         startDateTime = startDateTime - ([signalAnalysisPlotLeadHours intValue] * 60*60);
         long endDateTime = [[signalInfo objectForKey:@"EXITTIME"] longValue] + 2*tradingLag;
         
-        DataSeries *analysisDataSeries = [[simulationController currentSimulation] analysisDataSeries]; 
+        DataSeries *analysisDataSeries = [[self workingSimulation] analysisDataSeries]; 
         TimeSeriesLine *tsl;
         NSMutableArray *fieldNames;
         
@@ -268,7 +321,7 @@
                     plotLayerIndex = -1;
                     break;
             }
-            lineColour = [coloursForPlots objectAtIndex:i%[coloursForPlots count]];
+            lineColour = [[self coloursForPlots] objectAtIndex:i%[[self coloursForPlots] count]];
             tsl = [[TimeSeriesLine alloc] initWithLayerIndex:plotLayerIndex 
                                                      AndName:[fieldNames objectAtIndex:i] 
                                                    AndColour:lineColour];
@@ -276,9 +329,11 @@
                   TimeSeriesLine:tsl];
         }
         startDateTime = startDateTime - ([signalAnalysisPlotLeadHours intValue] * 60*60);
-        longShortIndicatorOn = YES;
+        [self setLongShortIndicatorOn:YES];
         [self plotSignalDataFrom:startDateTime 
                               To:endDateTime];
+        [simulationSignalSelectedTimeSeriesTableView reloadData];
+        [simulationSignalTableView reloadData];
     }
     
 }
@@ -290,14 +345,19 @@
 
 -(void)simulationEnded
 {
-    initialSetupComplete = YES;
+    [self setInitialSetupComplete:YES];
     [setUpSheetCancelButton setEnabled:NO];
     [setupSheetShowButton setEnabled:YES];
+    [importSimulationButton setHidden:NO];
+    [removeSimulationButton setHidden:NO];
+    [exportSimulationButton setHidden:NO];
+    [registeredSimsScrollView1 setHidden:NO];
 }
 
 
--(void)plotSimulationData: (DataSeries *) analysisDataSeries
+-(void)plotSimulationData
 {
+    DataSeries *analysisDataSeries = [[self workingSimulation] analysisDataSeries];
     TimeSeriesLine *tsl;
     NSMutableArray *fieldNames;
     fieldNames = [[[analysisDataSeries yData] allKeys] mutableCopy];
@@ -316,7 +376,7 @@
                 plotLayerIndex = -1;
                 break;
         }
-        lineColour = [coloursForPlots objectAtIndex:i%[coloursForPlots count]];
+        lineColour = [[self coloursForPlots] objectAtIndex:i%[[self coloursForPlots] count]];
         tsl = [[TimeSeriesLine alloc] initWithLayerIndex:plotLayerIndex
                                                  AndName:[fieldNames objectAtIndex:i] 
                                                AndColour:lineColour];
@@ -324,9 +384,9 @@
     }
     [simulationTimeSeriesTableView reloadData];
     [simulationTimeSeriesSelectedTableView reloadData];
-    [simulationResultsPlot setHostingView:simulationResultGraphHostingView];
-    [simulationResultsPlot setData:analysisDataSeries WithViewName:@"ALL"];
-    [simulationResultsPlot renderPlotWithFields:simulationTimeSeries];
+    [[self simulationResultsPlot] setHostingView:simulationResultGraphHostingView];
+    [[self simulationResultsPlot] setData:analysisDataSeries WithViewName:@"ALL"];
+    [[self simulationResultsPlot] renderPlotWithFields:[self simulationTimeSeries]];
     
     long minDataTime = [analysisDataSeries minDateTime];
     long maxDateTime = [analysisDataSeries maxDateTime];
@@ -338,13 +398,15 @@
     [zoomToDatePicker setMaxDate:[NSDate dateWithTimeIntervalSince1970:maxDateTime]];
     [zoomToDatePicker setDateValue:[NSDate dateWithTimeIntervalSince1970:maxDateTime]];
     
-    simulationDataSeries = analysisDataSeries;
+    [self setSimulationDataSeries:analysisDataSeries];
     
 }
 
-- (void) addSimulationDataToResultsTableView: (DataSeries *) analysisDataSeries
+- (void) addSimulationDataToResultsTableView
 {
+    DataSeries *analysisDataSeries = [[self workingSimulation] analysisDataSeries];
     [self clearTSTableView:simulationNumbersTableView];
+    
     NSTableColumn *newTableColumn;
     NSArray *tableColumns;
     NSMutableArray *fieldNames;
@@ -373,7 +435,7 @@
             [isAvailable addObject:[NSNumber numberWithBool:NO]];
         }
     }
-    for(int i = [fieldNames count] - 1; i >= 0; i--){
+    for(long i = [fieldNames count] - 1; i >= 0; i--){
         if(![[isAvailable objectAtIndex:i] boolValue]){
             [fieldNames removeObjectAtIndex:i];
         }
@@ -417,34 +479,30 @@
 - (void) plotSignalDataFrom: (long) startDateTime 
                          To:(long) endDateTime
 {
-    DataSeries *analysisDataSeries = [[simulationController currentSimulation] analysisDataSeries]; 
+    DataSeries *analysisDataSeries = [[self workingSimulation] analysisDataSeries]; 
     
     [analysisDataSeries setPlotViewWithName:@"SIGNAL" AndStartDateTime:startDateTime AndEndDateTime:endDateTime];
     
-    [signalAnalysisPlot setData:analysisDataSeries WithViewName:@"SIGNAL"];
-    [signalAnalysisPlot renderPlotWithFields:simulationSignalTimeSeries];
-    simulationDataSeries = analysisDataSeries;
+    [[self signalAnalysisPlot] setData:analysisDataSeries WithViewName:@"SIGNAL"];
+    [[self signalAnalysisPlot] renderPlotWithFields:[self simulationSignalTimeSeries]];
+    [self setSimulationDataSeries:analysisDataSeries];
     
 }
 
-- (void) addSimInfoToAboutPanelWithName: (NSString *) simName
-                              AndFxPair: (NSString *) fxPair
-                     AndAccountCurrency: (NSString *) accCurrency
-                        AndSimStartTime: (NSString *) simStartTime
-                          AndSimEndTime: (NSString *) simEndTime
+- (void) addSimInfoToAboutPanel
 {   
-    [aboutSimNameLabel setStringValue:simName];
-    [aboutTradingPairLabel setStringValue:fxPair];
-    [aboutAccountCurrencyLabel setStringValue:accCurrency];
-    [aboutSimStartTimeLabel setStringValue:simStartTime];
-    [aboutSimEndTimeLabel setStringValue:simEndTime];
+    [aboutSimNameLabel setStringValue:[[self workingSimulation] name]];
+    [aboutTradingPairLabel setStringValue: [NSString stringWithFormat:@"%@%@",[[self workingSimulation]  baseCode],[[self workingSimulation]  quoteCode]]];
+    [aboutAccountCurrencyLabel setStringValue: [[self workingSimulation] accCode]];
+    [aboutSimStartTimeLabel setStringValue: [EpochTime stringDateWithTime:[[self workingSimulation] startDate]]];
+    [aboutSimEndTimeLabel setStringValue: [EpochTime stringDateWithTime:[[self workingSimulation] endDate]]];
 }
 
 - (void) viewChosenFromMainMenu
 {
-    if(!initialSetupComplete){
-        //Not yet, this is to show cancel that the setup button has been pressed
-        doingSetup = NO;
+    if(![self initialSetupComplete]){
+        //Not yet, this is to sh]ow cancel that the setup button has been pressed
+        [self setDoingSetup:NO];
         [self disableMainButtons];
         [setupSheetShowButton setEnabled:NO];
         [NSApp beginSheet:setupSheet modalForWindow:[centreTabView window] modalDelegate:nil didEndSelector:NULL contextInfo:NULL];
@@ -453,12 +511,16 @@
 
 - (void) endSetupSheet
 {
-    if(cancelProcedure == NO)
+    if([self cancelProcedure] == NO)
     {
         [NSApp endSheet:setupSheet returnCode: NSOKButton];
     }else{
         [NSApp endSheet:setupSheet returnCode: NSCancelButton];
         [setupSheetShowButton setEnabled:YES];
+        [importSimulationButton setHidden:NO];
+        [removeSimulationButton setHidden:NO];
+        [exportSimulationButton setHidden:NO];
+        [registeredSimsScrollView1 setHidden:NO];
     }
     [self enableMainButtons];
     [setupSheet orderOut:nil];
@@ -574,6 +636,186 @@
     [NSApp runModalForWindow:fullScreenWindow];
 }
 
+-(void)makeSignalAnalysisPlot
+{
+    NSInteger selectedRow = [simulationSignalTableView selectedRow];
+    
+    if(selectedRow > -1){
+        NSDictionary *signalInfo;
+        long startDateTime, endDateTime;
+        NSUInteger tradingLag = [[self workingSimulation] tradingLag];
+        
+        if([simulationSignalTableView numberOfSelectedRows] > 1){
+            NSLog(@"%ld : %ld",selectedRow,[simulationSignalTableView numberOfSelectedRows]);
+            NSIndexSet *selectedIndexes = [simulationSignalTableView selectedRowIndexes];
+            NSUInteger minSelected, maxSelected;
+            if([selectedIndexes firstIndex] <= [selectedIndexes lastIndex])
+            {
+                minSelected = [selectedIndexes firstIndex];
+                maxSelected = [selectedIndexes lastIndex];
+            }else{
+                minSelected = [selectedIndexes lastIndex];
+                maxSelected = [selectedIndexes firstIndex]; 
+            }
+            selectedRow = [[[self signalTableViewOrdering] objectAtIndex:minSelected] intValue];
+            signalInfo = [[self workingSimulation] detailsOfSignalAtIndex:selectedRow];
+            startDateTime = [[signalInfo objectForKey:@"ENTRYTIME"] longValue];
+            startDateTime = startDateTime - ([signalAnalysisPlotLeadHours intValue] * 60*60);
+            
+            selectedRow = [[[self signalTableViewOrdering] objectAtIndex:maxSelected] intValue];
+            signalInfo = [[self workingSimulation] detailsOfSignalAtIndex:selectedRow];
+            endDateTime = [[signalInfo objectForKey:@"EXITTIME"] longValue] + 2*tradingLag;
+        }else{
+            selectedRow = [[[self signalTableViewOrdering] objectAtIndex:selectedRow] intValue];
+            signalInfo = [[self workingSimulation] detailsOfSignalAtIndex:selectedRow];
+            startDateTime = [[signalInfo objectForKey:@"ENTRYTIME"] longValue];
+            startDateTime = startDateTime - ([signalAnalysisPlotLeadHours intValue] * 60*60);
+            endDateTime = [[signalInfo objectForKey:@"EXITTIME"] longValue] + 2*tradingLag;
+        }
+        [self plotSignalDataFrom:startDateTime To:endDateTime];
+    }
+}
+
+-(void)updateStatus:(NSString *) statusMessage
+{
+    [performSimulationStatusLabel setHidden:NO];
+    [performSimulationStatusLabel setStringValue:statusMessage];
+}
+
+-(void) progressAsFraction:(NSNumber *) progressValue
+{
+    [currentProgressIndicator setDoubleValue:[progressValue doubleValue]];
+}
+
+-(void) progressBarOn
+{
+    [currentProgressIndicator setMinValue:0.0];
+    [currentProgressIndicator setMaxValue:1.0];
+    [currentProgressIndicator setDoubleValue:0.1];
+    [currentProgressIndicator startAnimation:nil];
+    [currentProgressIndicator setHidden:NO];
+}
+
+-(void) progressBarOff
+{
+    [currentProgressIndicator stopAnimation:nil];
+    [currentProgressIndicator setHidden:YES];
+}
+
+-(void) prepareForSimulationReport
+{
+    for(int i =0; i < [[self hideObjectsOnStartup] count];i++){
+        [[[self hideObjectsOnStartup] objectAtIndex:i] setHidden:NO];
+    }
+    if([centreTabView numberOfTabViewItems] == 1){
+        [centreTabView addTabViewItem:plotTab];
+        [centreTabView addTabViewItem:dataTab];
+        [centreTabView addTabViewItem:reportTab];
+        [centreTabView addTabViewItem:signalsTab];
+    }
+    [simulationRunScrollView setFrame:CGRectMake(18.0f, 59.0f, 650.0f, 306.0f)];
+}
+
+-(void)showAlertPanelWithInfo: (NSDictionary *) alertInfo
+{
+    if([[self delegate] respondsToSelector:@selector(showAlertPanelWithInfo:)])
+    {
+        [[self delegate] showAlertPanelWithInfo:alertInfo];
+    }else{
+        NSLog(@"Delegate not responding to \'showAlertPanelWithInfo\'"); 
+    } 
+}
+
+-(void) registerSimulation: (Simulation *) sim
+{
+    [[self allSimulations] addObject:sim];
+    [registeredSimsTableView1 reloadData];
+    [registeredSimsTableView2 reloadData];
+    [registeredSimsTableView3 reloadData];
+    [registeredSimsTableView reloadData];
+    [registeredSimsTableView5 reloadData];
+    
+    NSIndexSet *indexSet = [NSIndexSet indexSetWithIndex:[[self allSimulations] count]-1];
+    [registeredSimsTableView1 selectRowIndexes:indexSet byExtendingSelection:NO];
+    [registeredSimsTableView2 selectRowIndexes:indexSet byExtendingSelection:NO];
+    [registeredSimsTableView3 selectRowIndexes:indexSet byExtendingSelection:NO];
+    [registeredSimsTableView selectRowIndexes:indexSet byExtendingSelection:NO];
+    [registeredSimsTableView5 selectRowIndexes:indexSet byExtendingSelection:NO];
+    
+    
+    [self setWorkingSimulation:sim];
+    [self displayWorkingSim];
+    
+    [removeSimulationButton setEnabled:YES];
+    [exportSimulationButton setEnabled:YES];
+    }
+
+- (void) displayWorkingSim
+{
+    [self prepareForSimulationReport];
+    [self addSimulationDataToResultsTableView];
+    [self plotSimulationData];
+    [self addSimInfoToAboutPanel];
+    [self initialiseSignalTableView];
+    [self setupResultsReport];
+}
+
+-(void)fillSetupSheet:(NSDictionary *) parameters
+{
+    NSString *simName = [parameters objectForKey:@"SIMNAME"];
+    NSString *baseCode = [parameters objectForKey:@"BASECODE"];
+    NSString *quoteCode = [parameters objectForKey:@"QUOTECODE"];
+    NSString *accCode = [parameters objectForKey:@"ACCOUNTCODE"];
+    long startDateTime = [[parameters objectForKey:@"STARTTIME"] longValue];
+    long endDateTime = [[parameters objectForKey:@"ENDTIME"] longValue];
+    int maxLeverage = (int)[[parameters objectForKey:@"MAXLEVERAGE"] doubleValue];
+    double startingBalance = [[parameters objectForKey:@"STARTBALANCE"] doubleValue];
+    long initialDataBeforeStart = [[parameters objectForKey:@"WARMUPDATA"] longValue];
+    int timeStep = [[parameters objectForKey:@"TIMESTEP"] intValue];
+    int tradingLag = [[parameters objectForKey:@"TRADINGLAG"] intValue];
+    NSString *simDescription = [parameters objectForKey:@"SIMTYPE"];
+    NSString *positioningString = [parameters objectForKey:@"POSTYPE"];
+    NSString *rulesString = [parameters objectForKey:@"RULES"];
+    long tradingDayStart = [[parameters objectForKey:@"TRADINGDAYSTART"] longValue];
+    long tradingDayEnd = [[parameters objectForKey:@"TRADINGDAYEND"] longValue];
+    BOOL weekendTrading =   [[parameters objectForKey:@"WEEKENDTRADING"] boolValue];
+    //BOOL userDataGiven =  [[parameters objectForKey:@"USERDATAGIVEN"] boolValue];
+    //NSArray *extraRequiredVariables;
+    
+    NSString *tradingPair = [NSString stringWithFormat:@"%@%@",baseCode,quoteCode];
+    
+    [setupSimulationName setStringValue:simName];
+    [setupTradingPairPopup selectItem:[setupTradingPairPopup itemWithTitle:tradingPair]];
+    [setupAccountCurrencyPopup removeAllItems];
+    [setupAccountCurrencyPopup addItemWithTitle:baseCode];
+    [setupAccountCurrencyPopup addItemWithTitle:quoteCode];
+    [setupAccountCurrencyPopup selectItem:[setupAccountCurrencyPopup itemWithTitle:accCode]];
+    [setupStartTimePicker setDateValue:[NSDate dateWithTimeIntervalSince1970:startDateTime] ];
+    [setupEndTimePicker setDateValue:[NSDate dateWithTimeIntervalSince1970:endDateTime]];
+    
+    
+    
+    [setupAccountCurrencyLabel setStringValue:accCode];
+    [setupMaxLeverageTextField setStringValue:[NSString stringWithFormat:@"%d",maxLeverage]];
+    [setupAccountBalanceTextField setStringValue:[NSString stringWithFormat:@"%5.2f",startingBalance]];
+    [setupTradingStartTimePicker setDateValue:[NSDate dateWithTimeIntervalSince1970:tradingDayStart]];
+    [setupTradingEndTimePicker setDateValue:[NSDate dateWithTimeIntervalSince1970:tradingDayEnd]];
+    [setupDataWarmUpTextField setStringValue:[NSString stringWithFormat:@"%ld",initialDataBeforeStart/DAY_SECONDS]];
+    [setupSamplingMinutesTextField setStringValue:[NSString stringWithFormat:@"%d",timeStep/60]];
+    [setupTradingLagTextField setStringValue:[NSString stringWithFormat:@"%d",tradingLag/60]];
+    [setupParameterTextField setStringValue:simDescription];
+    [setupPositioningTextField setStringValue:positioningString];
+    [setupRulesTextField setStringValue:rulesString];
+    
+    if(weekendTrading){
+        [setupTradingWeekendYesNo setState:NSOnState];
+    }else{
+        [setupTradingWeekendYesNo setState:NSOffState];
+    }
+}
+
+
+
 #pragma mark -
 #pragma mark IBActions Methods
 
@@ -581,19 +823,19 @@
     NSString *senderIdentifer = [sender identifier];
     if (([[NSApp currentEvent] modifierFlags] & NSAlternateKeyMask) != 0){
         if([[senderIdentifer substringToIndex:7] isEqualToString:@"BIGPLOT"]){
-            [simulationResultsPlot rightSideExpand];
+            [[self simulationResultsPlot] rightSideExpand];
         }
         
         if([[senderIdentifer substringToIndex:7] isEqualToString:@"SIGPLOT"]){
-            [signalAnalysisPlot rightSideExpand];
+            [[self signalAnalysisPlot] rightSideExpand];
         } 
     }else{
         if([[senderIdentifer substringToIndex:7] isEqualToString:@"BIGPLOT"]){
-            [simulationResultsPlot leftSideContract];
+            [[self simulationResultsPlot] leftSideContract];
         }
     
         if([[senderIdentifer substringToIndex:7] isEqualToString:@"SIGPLOT"]){
-            [signalAnalysisPlot leftSideContract];
+            [[self signalAnalysisPlot] leftSideContract];
         }
     }
  
@@ -603,20 +845,20 @@
     NSString *senderIdentifer = [sender identifier];
     if (([[NSApp currentEvent] modifierFlags] & NSAlternateKeyMask) != 0){
         if([[senderIdentifer substringToIndex:7] isEqualToString:@"BIGPLOT"]){
-            [simulationResultsPlot rightSideContract];
+            [[self simulationResultsPlot] rightSideContract];
         }
         
         if([[senderIdentifer substringToIndex:7] isEqualToString:@"SIGPLOT"]){
-            [signalAnalysisPlot rightSideContract];
+            [[self signalAnalysisPlot] rightSideContract];
         }
         
     }else{
         if([[senderIdentifer substringToIndex:7] isEqualToString:@"BIGPLOT"]){
-            [simulationResultsPlot leftSideExpand];
+            [[self simulationResultsPlot] leftSideExpand];
         }
     
         if([[senderIdentifer substringToIndex:7] isEqualToString:@"SIGPLOT"]){
-            [signalAnalysisPlot leftSideExpand];
+            [[self signalAnalysisPlot] leftSideExpand];
         }
     }
 }
@@ -626,21 +868,21 @@
     if (([[NSApp currentEvent] modifierFlags] & NSAlternateKeyMask) != 0){
         // do alternate action
         if([[senderIdentifer substringToIndex:7] isEqualToString:@"BIGPLOT"]){
-            [simulationResultsPlot topContract];
+            [[self simulationResultsPlot] topContract];
         }
         
         if([[senderIdentifer substringToIndex:7] isEqualToString:@"SIGPLOT"]){
-            [signalAnalysisPlot topContract];
+            [[self signalAnalysisPlot] topContract];
         } 
         
     }else{
             // do normal action
         if([[senderIdentifer substringToIndex:7] isEqualToString:@"BIGPLOT"]){
-            [simulationResultsPlot bottomExpand];
+            [[self simulationResultsPlot] bottomExpand];
         }
     
         if([[senderIdentifer substringToIndex:7] isEqualToString:@"SIGPLOT"]){
-            [signalAnalysisPlot bottomExpand];
+            [[self signalAnalysisPlot] bottomExpand];
         }
     }
 }
@@ -649,20 +891,20 @@
     NSString *senderIdentifer = [sender identifier];
     if (([[NSApp currentEvent] modifierFlags] & NSAlternateKeyMask) != 0){
         if([[senderIdentifer substringToIndex:7] isEqualToString:@"BIGPLOT"]){
-            [simulationResultsPlot topExpand];
+            [[self simulationResultsPlot] topExpand];
         }
         
         if([[senderIdentifer substringToIndex:7] isEqualToString:@"SIGPLOT"]){
-            [signalAnalysisPlot topExpand];
+            [[self signalAnalysisPlot] topExpand];
         }
 
     }else{
         if([[senderIdentifer substringToIndex:7] isEqualToString:@"BIGPLOT"]){
-            [simulationResultsPlot bottomContract];
+            [[self simulationResultsPlot] bottomContract];
         }
     
         if([[senderIdentifer substringToIndex:7] isEqualToString:@"SIGPLOT"]){
-            [signalAnalysisPlot bottomContract];
+            [[self signalAnalysisPlot] bottomContract];
         }
     }
 }
@@ -672,7 +914,7 @@
     BOOL allOk;
     NSString *suggestedFileName;
     NSSavePanel *saveDlg = [NSSavePanel savePanel];
-    suggestedFileName = [NSString stringWithFormat:@"%@dataTS",[[simulationController currentSimulation] name]];
+    suggestedFileName = [NSString stringWithFormat:@"%@dataTS",[[self workingSimulation]  name]];
     [saveDlg setNameFieldStringValue:suggestedFileName];                     
     // Set array of file types
     NSArray *fileTypesArray;
@@ -689,7 +931,7 @@
     if ( [saveDlg runModal] == NSOKButton ) {
         // Gets list of all files selected
         NSURL *fileToSaveTo = [saveDlg URL];
-        allOk = [simulationController exportData:fileToSaveTo];
+        allOk = [[self simulationController] exportWorkingSimulationDataToFile:fileToSaveTo];
         if(!allOk){
             [self updateStatus:@"Problem trying to write data to file"];
         }
@@ -701,7 +943,7 @@
     BOOL allOk;
     NSString *suggestedFileName;
     NSSavePanel *saveDlg = [NSSavePanel savePanel];
-    suggestedFileName = [NSString stringWithFormat:@"%@trades",[[simulationController currentSimulation] name]];
+    suggestedFileName = [NSString stringWithFormat:@"%@trades",[[self workingSimulation] name]];
     [saveDlg setNameFieldStringValue:suggestedFileName]; 
     // Set array of file types
     NSArray *fileTypesArray;
@@ -718,14 +960,11 @@
     if ( [saveDlg runModal] == NSOKButton ) {
         // Gets list of all files selected
         NSURL *fileToSaveTo = [saveDlg URL];
-        allOk = [simulationController exportTrades:fileToSaveTo];
+        allOk = [[self simulationController] exportWorkingSimulationTradesToFile:fileToSaveTo];
         if(!allOk){
             [self updateStatus:@"Problem trying to write data to file"];
         }
     }
-
-    
-    
 }
 
 - (IBAction)exportBalanceAdjustments:(id)sender {
@@ -733,7 +972,7 @@
     BOOL allOk;
     NSString *suggestedFileName;
     NSSavePanel *saveDlg = [NSSavePanel savePanel];
-    suggestedFileName = [NSString stringWithFormat:@"%@balAdjs",[[simulationController currentSimulation] name]];
+    suggestedFileName = [NSString stringWithFormat:@"%@balAdjs",[[self workingSimulation] name]];
     [saveDlg setNameFieldStringValue:suggestedFileName]; 
     
     // Set array of file types
@@ -751,7 +990,7 @@
     if ( [saveDlg runModal] == NSOKButton ) {
         // Gets list of all files selected
         NSURL *fileToSaveTo = [saveDlg URL];
-        allOk = [simulationController exportBalAdjmts:fileToSaveTo];
+        allOk = [[self simulationController] exportWorkingSimulationBalAdjmtsToFile:fileToSaveTo];
         if(!allOk){
             [self updateStatus:@"Problem trying to write data to file"];
         }
@@ -772,7 +1011,7 @@
     BOOL allOk;
     NSString *suggestedFileName;
     NSSavePanel *saveDlg = [NSSavePanel savePanel];
-    suggestedFileName = [NSString stringWithFormat:@"%@report",[[simulationController currentSimulation] name]];
+    suggestedFileName = [NSString stringWithFormat:@"%@report",[[self workingSimulation] name]];
     [saveDlg setNameFieldStringValue:suggestedFileName]; 
     // Set array of file types
     NSArray *fileTypesArray;
@@ -789,7 +1028,7 @@
     if ( [saveDlg runModal] == NSOKButton ) {
         // Gets list of all files selected
         NSURL *fileToSaveTo = [saveDlg URL];
-        allOk = [simulationController writeReportToCsvFile:fileToSaveTo];
+        allOk = [[self simulationController] exportWorkingSimulationReportToFile:fileToSaveTo];
         if(!allOk){
             [self updateStatus:@"Problem trying to write data to file"];
         }
@@ -801,7 +1040,7 @@
     zoomStartDateTime = [[zoomFromDatePicker dateValue] timeIntervalSince1970];
     zoomEndDateTime = [[zoomToDatePicker dateValue] timeIntervalSince1970];
     
-    [simulationResultsPlot setZoomDataViewFrom:zoomStartDateTime To:zoomEndDateTime];
+    [[self simulationResultsPlot] setZoomDataViewFrom:zoomStartDateTime To:zoomEndDateTime];
 }
 
 - (IBAction)accountCurrencyChange:(id)sender {
@@ -825,8 +1064,8 @@
         }
         if(importedData != nil){
             if([importedData count] > 0){
-                importDataArray = importedData;
-                importDataFilename = [fileToRead absoluteString];
+                [self setImportDataArray:importedData];
+                [self setImportDataFilename:[fileToRead absoluteString]];
                 [setupSheetImportDataScrollView setHidden:NO];
                 NSArray *tableColumns;
                 tableColumns = [setupSheetImportDataTableView tableColumns];
@@ -839,14 +1078,14 @@
                 NSTableColumn *newTableColumn;
                 NSCell *newColumnCell;
                 int tableViewWidth;
-                NSArray *dataRow = [importDataArray objectAtIndex:0];
+                NSArray *dataRow = [[self importDataArray] objectAtIndex:0];
                 for(int i = 0; i < [dataRow count]; i++){
                     newTableColumn = [[NSTableColumn alloc] initWithIdentifier:[NSString stringWithFormat:@"Col%d",i]];
                     [[newTableColumn headerCell] setStringValue:[dataRow objectAtIndex:i]];
                     if(i ==0){
                         [newTableColumn setWidth:150];
                     }else{
-                        int width;
+                        NSUInteger width;
                         width = MAX(50, (280-150)/([dataRow count]-1));
                         [newTableColumn setWidth:width];
                     }
@@ -863,39 +1102,27 @@
                 [setupSheetImportDataTableView reloadData];
                 [setupSheetImportDataButton setTitle:@"Remove Data"];
             }else{
-                importDataArray = nil;
-                importDataFilename = nil;
+                [self setImportDataArray:Nil];
+                [self setImportDataFilename:Nil];
                 [setupSheetImportDataScrollView setHidden:YES];
                 [setupSheetImportDataButton setTitle:@"Import Data"];
             }
         }else{
-            importDataArray = nil;
-            importDataFilename = nil;
+            [self setImportDataArray:Nil];
+            [self setImportDataFilename:Nil];
             [setupSheetImportDataScrollView setHidden:YES];
             [setupSheetImportDataButton setTitle:@"Import Data"];
         }
     }else{
-        importDataArray = nil;
-        importDataFilename = nil;
+        [self setImportDataArray:Nil];
+        [self setImportDataFilename:Nil];
         [setupSheetImportDataScrollView setHidden:YES];
         [setupSheetImportDataButton setTitle:@"Import Data"];
     }
 }
 
 - (IBAction)signalAnalysisPlotReload:(id)sender {
-    NSInteger selectedRow = [simulationSignalTableView selectedRow];
-    if(selectedRow > -1){
-        selectedRow = [[signalTableViewOrdering objectAtIndex:selectedRow] intValue];
-        NSDictionary *signalInfo;
-        signalInfo = [[simulationController currentSimulation] detailsOfSignalAtIndex:selectedRow];
-        int tradingLag = [[simulationController currentSimulation] tradingLag];
-        
-        long startDateTime = [[signalInfo objectForKey:@"ENTRYTIME"] longValue];
-        startDateTime = startDateTime - ([signalAnalysisPlotLeadHours intValue] * 60*60);
-        long endDateTime = [[signalInfo objectForKey:@"EXITTIME"] longValue] + 2*tradingLag;
-        
-        [self plotSignalDataFrom:startDateTime To:endDateTime];
-    }
+    [self makeSignalAnalysisPlot];
 }
 
 - (IBAction)signalAnalysisPlotFullScreen:(id)sender {
@@ -904,6 +1131,83 @@
 
 - (IBAction)simPlotFullScreen:(id)sender {
     [self addPlotToFullScreenWindow:simulationResultGraphHostingView];
+}
+
+- (IBAction)saveWorkingSimulation:(id)sender {
+    BOOL allOk;
+    NSString *suggestedFileName;
+    NSSavePanel *saveDlg = [NSSavePanel savePanel];
+    suggestedFileName = [NSString stringWithFormat:@"%@report",[[self workingSimulation] name]];
+    [saveDlg setNameFieldStringValue:suggestedFileName]; 
+    
+        
+
+    
+    // Set array of file types
+    NSArray *fileTypesArray;
+    fileTypesArray = [NSArray arrayWithObjects:@"sss", nil];
+    
+    // Enable options in the dialog.
+    //[saveDlg setCanChooseFiles:YES];
+    [saveDlg setAllowedFileTypes:fileTypesArray];
+    //[saveDlg setAllowsMultipleSelection:NO];
+    
+    // Display the dialog box.  If the OK pressed,
+    // process the files.
+    
+    if ( [saveDlg runModal] == NSOKButton ) {
+        NSData *encodedObject = [NSKeyedArchiver archivedDataWithRootObject:[self workingSimulation]];
+        //simulation = [NSKeyedUnarchiver unarchiveObjectWithData:encodedObject];
+        
+        NSURL *fileToSaveTo = [saveDlg URL];
+        [encodedObject writeToURL:fileToSaveTo atomically:YES];
+       
+        if(!allOk){
+            [self updateStatus:@"Problem trying to write data to file"];
+        }
+    }
+}
+
+- (IBAction)importSimulation:(id)sender {
+    NSData *importedData;
+    NSArray *fileTypesArray;
+    Simulation *importedSimulation;
+    
+    fileTypesArray = [NSArray arrayWithObjects:@"sss", nil];
+    NSOpenPanel *openDlg = [NSOpenPanel openPanel];
+    NSURL *fileToRead;
+    [openDlg setAllowsMultipleSelection:NO];
+    [openDlg setAllowedFileTypes:fileTypesArray];
+    if ([openDlg runModal] == NSOKButton)
+    {
+        fileToRead =  [openDlg URL];
+        importedData = [NSData  dataWithContentsOfURL:fileToRead]; 
+        importedSimulation =  [NSKeyedUnarchiver unarchiveObjectWithData:importedData];
+        [self registerSimulation:importedSimulation]; 
+    }
+}
+
+- (IBAction)removeWorkingSimulation:(id)sender {
+    NSMutableArray *allSims = [self allSimulations];
+    if([allSims count] > 0)
+    {
+        [allSims removeObject:[self workingSimulation]]; 
+    }
+    
+    if(([allSims count] > 0) && ([registeredSimsTableView selectedRow] > -1)){
+        [removeSimulationButton setEnabled:YES];
+        [exportSimulationButton setEnabled:YES];
+    }else{
+        [removeSimulationButton setEnabled:NO];
+        [exportSimulationButton setEnabled:NO];
+    }
+    if([allSims count] > 0){
+        [self setWorkingSimulation:[allSims objectAtIndex:0]];
+    }
+    if([self workingSimulation] != Nil)
+    {
+        [self displayWorkingSim];
+    }
 }
 
 - (IBAction)changeSelectedTradingPair:(id)sender {
@@ -918,41 +1222,48 @@
 - (IBAction)showSetupSheet:(id)sender
 {
     //Not yet, this is to show cancel that the setup button has been pressed
-    doingSetup = NO;
-    cancelProcedure = NO;
-    [setupSheetShowButton setEnabled:NO];
+    [self setDoingSetup: NO];
+    [self setCancelProcedure: NO];
+    [self disableSimulationBrowser];
+    [setupSheetShowButton setEnabled: NO];
+    
+    
     [self disableMainButtons];
     [NSApp beginSheet:setupSheet modalForWindow:[centreTabView window] modalDelegate:nil didEndSelector:NULL contextInfo:NULL];
 }
 
 - (IBAction)cancelSetupSheet:(id)sender{
-    cancelProcedure = YES;
-    if(doingSetup == NO){
+    [self setCancelProcedure:YES];
+    if([self doingSetup] == NO){
         [self endSetupSheet];
     }
     [setupSheetShowButton setEnabled:YES];
+    [importSimulationButton setHidden:NO];
+    [removeSimulationButton setHidden:NO];
+    [exportSimulationButton setHidden:NO];
+    [registeredSimsScrollView1 setHidden:NO];
 }
 
 - (IBAction)cancelSimulation:(id)sender{
     NSString *userMessage = @"Trying to cancel...";
-    if(doThreads){
+    if([self doThreads]){
         [self performSelectorOnMainThread:@selector(updateStatus:) withObject:userMessage waitUntilDone:NO];
-        [simulationController performSelectorInBackground:@selector(askSimulationToCancel) withObject:nil];
+        [[self simulationController] performSelectorInBackground:@selector(askSimulationToCancel) withObject:nil];
 
     }else{
-        [simulationController askSimulationToCancel];
+        [[self simulationController] askSimulationToCancel];
     }
     [setUpSheetCancelButton setEnabled:NO];
 }
 
 - (IBAction)toggleLongShortIndicator:(id)sender {
     
-    [simulationResultsPlot togglePositionIndicator];
+    [[self simulationResultsPlot] togglePositionIndicator];
 }
 
 - (IBAction)sigPlotLongShortIndicatorToggle:(id)sender {
-    longShortIndicatorOn = !longShortIndicatorOn;
-    [signalAnalysisPlot togglePositionIndicator];
+    [self setLongShortIndicatorOn:![self longShortIndicatorOn]];
+    [[self signalAnalysisPlot] togglePositionIndicator];
 }
 
 - (IBAction)performSimulation:(id)sender {
@@ -967,6 +1278,11 @@
     
     [performSimulationButton setEnabled:NO];
     [self clearSimulationMessage];
+    for(int i =0; i < [[self hideObjectsOnStartup] count];i++){
+        [[[self hideObjectsOnStartup] objectAtIndex:i] setHidden:YES];
+    }
+
+    [simulationRunScrollView setFrame:CGRectMake(18.0f, 59.0f, 650.0f, 417.0f)];
     
     NSMutableDictionary *parameters = [[NSMutableDictionary alloc] init]; 
     
@@ -1067,28 +1383,34 @@
                        forKey:@"WARMUPDATA"];
         
         
-        if(importDataArray == nil){
+        if([self importDataArray] == Nil){
             [parameters setObject:[NSNumber numberWithBool:NO] 
                            forKey:@"USERDATAGIVEN"];
         }else{
             [parameters setObject:[NSNumber numberWithBool:YES] 
                            forKey:@"USERDATAGIVEN"];
-            [parameters setObject:importDataArray 
+            [parameters setObject:[self importDataArray] 
                            forKey:@"USERDATA"];
-            [parameters setObject:importDataFilename 
+            [parameters setObject:[self importDataFilename] 
                            forKey:@"USERDATAFILE"];
         }
     }
     
     if(basicCheckOk)
     {
+        NSData *encodedObject = [NSKeyedArchiver archivedDataWithRootObject:parameters];
+        //simulation = [NSKeyedUnarchiver unarchiveObjectWithData:encodedObject];
+        
+        NSURL *fileToSaveTo = [NSURL URLWithString:@"file://localhost/Users/Martin/Documents/params.ssp"];
+        [encodedObject writeToURL:fileToSaveTo atomically:YES];
+        
         [setUpSheetCancelButton setEnabled:YES];
     
         currentProgressIndicator = performSimulationProgressBar;
-        if(doThreads){
-            [simulationController performSelectorInBackground:@selector(tradingSimulation:) withObject:parameters];
+        if([self doThreads]){
+            [[self simulationController] performSelectorInBackground:@selector(tradingSimulation:) withObject:parameters];
         }else{
-            [simulationController tradingSimulation:parameters];
+            [[self simulationController] tradingSimulation:parameters];
         }
     
         [performSimulationButton setEnabled:YES];
@@ -1098,6 +1420,14 @@
         [performSimulationButton setEnabled:YES];
     }
     
+}
+
+- (void) disableSimulationBrowser
+{
+    [registeredSimsScrollView1 setHidden: YES];
+    [importSimulationButton setHidden: YES];
+    [removeSimulationButton setHidden: YES];
+    [exportSimulationButton setHidden:YES];
 }
 
 #pragma mark -
@@ -1116,7 +1446,9 @@
 - (void)outputSimulationMessage:(NSString *) message
 {
     [[[simulationMessagesTextView textStorage] mutableString] appendString:message];
-    [[[simulationMessagesTextView textStorage] mutableString] appendString:@"\n"];
+    [simulationMessagesTextView scrollRangeToVisible:NSMakeRange([[simulationMessagesTextView textStorage] length], 0)];
+    //[simulationRunScrollView scrollRectToVisible:NSRect
+    //[[[simulationMessagesTextView textStorage] mutableString] appendString:@"\n"];
 }
 
 #pragma mark -
@@ -1124,12 +1456,12 @@
 
 - (NSInteger)numberOfRowsInTableView:(NSTableView *)tableView{
     if([[tableView identifier] isEqualToString:@"SIMTSTV"]){
-        return [simulationTimeSeries count]; 
+        return [[self simulationTimeSeries] count]; 
     }
     
     if([[tableView identifier] isEqualToString:@"SIMSELTSTV"]){
         int numberSelected = 0;
-        for(TimeSeriesLine *tsl in simulationTimeSeries)
+        for(TimeSeriesLine *tsl in [self simulationTimeSeries])
         {
             if([tsl layerIndex] != -1){
                 numberSelected++;
@@ -1140,7 +1472,7 @@
     
     if([[tableView identifier] isEqualToString:@"SIGSELTSTV"]){
         int numberSelected = 0;
-        for(TimeSeriesLine *tsl in simulationSignalTimeSeries)
+        for(TimeSeriesLine *tsl in [self simulationSignalTimeSeries])
         {
             if([tsl layerIndex] != -1){
                 numberSelected++;
@@ -1150,39 +1482,45 @@
     }
     
     
-    
     if([[tableView identifier] isEqualToString:@"SIGTSTV"]){
-        return [simulationSignalTimeSeries count]; 
+        return [[self simulationSignalTimeSeries] count]; 
     } 
     
     if([[tableView identifier] isEqualToString:@"TRADESTV"]){
-        return [[simulationController currentSimulation] numberOfTrades]; 
+        return [[self workingSimulation] numberOfTrades]; 
     }
     
     if([[tableView identifier] isEqualToString:@"CASHTRANSTV"]){
-        return [[simulationController currentSimulation] numberOfBalanceAdjustments]; 
+        return [[self workingSimulation] numberOfBalanceAdjustments]; 
     }
     
     if([[tableView identifier] isEqualToString:@"SIMDATATV"]){
-        return [[[simulationController currentSimulation] analysisDataSeries] length]; 
+        return [[[self workingSimulation] analysisDataSeries] length]; 
     }
     
     if([[tableView identifier] isEqualToString:@"SIGANALTV"]){
-        return [[simulationController currentSimulation] numberOfSignals]; 
+        return [[self workingSimulation] numberOfSignals]; 
     }
 
     if([[tableView identifier] isEqualToString:@"SIMREPORTTV"])
     {
-        return [[simulationController currentSimulation] getNumberOfReportDataFields];
+        return [[self workingSimulation] getNumberOfReportDataFields];
     }
     if([[tableView identifier] isEqualToString:@"IMPORTDATATV"])
     {
-        if(importDataArray !=0){
-            return [importDataArray count]-1;
+        if([self importDataArray] !=0){
+            return [[self importDataArray] count]-1;
         }else{
             return 0;
         }
     }
+    if([[tableView identifier] length] >= 10){
+        if([[[tableView identifier] substringToIndex:10] isEqualToString:@"SAVEDSIMTV"])
+        {
+            return [[self allSimulations] count];
+        }
+    }
+    
     return 0;
 }
 
@@ -1192,7 +1530,7 @@
     NSString *columnId = [tableColumn identifier];
     
     if([[tableView identifier] isEqualToString:@"SIMTSTV"]){
-        tsl = [simulationTimeSeries objectAtIndex:row];
+        tsl = [[self simulationTimeSeries] objectAtIndex:row];
         if([columnId isEqualToString:@"plot0"]){
             return [NSNumber numberWithBool:[tsl layerIndex] == 0];
         }else if([columnId isEqualToString:@"plot1"]){
@@ -1207,12 +1545,16 @@
     
     if([[tableView identifier] isEqualToString:@"SIMSELTSTV"]){
         int numberSelected = 0;
-        for(int tslIndex = 0; tslIndex < [simulationTimeSeries count]; tslIndex++)
+        for(int tslIndex = 0; tslIndex < [[self simulationTimeSeries] count]; tslIndex++)
         {
-            tsl = [simulationTimeSeries objectAtIndex:tslIndex];
+            tsl = [[self simulationTimeSeries] objectAtIndex:tslIndex];
             if([tsl layerIndex] != -1){
                 if(numberSelected == row){
-                    return [tsl valueForKey:columnId];
+                    if([columnId isEqualToString:@"axis"]){
+                        return [NSNumber numberWithInt:[tsl layerIndex]+1]; 
+                    }else{
+                        return [tsl valueForKey:columnId];
+                    }
                 }else{
                     numberSelected++;
                 }
@@ -1224,12 +1566,17 @@
     
     if([[tableView identifier] isEqualToString:@"SIGSELTSTV"]){
         int numberSelected = 0;
-        for(int tslIndex = 0; tslIndex < [simulationSignalTimeSeries count]; tslIndex++)
+        for(int tslIndex = 0; tslIndex < [[self simulationSignalTimeSeries] count]; tslIndex++)
         {
-            tsl = [simulationSignalTimeSeries objectAtIndex:tslIndex];
+            tsl = [[self simulationSignalTimeSeries] objectAtIndex:tslIndex];
             if([tsl layerIndex] != -1){
                 if(numberSelected == row){
-                    return [tsl valueForKey:columnId];
+                    if([columnId isEqualToString:@"axis"])
+                    {
+                        return [NSNumber numberWithInt:[tsl layerIndex]];
+                    }else{
+                        return [tsl valueForKey:columnId];
+                    }
                 }else{
                     numberSelected++;
                 }
@@ -1239,7 +1586,7 @@
     }
     
     if([[tableView identifier] isEqualToString:@"SIGTSTV"]){
-        tsl = [simulationSignalTimeSeries objectAtIndex:row];
+        tsl = [[self simulationSignalTimeSeries] objectAtIndex:row];
         if([columnId isEqualToString:@"plot0"]){
             return [NSNumber numberWithBool:[tsl layerIndex] == 0];
         }else if([columnId isEqualToString:@"plot1"]){
@@ -1254,19 +1601,19 @@
     if([[tableView identifier] isEqualToString:@"TRADESTV"]){
         if([[tableColumn identifier] isEqualToString:@"DATETIME"])
         {
-            return [EpochTime stringDateWithTime:[[simulationController currentSimulation] getDateTimeForTradeAtIndex:row]];
+            return [EpochTime stringDateWithTime:[[self workingSimulation] getDateTimeForTradeAtIndex:row]];
         }
         if([[tableColumn identifier] isEqualToString:@"AMOUNT"])
         {
-            return [NSString stringWithFormat:@"%d",[[simulationController currentSimulation] getAmountForTradeAtIndex:row]];
+            return [NSString stringWithFormat:@"%d",[[self workingSimulation] getAmountForTradeAtIndex:row]];
         }
         if([[tableColumn identifier] isEqualToString:@"PRICE"])
         {
-            return [NSString stringWithFormat:@"%5.3f",[[simulationController currentSimulation] getPriceForTradeAtIndex:row]];
+            return [NSString stringWithFormat:@"%5.3f",[[self workingSimulation] getPriceForTradeAtIndex:row]];
         }
         if([[tableColumn identifier] isEqualToString:@"ENDEXP"])
         {
-            return [NSString stringWithFormat:@"%d",[[simulationController currentSimulation] getResultingMarketExposureForTradeAtIndex:row]];
+            return [NSString stringWithFormat:@"%d",[[self workingSimulation] getResultingMarketExposureForTradeAtIndex:row]];
         }
     }
     
@@ -1274,24 +1621,24 @@
     {
         if([[tableColumn identifier] isEqualToString:@"DATETIME"])
         {
-            return [EpochTime stringDateWithTime:[[simulationController currentSimulation] getDateTimeForBalanceAdjustmentAtIndex:row]];
+            return [EpochTime stringDateWithTime:[[self workingSimulation] getDateTimeForBalanceAdjustmentAtIndex:row]];
         }
         if([[tableColumn identifier] isEqualToString:@"AMOUNT"])
         {
-            return [NSString stringWithFormat:@"%5.3f",[[simulationController currentSimulation] getAmountForBalanceAdjustmentAtIndex:row]];
+            return [NSString stringWithFormat:@"%5.3f",[[self workingSimulation] getAmountForBalanceAdjustmentAtIndex:row]];
         }
         if([[tableColumn identifier] isEqualToString:@"REASON"])
         {
-            return [[simulationController currentSimulation] getReasonForBalanceAdjustmentAtIndex:row]; 
+            return [[self workingSimulation] getReasonForBalanceAdjustmentAtIndex:row]; 
         }
         if([[tableColumn identifier] isEqualToString:@"ENDBALANCE"])
         {
-            return [NSString stringWithFormat:@"%5.3f",[[simulationController currentSimulation] getResultingBalanceForBalanceAdjustmentAtIndex:row]];
+            return [NSString stringWithFormat:@"%5.3f",[[self workingSimulation] getResultingBalanceForBalanceAdjustmentAtIndex:row]];
         }
     }
      
     if([[tableView identifier] isEqualToString:@"SIMDATATV"]){
-        DataSeries* simData = [[simulationController currentSimulation] analysisDataSeries];
+        DataSeries* simData = [[self workingSimulation] analysisDataSeries];
         if([[tableColumn identifier] isEqualToString:@"DATETIME"]){
             long dateTimeNumber = [[[simData xData] sampleValue:row] longValue];
             //NSString *dateTime = [EpochTime stringDateWithTime:dateTimeNumber];
@@ -1311,8 +1658,8 @@
     
     if([[tableView identifier] isEqualToString:@"SIGANALTV"])
     {
-        int sortedIndex =  [[signalTableViewOrdering objectAtIndex:row] intValue];
-        NSDictionary *signalAnalysisDetails = [[simulationController currentSimulation] detailsOfSignalAtIndex:sortedIndex];
+        int sortedIndex =  [[[self signalTableViewOrdering] objectAtIndex:row] intValue];
+        NSDictionary *signalAnalysisDetails = [[self workingSimulation] detailsOfSignalAtIndex:sortedIndex];
         
         if([[tableColumn identifier] isEqualToString:@"SIGNAL"]){
             int signalSide =  [UtilityFunctions signOfDouble:[[signalAnalysisDetails objectForKey:@"SIGNAL"] doubleValue]];
@@ -1344,11 +1691,11 @@
         id returnValue;
         if([[tableColumn identifier] isEqualToString:@"NAME"])
         {
-             returnValue = [[simulationController currentSimulation] getReportNameFieldAtIndex:row];
+             returnValue = [[self workingSimulation] getReportNameFieldAtIndex:row];
         }
         if([[tableColumn identifier] isEqualToString:@"DATA1"])
         {
-            returnValue = [[simulationController currentSimulation] getReportDataFieldAtIndex:row];
+            returnValue = [[self workingSimulation] getReportDataFieldAtIndex:row];
         }
         if([returnValue isKindOfClass:[NSString class]]){
             if([returnValue length] > 25){
@@ -1357,7 +1704,7 @@
             }
         }
         return returnValue;
-//            id returnValue = [[simulationController currentSimulation] getReportDataFieldAtIndex:row];
+//            id returnValue = [[simulationController workingSimulation] getReportDataFieldAtIndex:row];
 //            if([returnValue isKindOfClass:[NSString class]]){
 //                return returnValue;
 //            }else{
@@ -1368,17 +1715,25 @@
     }
     if([[tableView identifier] isEqualToString:@"IMPORTDATATV"])
     {
-        if(importDataArray !=0){
+        if([self importDataArray] !=0){
             NSString *columnId = [tableColumn identifier];
             int columnNumber = [[columnId substringFromIndex:3] intValue];
             if(columnNumber == 0){
-                long dateTime =  (long)[[[importDataArray objectAtIndex:row+1] objectAtIndex:0] longLongValue];
+                long dateTime =  (long)[[[[self importDataArray] objectAtIndex:row+1] objectAtIndex:0] longLongValue];
                 return [EpochTime stringDateWithTime:dateTime];
             }else{
-                return [[importDataArray objectAtIndex:row+1] objectAtIndex:columnNumber];
+                return [[[self importDataArray] objectAtIndex:row+1] objectAtIndex:columnNumber];
             }
         }else{
             return 0;
+        }
+    }
+    
+    if([[tableView identifier] length] >= 10){
+        if([[[tableView identifier] substringToIndex:10] isEqualToString:@"SAVEDSIMTV"])
+        {
+            Simulation *sim = [[self allSimulations] objectAtIndex:row];
+            return [sim name];
         }
     }
 
@@ -1395,13 +1750,13 @@
     //int layerIndex = 0;
     
     if([[tableView identifier] isEqualToString:@"SIMTSTV"]){
-        tsl = [simulationTimeSeries objectAtIndex:row];
-        plot = simulationResultsPlot;
+        tsl = [[self simulationTimeSeries] objectAtIndex:row];
+        plot = [self simulationResultsPlot];
     }
     
     if([[tableView identifier] isEqualToString:@"SIGTSTV"]){
-        tsl = [simulationSignalTimeSeries objectAtIndex:row];
-        plot = signalAnalysisPlot;
+        tsl = [[self simulationSignalTimeSeries] objectAtIndex:row];
+        plot = [self signalAnalysisPlot];
     }
     
     NSString *column = [tableColumn identifier];
@@ -1442,7 +1797,7 @@
 {
     BOOL found = NO;
     if([[tableView identifier] isEqualToString:@"SIMTSTV"]){
-        [simulationTimeSeries removeAllObjects];
+        [[self simulationTimeSeries] removeAllObjects];
         [simulationTimeSeriesTableView reloadData];
         [simulationTimeSeriesSelectedTableView reloadData];
         found = YES;
@@ -1456,7 +1811,7 @@
     } 
     
     if([[tableView identifier] isEqualToString:@"SIGTSTV"]){
-        [simulationSignalTimeSeries removeAllObjects];
+        [[self simulationSignalTimeSeries] removeAllObjects];
         [simulationSignalTimeSeriesTableView reloadData];
         [simulationSignalSelectedTimeSeriesTableView reloadData];
         found = YES;
@@ -1466,14 +1821,15 @@
     }
 }
 
--(void)addToTableView:(NSTableView *)tableView TimeSeriesLine: (TimeSeriesLine *)TSLine
+-(void)addToTableView:(NSTableView *)tableView 
+       TimeSeriesLine: (TimeSeriesLine *)TSLine
 {
    if([[tableView identifier] isEqualToString:@"SIMTSTV"]){
-        [simulationTimeSeries addObject:TSLine];
+        [[self simulationTimeSeries] addObject:TSLine];
     }
     
     if([[tableView identifier] isEqualToString:@"SIGTSTV"]){
-        [simulationSignalTimeSeries addObject:TSLine];
+        [[self simulationSignalTimeSeries] addObject:TSLine];
     }
     [tableView reloadData];
     if([[tableView identifier] isEqualToString:@"SIMTSTV"]){
@@ -1483,103 +1839,93 @@
 
 -(void)tableViewSelectionDidChange:(NSNotification *)notification
 {
-    NSTableView *signalAnalysisTableView = [notification object];
+    NSTableView *tableView = [notification object];
     
-    if([[signalAnalysisTableView identifier] isEqualToString:@"SIGANALTV"]){
-        NSInteger selectedRow = [signalAnalysisTableView selectedRow];
-        
-        if(selectedRow > -1){
-            NSDictionary *signalInfo;
-            long startDateTime, endDateTime;
-            int tradingLag = [[simulationController currentSimulation] tradingLag];
+    if([[tableView identifier] isEqualToString:@"SIGANALTV"]){
+        [self makeSignalAnalysisPlot];
+    }
+   
+    if([[tableView identifier] length] >= 10){
+        if([[[tableView identifier] substringToIndex:10] isEqualToString:@"SAVEDSIMTV"]){
             
-            if([signalAnalysisTableView numberOfSelectedRows] > 1){
-                NSLog(@"%ld : %ld",selectedRow,[signalAnalysisTableView numberOfSelectedRows]);
-                NSIndexSet *selectedIndexes = [signalAnalysisTableView selectedRowIndexes];
-                int minSelected, maxSelected;
-                if([selectedIndexes firstIndex] <= [selectedIndexes lastIndex])
-                {
-                    minSelected = [selectedIndexes firstIndex];
-                    maxSelected = [selectedIndexes lastIndex];
-                }else{
-                    minSelected = [selectedIndexes lastIndex];
-                    maxSelected = [selectedIndexes firstIndex]; 
+            if([registeredSimsTableView selectedRow] > -1){
+                Simulation *selectedSim=[[self allSimulations] objectAtIndex:[registeredSimsTableView selectedRow]];
+                if(selectedSim != [self workingSimulation]){
+                    [self setWorkingSimulation:selectedSim];
+                    [self displayWorkingSim];
+                    NSMutableString *outputTextField = [[simulationMessagesTextView textStorage] mutableString];
+                    [outputTextField deleteCharactersInRange:NSMakeRange(0, [outputTextField length])];
+                    [outputTextField appendString:[[[selectedSim simulationRunOutput] string] mutableCopy]];
+                    [simulationTradesTableView reloadData];
+                    [simulationCashFlowsTableView reloadData];
                 }
-                selectedRow = [[signalTableViewOrdering objectAtIndex:minSelected] intValue];
-                signalInfo = [[simulationController currentSimulation] detailsOfSignalAtIndex:selectedRow];
-                startDateTime = [[signalInfo objectForKey:@"ENTRYTIME"] longValue];
-                startDateTime = startDateTime - ([signalAnalysisPlotLeadHours intValue] * 60*60);
-
-                selectedRow = [[signalTableViewOrdering objectAtIndex:maxSelected] intValue];
-                signalInfo = [[simulationController currentSimulation] detailsOfSignalAtIndex:selectedRow];
-                endDateTime = [[signalInfo objectForKey:@"EXITTIME"] longValue] + 2*tradingLag;
-            }else{
-                selectedRow = [[signalTableViewOrdering objectAtIndex:selectedRow] intValue];
-                signalInfo = [[simulationController currentSimulation] detailsOfSignalAtIndex:selectedRow];
-                startDateTime = [[signalInfo objectForKey:@"ENTRYTIME"] longValue];
-                startDateTime = startDateTime - ([signalAnalysisPlotLeadHours intValue] * 60*60);
-                endDateTime = [[signalInfo objectForKey:@"EXITTIME"] longValue] + 2*tradingLag;
             }
-            [self plotSignalDataFrom:startDateTime To:endDateTime];
+            NSInteger selectedRow = [tableView selectedRow];
+            NSIndexSet *indexSet = [NSIndexSet indexSetWithIndex:selectedRow];
+            [registeredSimsTableView1 selectRowIndexes:indexSet byExtendingSelection:NO];
+            [registeredSimsTableView2 selectRowIndexes:indexSet byExtendingSelection:NO];
+            [registeredSimsTableView3 selectRowIndexes:indexSet byExtendingSelection:NO];
+            [registeredSimsTableView selectRowIndexes:indexSet byExtendingSelection:NO];
+            [registeredSimsTableView5 selectRowIndexes:indexSet byExtendingSelection:NO];
+            
         }
     }
     return;
 }
+
 
 - (void)tableView:(NSTableView *)tableView didClickTableColumn:(NSTableColumn *)tableColumn
 {
     
     if([[tableView identifier] isEqualToString:@"SIGTSTV"]){
         if([[tableColumn identifier] isEqualToString:@"plot1"]){
-            [signalAnalysisPlot toggleAxisLabelsForLayer:1];
+            [[self signalAnalysisPlot] toggleAxisLabelsForLayer:1];
         }
         if([[tableColumn identifier] isEqualToString:@"plot2"]){
-            [signalAnalysisPlot toggleAxisLabelsForLayer:2];
+            [[self signalAnalysisPlot] toggleAxisLabelsForLayer:2];
         }
         [tableView deselectColumn:[tableView selectedColumn]];
     }
     
     if([[tableView identifier] isEqualToString:@"SIMTSTV"]){
         if([[tableColumn identifier] isEqualToString:@"plot1"]){
-            [simulationResultsPlot toggleAxisLabelsForLayer:1];
+            [[self simulationResultsPlot] toggleAxisLabelsForLayer:1];
         }
         if([[tableColumn identifier] isEqualToString:@"plot2"]){
-            [simulationResultsPlot toggleAxisLabelsForLayer:2];
+            [[self simulationResultsPlot] toggleAxisLabelsForLayer:2];
         }
         [tableView deselectColumn:[tableView selectedColumn]];
     }
     
     if([[tableView identifier] isEqualToString:@"SIGANALTV"])
     {
-        int numberOfData = [[simulationController currentSimulation] numberOfSignals];
-        [signalTableViewOrdering removeAllObjects];
-        
-        
+        NSUInteger numberOfData = [[self workingSimulation] numberOfSignals];
+        [[self signalTableViewOrdering] removeAllObjects];       
         NSDictionary *signalAnalysisDetails; 
         //NSMutableArray *columnData = [[NSMutableArray alloc] initWithCapacity:[tableView numberOfRows]];
         double *columnData = malloc(numberOfData * sizeof(double));
         int *sortOrderIndex = malloc(numberOfData * sizeof(int));
         
         int sortSwitch;
-        if ([signalTableViewSortColumn isEqualToString:[tableColumn identifier]])
+        if ([[self signalTableViewSortColumn] isEqualToString:[tableColumn identifier]])
         {
-            sortSwitch = (signalTableViewSortedAscending) ? -1: 1;  
-            signalTableViewSortedAscending = !signalTableViewSortedAscending;
+            sortSwitch = ([self signalTableViewSortedAscending]) ? -1: 1;  
+            [self setSignalTableViewSortedAscending:![self signalTableViewSortedAscending]];
         }else{
             sortSwitch = 1;
         }
-        signalTableViewSortColumn = [tableColumn identifier];
-        if([signalTableViewSortColumn isEqualToString:@"SIGNALGAIN"]){
+        [self setSignalTableViewSortColumn:[tableColumn identifier]];
+        if([[self signalTableViewSortColumn] isEqualToString:@"SIGNALGAIN"]){
             for(int i = 0; i < numberOfData;i++){
-                signalAnalysisDetails = [[simulationController currentSimulation] detailsOfSignalAtIndex:i];
-                int signalSide = [UtilityFunctions signOfDouble:[[signalAnalysisDetails objectForKey:@"SIGNAL"] doubleValue]];
+                signalAnalysisDetails = [[self workingSimulation] detailsOfSignalAtIndex:i];
+                int signalSide = [UtilityFunctions signOfDouble:[[ signalAnalysisDetails objectForKey:@"SIGNAL"] doubleValue]];
                 float priceChange = ([[signalAnalysisDetails objectForKey:@"EXITPRICE"] floatValue] - [[signalAnalysisDetails objectForKey:@"ENTRYPRICE"] floatValue]);
                 columnData[i] = sortSwitch * signalSide * priceChange;
                 sortOrderIndex[i] = i;
             }
         }else{
             for(int i = 0; i < numberOfData;i++){
-                signalAnalysisDetails = [[simulationController currentSimulation] detailsOfSignalAtIndex:i];
+                signalAnalysisDetails = [[self workingSimulation] detailsOfSignalAtIndex:i];
                 NSNumber *dataValue = [signalAnalysisDetails objectForKey:[tableColumn identifier]]; 
                 columnData[i] = sortSwitch*[dataValue doubleValue];
                 sortOrderIndex[i] = i;
@@ -1592,7 +1938,7 @@
                                 AndReturningSortIndex:sortOrderIndex];
         
         for(int i = 0; i < numberOfData;i++){
-            [signalTableViewOrdering addObject:[NSNumber numberWithInt:sortOrderIndex[i]]];  
+            [[self signalTableViewOrdering] addObject:[NSNumber numberWithInt:sortOrderIndex[i]]];  
         }
         [tableView reloadData];
         free(columnData);
@@ -1613,14 +1959,13 @@
     
     
     if([[aTableView identifier] isEqualToString:@"SIMSELTSTV"]){
-        timeSeriesArray = simulationTimeSeries;
+        timeSeriesArray = [self simulationTimeSeries];
         doColour = YES;
     }
     if([[aTableView identifier] isEqualToString:@"SIGSELTSTV"]){
-        timeSeriesArray = simulationSignalTimeSeries;
+        timeSeriesArray = [self simulationSignalTimeSeries];
         doColour = YES;
     }
-    
     
     if(doColour){
         int numberSelected = 0;
@@ -1650,7 +1995,6 @@
         }
     }
 }
-
 
 
 
@@ -1687,56 +2031,6 @@
     }
 }
 
--(void)updateStatus:(NSString *) statusMessage
-{
-    [performSimulationStatusLabel setHidden:NO];
-    [performSimulationStatusLabel setStringValue:statusMessage];
-}
-
--(void) progressAsFraction:(NSNumber *) progressValue
-{
-    [currentProgressIndicator setDoubleValue:[progressValue doubleValue]];
-}
-
--(void) progressBarOn
-{
-    [currentProgressIndicator setMinValue:0.0];
-    [currentProgressIndicator setMaxValue:1.0];
-    [currentProgressIndicator setDoubleValue:0.1];
-    [currentProgressIndicator startAnimation:nil];
-    [currentProgressIndicator setHidden:NO];
-}
-
--(void) progressBarOff
-{
-    [currentProgressIndicator stopAnimation:nil];
-    [currentProgressIndicator setHidden:YES];
-}
-
--(void) prepareForSimulationReport
-{
-    for(int i =0; i < [hideObjectsOnStartup count];i++){
-        [[hideObjectsOnStartup objectAtIndex:i] setHidden:NO];
-    }
-    if([centreTabView numberOfTabViewItems] == 1){
-        [centreTabView addTabViewItem:plotTab];
-        [centreTabView addTabViewItem:dataTab];
-        [centreTabView addTabViewItem:reportTab];
-        [centreTabView addTabViewItem:signalsTab];
-    }
-    [simulationRunScrollView setFrame:CGRectMake(18.0f, 59.0f, 650.0f, 306.0f)];
-}
-
--(void)showAlertPanelWithInfo: (NSDictionary *) alertInfo
-{
-    if([[self delegate] respondsToSelector:@selector(showAlertPanelWithInfo:)])
-    {
-        [[self delegate] showAlertPanelWithInfo:alertInfo];
-    }else{
-        NSLog(@"Delegate not responding to \'showAlertPanelWithInfo\'"); 
-    } 
-}
-
 - (void) disableMainButtons
 {
     if([[self delegate] respondsToSelector:@selector(disableMainButtons)])
@@ -1754,7 +2048,7 @@
         [[self delegate] enableMainButtons];
     }else{
         NSLog(@"Delegate not responding to \'enableMainButtons'"); 
-    } 
+    }
 }
 
 
@@ -1810,6 +2104,23 @@
     }
 }
 
+-(void)windowDidBecomeKey:(NSNotification *)notification
+{
+    if([[[notification object] identifier] isEqualToString:@"SETUPWINDOW"]){
+        if([self firstTimeSetup]){
+            NSString *paramFilePath = @"file://localhost/Users/Martin/Documents/params.ssp";
+            NSURL *previousParamsFile =  [NSURL URLWithString:paramFilePath];
+            NSFileManager *fileManager = [NSFileManager defaultManager];
+
+            if ([fileManager fileExistsAtPath:@"/Users/Martin/Documents/params.ssp"]){
+                NSData *importedData = [NSData  dataWithContentsOfURL:previousParamsFile];
+                NSDictionary *importedParameters =  [NSKeyedUnarchiver unarchiveObjectWithData:importedData];
+                [self fillSetupSheet:importedParameters];
+            }
+            [self setFirstTimeSetup:NO];
+        }
+    }
+}
 #pragma mark -
 #pragma mark Properties
 
@@ -1833,7 +2144,7 @@
 @synthesize aboutTradingPairLabel;
 @synthesize aboutSimNameLabel;
 @synthesize performSimulationProgressBar;
-@synthesize dataControllerForUI;
+
 @synthesize setupTradingLagTextField;
 @synthesize endDateDoWLabel;
 @synthesize startDateDoWLabel;
@@ -1850,7 +2161,6 @@
 @synthesize setupAccountCurrencyPopup;
 @synthesize setupSimulationName;
 @synthesize setupTradingPairPopup;
-@synthesize fxPairsAndDbIds;
 @synthesize centreTabView;
 @synthesize rightSideTabView;
 @synthesize performSimulationStatusLabel;
@@ -1859,13 +2169,58 @@
 @synthesize simulationResultGraphHostingView;
 @synthesize simulationTimeSeriesTableView;
 @synthesize performSimulationButton;
-@synthesize coloursForPlots;
 @synthesize simulationRunScrollView;
 @synthesize accountCurrencyLabel;
-
 @synthesize endLabel;
 @synthesize startLabel;
 @synthesize tradingPairLabel;
+@synthesize simulationNameLabel;
 @synthesize zoomToDatePicker;
 @synthesize zoomFromDatePicker;
+@synthesize simulationSignalSelectedTimeSeriesTableView;
+@synthesize simulationTimeSeriesSelectedTableView;
+@synthesize setupRulesTextField;
+@synthesize setupDataWarmUpTextField;
+@synthesize simPlotBox;
+@synthesize signalAnalysisPlotBox;
+@synthesize fullScreenBox;
+@synthesize setupPositioningTextField;
+@synthesize registeredSimsTableView;
+@synthesize registeredSimsTableView1;
+@synthesize registeredSimsTableView2;
+@synthesize registeredSimsTableView3;
+@synthesize registeredSimsTableView5;
+@synthesize importSimulationButton;
+@synthesize removeSimulationButton;
+@synthesize registeredSimsScrollView1;
+@synthesize exportSimulationButton;
+
+@synthesize allSimulations = _allSimulations;
+@synthesize simulationTimeSeries = _simulationTimeSeries;
+@synthesize simulationSignalTimeSeries = _simulationSignalTimeSeries;
+@synthesize signalTableViewSortedAscending = _signalTableViewSortedAscending;
+@synthesize initialSetupComplete = _initialSetupComplete;
+@synthesize doingSetup = _doingSetup;
+@synthesize cancelProcedure = _cancelProcedure;
+@synthesize signalTableViewSortColumn = _signalTableViewSortColumn;
+@synthesize longShortIndicatorOn = _longShortIndicatorOn;
+@synthesize importDataFilename = _importDataFilename;
+@synthesize hideObjectsOnStartup = _hideObjectsOnStartup;
+
+
+@synthesize simulationController = _simulationController;
+@synthesize signalTableViewOrdering = _signalTableViewOrdering;
+@synthesize simulationResultsPlot = _simulationResultsPlot;
+@synthesize signalAnalysisPlot = _signalAnalysisPlot;
+@synthesize simulationDataSeries = _simulationDataSeries;
+@synthesize importDataArray = _importDataArray;
+
+@synthesize fxPairsAndDbIds = _fxPairsAndDbIds;
+@synthesize coloursForPlots = _coloursForPlots;
+@synthesize dataControllerForUI = _dataControllerForUI;
+@synthesize doThreads = _doThreads;
+@synthesize firstTimeSetup = _firstTimeSetup;
+@synthesize workingSimulation = _workingSimulation;
+
+
 @end

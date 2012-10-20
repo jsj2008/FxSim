@@ -202,7 +202,7 @@
     [centreTabs selectTabViewItemWithIdentifier:@"P1"];
     [rightSideTabView selectTabViewItemWithIdentifier:@"P1"];
     
-    int tabIndex;
+    NSUInteger tabIndex;
     tabIndex = [centreTabs indexOfTabViewItemWithIdentifier:@"P4"];
     dataTab = [centreTabs tabViewItemAtIndex:tabIndex];
     [centreTabs removeTabViewItem:dataTab];
@@ -660,7 +660,7 @@
                     if(i ==0){
                         [newTableColumn setWidth:150];
                     }else{
-                        int width;
+                        NSUInteger width;
                         width = MAX(50, (280-150)/([dataRow count]-1));
                         [newTableColumn setWidth:width];
                     }
@@ -903,8 +903,9 @@
             }
         }else{
             newSigSystem = [[SignalSystem alloc] initWithString:strategyFields];
-            extraRequiredVariables = [SimulationController derivedVariablesForSignal:newSigSystem 
-                                                                      AndPositioning:Nil AndRules:Nil];
+            extraRequiredVariables = [SimulationController getNamesOfRequiredVariablesForSignal: newSigSystem 
+                                                                                 AndPositioning: Nil 
+                                                                                       AndRules: Nil];
             [self setSignalSystem:newSigSystem];
         }
     }else{
@@ -919,9 +920,9 @@
         }
         success = [panel1DataController setupDataSeriesForName:selectedPair];
         
-        extraRequiredVariables = [SimulationController derivedVariablesForSignal: newSigSystem 
-                                                                  AndPositioning: Nil 
-                                                                        AndRules: Nil];
+        extraRequiredVariables = [SimulationController getNamesOfRequiredVariablesForSignal: newSigSystem 
+                                                                             AndPositioning: Nil 
+                                                                                   AndRules: Nil];
     }
     
     if(success){
@@ -1129,9 +1130,9 @@
         
         if(success){
             if(doThreads){
-                extraVariables = [SimulationController derivedVariablesForSignal:[self signalSystem] 
-                                                                  AndPositioning: Nil 
-                                                                        AndRules: Nil];
+                extraVariables = [SimulationController getNamesOfRequiredVariablesForSignal: [self signalSystem] 
+                                                                             AndPositioning: Nil 
+                                                                                   AndRules: Nil];
                 [panel2DataController setDataForStartDateTime: minDateTime 
                                                AndEndDateTime: maxDateTime 
                                             AndExtraVariables: extraVariables
@@ -1180,7 +1181,7 @@
 }
 
 -(void)initialiseSignalTableView{
-    int numberOfSignals = [[panel1DataController signalStats] count];
+    NSUInteger numberOfSignals = [[panel1DataController signalStats] count];
     
     signalTableViewOrdering = [[NSMutableArray alloc] initWithCapacity:numberOfSignals];
     
@@ -1278,9 +1279,9 @@
     if([self signalSystem] == Nil){
         extraVariables = [[NSArray alloc] init];
     }else{
-        extraVariables = [SimulationController derivedVariablesForSignal: [self signalSystem] 
-                                                          AndPositioning: Nil 
-                                                                AndRules: Nil];
+        extraVariables = [SimulationController getNamesOfRequiredVariablesForSignal: [self signalSystem] 
+                                                                     AndPositioning: Nil 
+                                                                           AndRules: Nil];
     }
     
     
@@ -1413,7 +1414,7 @@
     if([[tableView identifier] isEqualToString:@"SIGNALTV"])
     {
         SignalStats *signalStats;
-        int numberOfData = [[panel1DataController signalStats] count];
+        NSUInteger numberOfData = [[panel1DataController signalStats] count];
         [signalTableViewOrdering removeAllObjects];
 
         double *columnData = malloc(numberOfData * sizeof(double));
