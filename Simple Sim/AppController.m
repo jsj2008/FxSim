@@ -7,30 +7,16 @@
 //
 
 #import "AppController.h"
-#import "PlotController.h"
-#import "SimulationController.h"
-#import "Simulation.h"
-#import "DataView.h"
-#import "EpochTime.h"
-#import "DataSeries.h"
-#import "SeriesPlot.h"
-#import "TimeSeriesLine.h"
 #import "SimulationViewController.h"
 #import "InteractiveTradeViewController.h"
 #import "TitlePaneViewController.h"
 
-//#import "UtilityFunctions.h"
-
-
-
 #define THREADS YES
-
 #define DAY_SECONDS 24*60*60
 
 
 @interface AppController()
 @end
-
 
 @implementation AppController
 @synthesize realtimeButton;
@@ -266,9 +252,14 @@
     
 }
 
-- (void) readingRecordSetsProgress: (NSNumber *) progressFraction;
+- (void) readingRecordSetProgress: (NSNumber *) progressFraction;
 {
     [leftSideProgressBar2 setDoubleValue:[progressFraction doubleValue]];
+}
+
+- (void) readingRecordSetMessage:(NSString *) progressMessage
+{
+    [leftPanelStatusLabel setStringValue:progressMessage];
 }
 
 - (void) showAlertPanelWithInfo: (NSDictionary *) alertInfo

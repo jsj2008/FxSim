@@ -1619,7 +1619,11 @@
         [tsl setValue:obj forKey:column];
     }
     
-    [plot plotLineUpdated];
+    if([[tableColumn identifier] isEqualToString:@"colourId"]){
+        [plot plotLineUpdated:NO];
+    }else{
+        [plot plotLineUpdated:YES];
+    }
     [tableView reloadData];
 }
 
@@ -1730,7 +1734,7 @@
     }
 }
 
--(void)gettingDataIndicatorSwitchOff
+- (void)gettingDataIndicatorSwitchOff
 {
     if([[self delegate] respondsToSelector:@selector(gettingDataIndicatorSwitchOff)])
     {
@@ -1740,15 +1744,26 @@
     }
 }
 
--(void)readingRecordSetsProgress: (NSNumber *) progressFraction
+- (void) readingRecordSetProgress: (NSNumber *) progressFraction
 {
-    if([[self delegate] respondsToSelector:@selector(readingRecordSetsProgress:)])
+    if([[self delegate] respondsToSelector:@selector(readingRecordSetProgress:)])
     {
-        [[self delegate] readingRecordSetsProgress:progressFraction];
+        [[self delegate] readingRecordSetProgress:progressFraction];
     }else{
-        NSLog(@"Delegate does not respond to \'readingRecordSetsProgress:\'");
+        NSLog(@"Delegate does not respond to \'readingRecordSetProgress:\'");
     }
 }
+
+- (void) readingRecordSetMessage: (NSString *) progressMessage
+{
+    if([[self delegate] respondsToSelector:@selector(readingRecordSetMessage:)])
+    {
+        [[self delegate] readingRecordSetMessage:progressMessage];
+    }else{
+        NSLog(@"Delegate does not respond to \'readingRecordSetMessage:\'");
+    }
+}
+
 
 #pragma mark -
 #pragma mark TabView Delegate Methods

@@ -13,7 +13,7 @@
 - (void) outputSimulationMessage:(NSString *) message;
 - (void) gettingDataIndicatorSwitchOn;
 - (void) gettingDataIndicatorSwitchOff;
-- (void) readingRecordSetsProgress: (NSNumber *) progressFraction;
+- (void) readingRecordSetProgress: (NSNumber *) progressFraction;
 - (void) progressAsFraction:(NSNumber *) progressValue;
 - (void) progressBarOn;
 - (void) progressBarOff;

@@ -9,9 +9,6 @@
 #import "DataSeries.h"
 #import "EpochTime.h"
 #import "DataView.h"
-//#import "SignalSystem.h"
-//#import "PositioningSystem.h"
-//#import "RulesSystem.h"
 
 #pragma mark - 
 #pragma mark Implementation 
@@ -27,9 +24,6 @@
 - (id)  initWithName: (NSString *)seriesName 
             AndDbTag: (NSUInteger) databaseId 
           AndPipSize: (double) quotePipSize 
-//     AndSignalSystem: (SignalSystem *) sigSystem
-//   AndPositionSystem: (PositioningSystem *) posSystem
-//      AndRulesSystem:(RulesSystem *)rulesSystem
 {
     self = [super init];
     if(self){
@@ -40,8 +34,6 @@
         _yData = [[NSMutableDictionary alloc] init]; 
         _dataViews = [[NSMutableDictionary alloc] init];
         _sampleRate = 0;
-        //_signalSystem = sigSystem;
-        //_positioningSystem = posSystem;
     }    
     return self;    
 }
@@ -59,17 +51,6 @@
 
 -(void) encodeWithCoder:(NSCoder *)aCoder
 {
-    
-    
-//    NSString *_name;
-//    int _databaseId;
-//    double _pipSize;
-//    CPTNumericData *_xData; 
-//    NSMutableDictionary *_yData; 
-//    NSMutableDictionary *_dataViews;
-//    int _sampleRate;
-    
-    
     [aCoder encodeObject:_name forKey:@"NAME"];
     [aCoder encodeObject:[NSNumber numberWithInteger:_databaseId] forKey:@"DATABASEID"];
     [aCoder encodeObject:[NSNumber numberWithDouble:_pipSize] forKey:@"PIPSIZE"];
@@ -120,68 +101,13 @@
     return 0;
 }
 
--(void)setDataSeriesWithFieldName:(NSString*)fieldName AndDates:(CPTNumericData *)epochdates AndData: (CPTNumericData *)dataSeries 
-{
-    [self setXData:epochdates];
-    [self setYData:[[NSMutableDictionary alloc] init]];
-    [[self yData] setObject:dataSeries forKey:fieldName] ;
-    [self setSampleRate:1];
-}
-
-//-(NSArray *) derivedVariables
+//-(void)setDataSeriesWithFieldName:(NSString*)fieldName AndDates:(CPTNumericData *)epochdates AndData: (CPTNumericData *)dataSeries 
 //{
-//    
-//    NSArray *variablesForSignal;
-//    NSArray *variablesForPositioning;
-//    NSArray *variablesForRules;
-//    NSMutableArray *derivedVariables;
-//    
-//    
-//    if([self signalSystem] != Nil){
-//        variablesForSignal = [[self signalSystem] variablesNeeded];
-//    }else{
-//        variablesForSignal = [[NSArray alloc] init];
-//    }
-//    derivedVariables = [variablesForSignal mutableCopy];
-//    
-//    if([self positioningSystem] != Nil){
-//        variablesForPositioning = [[self positioningSystem] variablesNeeded];
-//    
-//        for(int i = 0; i < [variablesForPositioning count]; i++){
-//            NSString *variableToAdd = [variablesForPositioning objectAtIndex:i];
-//            BOOL duplicate = FALSE;
-//            for(int j = 0; j < [variablesForSignal count]; j++){
-//                if([[variablesForSignal objectAtIndex:j] isEqualToString:variableToAdd]){
-//                    duplicate = TRUE;
-//                    break;
-//                }
-//            }
-//            if(!duplicate){
-//                [derivedVariables addObject:variableToAdd];
-//            }
-//        }
-//    }
-//    if([self rulesSystem] != Nil){
-//        variablesForRules = [[self rulesSystem] variablesNeeded];
-//        
-//        for(int i = 0; i < [variablesForRules count]; i++){
-//            NSString *variableToAdd = [variablesForRules objectAtIndex:i];
-//            BOOL duplicate = FALSE;
-//            for(int j = 0; j < [variablesForSignal count]; j++){
-//                if([[variablesForSignal objectAtIndex:j] isEqualToString:variableToAdd]){
-//                    duplicate = TRUE;
-//                    break;
-//                }
-//            }
-//            if(!duplicate){
-//                [derivedVariables addObject:variableToAdd];
-//            }
-//        }
-//    }
-//    return derivedVariables;
+//    [self setXData:epochdates];
+//    [self setYData:[[NSMutableDictionary alloc] init]];
+//    [[self yData] setObject:dataSeries forKey:fieldName] ;
+//    [self setSampleRate:1];
 //}
-
-
 
 
 -(DataSeries *) getCopyOfStaticData
@@ -251,7 +177,7 @@
     originalNumberOfData = [self length];
     anchorDateTime = [EpochTime epochTimeAtZeroHour:[datetime longValue]];
     
-    NSArray *fieldnames = [[NSArray alloc] initWithArray:[self.yData allKeys] copyItems:YES];
+    NSArray *fieldnames = [[NSArray alloc] initWithArray:[[self yData] allKeys] copyItems:YES];
     NSUInteger numberOfFields = [[self yData] count];
     NSMutableData *intermediateValueData;
     double *intermediateValues;
@@ -267,7 +193,7 @@
     CPTNumericData *yDataFields[numberOfFields];
     int fieldIndex;
     for( fieldIndex= 0; fieldIndex < numberOfFields; fieldIndex++){
-        yDataFields[fieldIndex] = [self.yData objectForKey:[fieldnames objectAtIndex:fieldIndex]];
+        yDataFields[fieldIndex] = [[self yData] objectForKey:[fieldnames objectAtIndex:fieldIndex]];
     }
     
     double minYvalues[numberOfFields];
@@ -414,10 +340,10 @@
     
         NSMutableData *newXData = [NSMutableData dataWithLength:sampleCount * sizeof(long)];
         long *newXLongs = [newXData mutableBytes];
-        NSUInteger numberOfFields = [self.yData count];
-        NSMutableData *newYDoublesData = [[NSMutableData alloc] initWithLength:[self.yData count] * sizeof(double*)];
+        NSUInteger numberOfFields = [[self yData] count];
+        NSMutableData *newYDoublesData = [[NSMutableData alloc] initWithLength:[[self yData] count] * sizeof(double*)];
         double **newYDoubles = (double **)[newYDoublesData mutableBytes];
-        NSArray *fieldnames = [[NSArray alloc] initWithArray:[self.yData allKeys]];
+        NSArray *fieldnames = [[NSArray alloc] initWithArray:[[self yData] allKeys]];
         // Put all the Y values into a temp dictionary
         NSMutableDictionary  * newYDataTemp = [[NSMutableDictionary alloc] init ];
         for(NSUInteger i = 0; i < numberOfFields;i++)
@@ -446,7 +372,7 @@
                         newXLongs[sampleCount] = currentSampleDateTime;
                         for(NSUInteger i = 0; i < numberOfFields;i++)
                         {
-                            oldYData = [self.yData objectForKey:[fieldnames objectAtIndex:i]];
+                            oldYData = [[self yData] objectForKey:[fieldnames objectAtIndex:i]];
                             newYDoubles[i][sampleCount] = [[oldYData  sampleValue:index] doubleValue];
                         }
                         currentSampleDateTime = currentSampleDateTime + numberOfSeconds;
@@ -457,7 +383,7 @@
                         newXLongs[sampleCount] = currentSampleDateTime;
                         for(NSUInteger i = 0; i < numberOfFields;i++)
                         {
-                            oldYData = [self.yData objectForKey:[fieldnames objectAtIndex:i]];
+                            oldYData = [[self yData] objectForKey:[fieldnames objectAtIndex:i]];
                             newYDoubles[i][sampleCount] = [[oldYData  sampleValue:(index-1)] doubleValue];
                         }
                         currentSampleDateTime = currentSampleDateTime + numberOfSeconds;
@@ -481,7 +407,7 @@
         
         //Need to get the new Y data out of the dictionary and into a CPTNumericData object
         // These then are put into a dictionary at yData
-        self.yData = [[NSMutableDictionary alloc] init];
+        [self setYData:[[NSMutableDictionary alloc] init]];
         for(NSUInteger i = 0; i < numberOfFields;i++)
         {
             newYData = [CPTNumericData 
@@ -491,7 +417,7 @@
                                                  CFByteOrderGetCurrent())
                         shape:nil];
             
-            [self.yData setObject:newYData forKey:[fieldnames objectAtIndex:i]];
+            [[self yData] setObject:newYData forKey:[fieldnames objectAtIndex:i]];
         }        
         
         [self setSampleRate:numberOfSeconds];
@@ -675,11 +601,11 @@
     endIndex = [self earliestDateTimeAfterOrEqualTo:endDateTime];
     
     //Figure out the minimums and maximums
-    fieldnames = [self.yData allKeys];
+    fieldnames = [[self yData] allKeys];
     CPTNumericData *dataSeries;
     double *yDataArray;
     for (NSString *fieldname in fieldnames) {
-        dataSeries = [self.yData objectForKey:fieldname];
+        dataSeries = [[self yData] objectForKey:fieldname];
         
         yDataArray = (double *)[dataSeries bytes];
         minY = yDataArray[startIndex];
@@ -711,9 +637,9 @@
 -(NSArray *)getFieldNames
 {
     NSArray *fieldNames;
-    if(self.yData != nil)
+    if([self yData]!= nil)
     {
-        fieldNames = [self.yData allKeys]; 
+        fieldNames = [[self yData] allKeys];
     }
     return fieldNames;
 }
@@ -741,9 +667,6 @@
 @synthesize dataViews = _dataViews;
 @synthesize pipSize = _pipSize;
 @synthesize sampleRate = _sampleRate;
-//@synthesize signalSystem = _signalSystem;
-//@synthesize positioningSystem = _positioningSystem;
-//@synthesize rulesSystem = _rulesSystem;
 @end 
 
 

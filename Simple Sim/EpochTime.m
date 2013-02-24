@@ -10,16 +10,7 @@
 
 @implementation EpochTime
 
-//-(id)init
-//{
-//    self = [super init];
-//    if(self){
-//        
-//    }
-//    return self;
-//}
-
-+(long)epochTimeAtZeroHour:(long) epochDate
++ (long) epochTimeAtZeroHour:(long) epochDate
 {
     long epochDateZeroHour;
     NSDate *nsDate = [[NSDate alloc] initWithTimeIntervalSince1970:epochDate];
@@ -28,10 +19,6 @@
     [calendar setTimeZone:[NSTimeZone timeZoneWithAbbreviation:@"UTC"]];
     NSCalendarUnit unitFlags = NSHourCalendarUnit | NSMinuteCalendarUnit | NSSecondCalendarUnit; 
     NSDateComponents *dateComponents = [calendar components:unitFlags fromDate:nsDate]; 
-     //NSInteger day = [weekdayComponents day];
-    //NSInteger weekday = [weekdayComponents weekday];
-    //NSInteger month = [weekdayComponents month];
-    //NSInteger year = [weekdayComponents year];
     NSInteger hour = [dateComponents hour];
     NSInteger minute = [dateComponents minute];
     NSInteger second = [dateComponents second];
@@ -40,7 +27,7 @@
     return epochDateZeroHour;
 }
 
-+(long)epochTimeNextDayAtZeroHour:(long) epochDate
++ (long) epochTimeNextDayAtZeroHour:(long) epochDate
 {
     long epochDay;
     NSDate *nsDate = [[NSDate alloc] initWithTimeIntervalSince1970:epochDate];
@@ -56,40 +43,95 @@
 
 }
 
-+(NSString *)stringDateWithDayOfWeek:(long) epochDate
++ (NSString *) stringDateWithDayOfWeek:(long) epochDate
 {
     NSString *returnString;
     returnString = [[NSDate dateWithTimeIntervalSince1970:(NSTimeInterval) epochDate] descriptionWithCalendarFormat:@"%a %Y-%m-%d" timeZone:[NSTimeZone timeZoneWithName:@"GMT"] locale:nil];
     return returnString;
 }
 
-+(NSString *)stringDateWithTime:(long) epochDate
++ (NSString *) stringDateWithTime:(long) epochDate
 {
     NSString *returnString;
     returnString = [[NSDate dateWithTimeIntervalSince1970:(NSTimeInterval) epochDate] descriptionWithCalendarFormat:@"%Y-%m-%d %H:%M:%S" timeZone:[NSTimeZone timeZoneWithName:@"GMT"] locale:nil];
     return returnString;    
 }
 
-+(NSString *)stringHoursMinutesSeconds:(long) epochDate
++ (NSString *) stringHoursMinutesSeconds:(long) epochDate
 {
     NSString *returnString;
     returnString = [[NSDate dateWithTimeIntervalSince1970:(NSTimeInterval) epochDate] descriptionWithCalendarFormat:@"%H:%M:%S" timeZone:[NSTimeZone timeZoneWithName:@"GMT"] locale:nil];
     return returnString;    
 }
 
-+(NSString *)stringDate:(long) epochDate
++ (NSString *) stringDate:(long) epochDate
 {
     NSString *returnString;
     returnString = [[NSDate dateWithTimeIntervalSince1970:(NSTimeInterval) epochDate] descriptionWithCalendarFormat:@"%Y-%m-%d" timeZone:[NSTimeZone timeZoneWithName:@"GMT"] locale:nil];
     return returnString;
 }
 
-+(NSString *)stringOfDateTimeForTime:(long) epochDate WithFormat:(NSString *)formatString
++ (NSString *) stringOfDateTimeForTime:(long) epochDate
+                            WithFormat:(NSString *)formatString
 {
     NSString *returnString;
     returnString = [[NSDate dateWithTimeIntervalSince1970:(NSTimeInterval) epochDate] descriptionWithCalendarFormat:formatString timeZone:[NSTimeZone timeZoneWithName:@"GMT"] locale:nil];
     return returnString;
+}
+
++ (int) daysSinceEpoch:(long) epochDate
+{
+    int daysSinceZero;
+    daysSinceZero = (int) epochDate / (24*60*60);
+    
+    return daysSinceZero;
+}
+
++ (int) dayOfWeek:(long) epochDate
+{
+    int dayOfWeek;
+    
+    dayOfWeek = [[[NSDate dateWithTimeIntervalSince1970:(NSTimeInterval) epochDate] descriptionWithCalendarFormat:@"%w" timeZone:[NSTimeZone timeZoneWithName:@"GMT"] locale:nil] intValue];
+    
+    return dayOfWeek;
+}
+
++ (BOOL) isWeekday:(long) epochDate
+{
+    BOOL isMonToFri = YES;
+    int dayOfWeek;
+    
+    dayOfWeek = [[[NSDate dateWithTimeIntervalSince1970:(NSTimeInterval) epochDate] descriptionWithCalendarFormat:@"%w" timeZone:[NSTimeZone timeZoneWithName:@"GMT"] locale:nil] intValue];
+    
+    if(dayOfWeek==0){
+        isMonToFri = NO;
     }
+    if(dayOfWeek==6){
+        isMonToFri = NO;
+    }
+    
+    return isMonToFri;
+}
+
++(int)daysBetweenInclusiveFrom: (long) startDateTime
+                            To: (long) endDateTime
+              CountingWeekends:(BOOL) countWeekendDays
+{
+    startDateTime = [self epochTimeAtZeroHour:startDateTime];
+    endDateTime = [self epochTimeAtZeroHour:endDateTime];
+    int count = 0;
+    for(long currentDateTime = startDateTime; currentDateTime <= endDateTime; currentDateTime = currentDateTime + (24*60*60))
+    {
+        if(countWeekendDays){
+            count++;
+        }else{
+            if(![self isWeekday:currentDateTime]){
+                count++;
+            }
+        }
+    }
+    return count;
+}
 @end
 
 

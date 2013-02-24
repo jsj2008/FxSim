@@ -151,7 +151,8 @@
 
 - (BOOL) doThreads;
 - (void) setDoThreads:(BOOL)doThreadedProcedures;
-- (void) readingRecordSetsProgress: (NSNumber *) progressFraction;
+- (void) readingRecordSetProgress: (NSNumber *) progressFraction;
+- (void) readingRecordSetMessage: (NSString *) progressMessage;
 - (void) progressAsFraction:(NSNumber *) progressValue;
 - (void) progressBarOn;
 - (void) progressBarOff;

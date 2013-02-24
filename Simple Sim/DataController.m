@@ -18,10 +18,10 @@
 #import "SignalSystem.h"
 
 #define DATABASE_GRANULARITY_SECONDS 1
-//30*24*60*60 
-#define MAX_DATA_CHUNK  2592000 
-//360*24*60*60 
-//#define MAX_DATA_CHUNK 31104000
+//30*24*60*60
+//#define MAX_DATA_CHUNK  2592000
+//60*24*60*60 
+#define MAX_DATA_CHUNK (60*24*60*60)
 
 //24*60*60
 #define DAY_SECONDS 86400
@@ -29,7 +29,9 @@
 @interface DataController()
 - (void) setupListofPairs;
 - (void) setupListofDataFields;
-- (void) readingRecordSetsProgress:(NSNumber *) progressFraction;
+- (void) readingRecordSetProgress:(NSNumber *) progressFraction;
+- (void) readingRecordSetMessage:(NSString *) progressMessage;
+
 - (void) progressAsFraction:(NSNumber *) progressValue;
 @end
 
@@ -47,6 +49,7 @@ FMDatabase *db;
         doThreads = NO;
         _adhocDataAdded = NO;
         _fileDataAdded = NO;
+
         if (![db open]) {
             db = nil;
             _connected = NO;
@@ -72,10 +75,13 @@ FMDatabase *db;
     }
 }
 
++ (long) getMaxDataLength
+{
+    return MAX_DATA_CHUNK;
+}
+
+
 - (BOOL) setupDataSeriesForName: (NSString *) dataSeriesName 
-//                AndSignalSystem: (SignalSystem *) sigSystem
-//              AndPositionSystem: (PositioningSystem *) posSystem
-//                  AndRuleSystem: (RulesSystem *) ruleSystem
 {
     BOOL success = YES;
     double pipSize;
@@ -121,17 +127,30 @@ FMDatabase *db;
     doThreads = doThreadedProcedures;
 }
 
-- (void) readingRecordSetsProgress:(NSNumber *) progressFraction;
+- (void) readingRecordSetProgress:(NSNumber *) progressFraction;
 {
     if([self delegate] != nil){
-        if([[self delegate] respondsToSelector:@selector(readingRecordSetsProgress:)])
+        if([[self delegate] respondsToSelector:@selector(readingRecordSetProgress:)])
         {
-            [[self delegate] readingRecordSetsProgress:progressFraction];
+            [[self delegate] readingRecordSetProgress:progressFraction];
         }else{
-            NSLog(@"Delegate does not respond to \'readingRecordSetsProgress:\'");
+            NSLog(@"Delegate does not respond to \'readingRecordSetProgress:\'");
         }
     }
 }
+
+- (void) readingRecordSetMessage:(NSString *) progressMessage;
+{
+    if([self delegate] != nil){
+        if([[self delegate] respondsToSelector:@selector(readingRecordSetMessage:)])
+        {
+            [[self delegate] readingRecordSetMessage:progressMessage];
+        }else{
+            NSLog(@"Delegate does not respond to \'readingRecordSetMessage:\'");
+        }
+    }
+}
+
 
 -(void) progressAsFraction:(NSNumber *) progressValue
 {
@@ -734,13 +753,6 @@ FMDatabase *db;
         do{ 
             oldDataStartIndex--;
         }while(oldDateLongs[oldDataStartIndex] > adjustedStartDate && oldDataStartIndex > 0);
-        
-//        if(oldDateLongs[oldDataStartIndex] < adjustedStartDate && oldDataStartIndex < [dataSeries length] - 1 ){
-//            oldDataStartIndex++;
-//        }
-//        if(oldDataStartIndex >= [dataSeries length]){
-//            useOldData = NO;
-//        }
     }
       
     FMResultSet *rs;
@@ -809,11 +821,16 @@ FMDatabase *db;
                 
                 progress = (double)(newDateLongsTemp[recordsetIndex]-requestedStartDate)/(queryEnd-requestedStartDate);
                 recordsetIndex ++; 
-                if(progress - progressUpdate > 0.1){
+                if(progress - progressUpdate > 0.05){
                     progressUpdate = progress;
                     if(doThreads){
-                        [self performSelectorOnMainThread:@selector(readingRecordSetsProgress:) withObject:[NSNumber numberWithDouble:progressUpdate] waitUntilDone:NO];
+                        [self performSelectorOnMainThread:@selector(readingRecordSetProgress:) withObject:[NSNumber numberWithDouble:progressUpdate] waitUntilDone:NO];
                         
+                        NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];
+                        [numberFormatter setFormat:@"#,###"];
+                        NSNumber *numberOfRecords = [NSNumber numberWithLong:recordsetIndex];
+                   
+                        [self performSelectorOnMainThread:@selector(readingRecordSetMessage:) withObject:[NSString stringWithFormat:@"Data records read: %@",[numberFormatter stringForObjectValue:numberOfRecords]] waitUntilDone:NO];
                     }
                 }
             }
@@ -954,11 +971,6 @@ FMDatabase *db;
                 [parameters setObject:[[self dataSeries] xData] forKey:@"OLDDATETIME"];
                 [parameters setObject:[NSNumber numberWithInteger:oldDataStartIndex] forKey:@"OVERLAPINDEX"];
             }
-            
-//            derivedDataDictionary = [DataProcessor processWithDataSeries: newData
-//                                                               AndSignal: [dataSeries strategy]
-//                                                          AndProcessInfo: parameters
-//                                                       AndReturningStats: statsArray];
             
             derivedDataDictionary =  [DataProcessor addToDataSeries: newDataDictionary
                                                    DerivedVariables: extraVariables

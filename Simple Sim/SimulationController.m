@@ -18,7 +18,7 @@
 #import "RulesSystem.h"
 #import "BasicParameters.h"
 
-#define DAY_SECONDS 24*60*60
+#define DAY_SECONDS (24*60*60)
 
 @interface SimulationController()
 - (void) tradingSimulation:(NSDictionary *) parameters;
@@ -44,11 +44,14 @@
 - (void) registerSimulation: (Simulation *) sim;
 - (void) clearUserInterfaceMessages;
 - (void) outputSimulationMessage:(NSString *) message;
-- (void) analyseSimulation: (Simulation *) simulation;
+- (void) analyseSimulation: (Simulation *) simulation
+         WithPreloadedData: (BOOL) preloadedData;
 - (void) progressBarOn;
 - (void) progressBarOff;
 - (void) progressAsFraction:(NSNumber *) progressValue;
-- (void) readingRecordSetsProgress: (NSNumber *) progressFraction;
+- (void) readingRecordSetProgress: (NSNumber *) progressFraction;
+- (void) readingRecordSetMessage: (NSString *) progressMessage;
+
 
 @end
 
@@ -61,10 +64,11 @@
 {
     self = [super init];
     if(self){
-        simDataController = [[DataController alloc] init];
-        [simDataController setDelegate:self];
-        interestRates = [[NSMutableDictionary alloc] init];
+        _dataController = [[DataController alloc] init];
+        [_dataController setDelegate:self];
+        _interestRates = [[NSMutableDictionary alloc] init];
         _doThreads = NO;
+        _loadAllData = YES;
         return self;
     }
     return nil;
@@ -72,12 +76,12 @@
 
 -(void)setDelegate:(id)del
 {
-    delegate = del;
+    _delegate = del;
 }
 
 -(id)delegate 
 { 
-    return delegate;
+    return _delegate;
 };
 
 - (BOOL) doThreads
@@ -88,7 +92,7 @@
 - (void) setDoThreads:(BOOL)doThreadedProcedures
 {
     _doThreads = doThreadedProcedures;
-    [simDataController setDoThreads:doThreadedProcedures];
+    [[self dataController] setDoThreads:doThreadedProcedures];
 }
 
 #pragma mark -
@@ -134,6 +138,7 @@
     long dataRequestMinDateTime, dataRequestMaxDateTime;
     int dataRequestTruncatedFlag = 1;
     BOOL allOk = YES;
+    BOOL fullDataLoaded = YES;
     
     long leadTimeRequiredForPositioning;
     long leadTimeRequiredForSignal;
@@ -142,7 +147,7 @@
     long leadTimeRequired;
     long leadTicsRequired;
     
-    cancelProcedure = NO;
+    [self setCancelProcedure:NO];
     
     NSString *simName = [parameters objectForKey:@"SIMNAME"];
     NSString *baseCode = [parameters objectForKey:@"BASECODE"];
@@ -167,17 +172,13 @@
     SignalSystem *newSigSystem;
     PositioningSystem *newPosSystem;
     
-    if(!cancelProcedure){
+    if(![self cancelProcedure]){
         if(userDataGiven){
             userData = [parameters objectForKey:@"USERDATA"];
             userDataFilename = [parameters objectForKey:@"USERDATAFILE"];
-            [simDataController setData:userData 
+            [[self dataController] setData:userData
                               FromFile:userDataFilename];
         }
-        
-//        if([accCode isEqualToString:quoteCode]){
-//            accountCurrencyIsQuoteCurrency = YES;
-//        }
         
         tradingDayStartHour = tradingDayStart/(60*60) ; 
         tradingDayEndHour = tradingDayEnd/(60*60) ;
@@ -186,10 +187,17 @@
         
         tradingPair = [NSString stringWithFormat:@"%@%@",baseCode,quoteCode];
         
-        minDateTime = [simDataController getMinDataDateTimeForPair:tradingPair];
-        maxDateTime = [simDataController getMaxDataDateTimeForPair:tradingPair];
+        minDateTime = [[self dataController] getMinDataDateTimeForPair:tradingPair];
+        maxDateTime = [[self dataController] getMaxDataDateTimeForPair:tradingPair];
         
-        leadTimeRequiredForSignal = [simDataController leadTimeRequired:simDescription];
+        if(((double)endDateTime - startDateTime)/[DataController getMaxDataLength] > 1.0){
+            [self setLoadAllData:NO];
+        }else{
+            [self setLoadAllData:YES];
+        }
+        
+        
+        leadTimeRequiredForSignal = [[self dataController] leadTimeRequired:simDescription];
         initialDataBeforeStart = MAX(initialDataBeforeStart,leadTimeRequiredForSignal);
         
         if(startDateTime < (minDateTime + initialDataBeforeStart))
@@ -242,15 +250,12 @@
                                            withObject:userMessage 
                                         waitUntilDone:NO];
                 }
-                cancelProcedure = YES;
+                [self setCancelProcedure:YES];
             }
         }
     }
     
-    if(!cancelProcedure){
-//        [allSimulations setObject: newSimulation 
-//                           forKey: simName];
-        
+    if(![self cancelProcedure]){
         //Getting Interest Rate Data
         userMessage = @"Getting Interest Rate data";
         if([self doThreads]){
@@ -268,7 +273,7 @@
         }
     }
     
-    leadTicsRequiredForSignal = [simDataController leadTimeRequired:simDescription];
+    leadTicsRequiredForSignal = [[self dataController] leadTimeRequired:simDescription];
     leadTimeRequiredForPositioning = [[newSimulation positionSystem] leadTimeRequired];
     leadTicsRequiredForPositioning = [[newSimulation positionSystem] leadTicsRequired];
     
@@ -279,9 +284,12 @@
     long simulationDateTime;
     simulationDateTime = startDateTime;
         
-    if(!cancelProcedure){
-        userMessage = @"Setting up initial data";
+    if(![self cancelProcedure]){
+        userMessage = @"Importing initial price data";
+        [[[newSimulation simulationRunOutput] mutableString] appendString:userMessage];
         if([self doThreads]){
+            [self performSelectorOnMainThread:@selector(outputSimulationMessage:)
+                                   withObject:userMessage waitUntilDone:NO];
             [self performSelectorOnMainThread:@selector(updateStatus:) 
                                    withObject:userMessage 
                                 waitUntilDone:NO];
@@ -295,10 +303,10 @@
                                                                                     AndRules:[newSimulation rulesSystem]];
         
         dataRequestMinDateTime = startDateTime - initialDataBeforeStart;
-        dataRequestMaxDateTime = endDateTime;
+        dataRequestMaxDateTime = endDateTime + 7*DAY_SECONDS  + tradingLag;
         
         [newSimulation setDataStartDateTime:dataRequestMinDateTime];
-        allOk = [simDataController setupDataSeriesForName:tradingPair];
+        allOk = [[self dataController] setupDataSeriesForName:tradingPair];
         if(!allOk){
             userMessage = @"***Problem setting up database***";
             if([self doThreads]){
@@ -306,15 +314,15 @@
                                        withObject:userMessage 
                                     waitUntilDone:NO];
             }
-            cancelProcedure = YES;
+            [self setCancelProcedure:YES];
         }
-        allOk = [simDataController getMoreDataForStartDateTime: dataRequestMinDateTime
-                                                AndEndDateTime: dataRequestMaxDateTime
-                                             AndExtraVariables: extraRequiredVariables
-                                               AndSignalSystem: [newSimulation signalSystem]
-                                        AndReturningStatsArray: nil
-                                         IncludePrecedingTicks: leadTicsRequired
-                                      WithRequestTruncatedFlag: &dataRequestTruncatedFlag];
+        allOk = [[self dataController] getMoreDataForStartDateTime: dataRequestMinDateTime
+                                                    AndEndDateTime: dataRequestMaxDateTime
+                                                 AndExtraVariables: extraRequiredVariables
+                                                   AndSignalSystem: [newSimulation signalSystem]
+                                            AndReturningStatsArray: nil
+                                             IncludePrecedingTicks: leadTicsRequired
+                                          WithRequestTruncatedFlag: &dataRequestTruncatedFlag];
         userMessage = @"Data set up";
         if([self doThreads]){
             [self performSelectorOnMainThread:@selector(updateStatus:) 
@@ -334,9 +342,9 @@
     double **simulationData;
     NSMutableData *dateTimesData;
     NSMutableDictionary *simulationDataDictionary;
-    if(!cancelProcedure){    
+    if(![self cancelProcedure]){
         //Creating a timeseries object to store the data that is actually used in the simulation
-        fieldNames = [simDataController getFieldNames];
+        fieldNames = [[self dataController] getFieldNames];
         long numberOfSimulationSteps = (endDateTime-startDateTime)/timeStep;
   
         dateTimesData = [[NSMutableData alloc] initWithLength:numberOfSimulationSteps * sizeof(long)]; 
@@ -353,7 +361,7 @@
     }
 
     //****ACTUAL START OF THE SIMULATION****//
-    if([self doThreads] && !cancelProcedure){
+    if([self doThreads] && ![self cancelProcedure]){
         userMessage = @"Simulation Loop";
         [self performSelectorOnMainThread:@selector(updateStatus:) withObject:userMessage waitUntilDone:NO];
         [self performSelectorOnMainThread:@selector(progressBarOn) withObject:nil waitUntilDone:NO];
@@ -367,10 +375,10 @@
     NSDictionary *values;
 
     simulationDateTime = startDateTime;
-    cashPosition = startingBalance;
+         [self setCashPosition:startingBalance];
     //nav = startingBalance;
 
-    if(!cancelProcedure){        
+    if(![self cancelProcedure]){
         do{
             // 
             //BOOL isNewTradeSignal = NO;
@@ -396,49 +404,54 @@
             }
             isTradingTime = isTradingTime && tradingDay;
             
-            if(simulationDateTime == 1281466800){
-                NSLog(@"STOP");
-            }
-            
             // First make sure the data is ok
             //If the current date is greater than the last day of data we need to move the data forward
-            if(simulationDateTime + tradingLag > [simDataController getMaxDateTimeForLoadedData] )
+            if(simulationDateTime + tradingLag > [[self dataController] getMaxDateTimeForLoadedData] )
             {
-                dataRequestMinDateTime = MIN(simulationDateTime-leadTimeRequired,[simDataController getMaxDateTimeForLoadedData]);
-                if((simulationDateTime) > endDateTime){
-                    dataRequestMaxDateTime = simulationDateTime + 3*DAY_SECONDS + tradingLag;
+                if([self loadAllData]){
+                    dataRequestMinDateTime = [[self dataController] getMinDateTimeForLoadedData];
                 }else{
-                    dataRequestMaxDateTime = endDateTime + 3*DAY_SECONDS  + tradingLag;
+                    dataRequestMinDateTime = MIN(simulationDateTime-leadTimeRequired,[[self dataController] getMaxDateTimeForLoadedData]);
+                    fullDataLoaded = NO;
+                }
+                
+                
+                if(simulationDateTime > endDateTime){
+                    dataRequestMaxDateTime = simulationDateTime + 7*DAY_SECONDS + tradingLag;
+                }else{
+                    dataRequestMaxDateTime = endDateTime + 7*DAY_SECONDS  + tradingLag;
                 }          
                 if([self doThreads]){
                     [self performSelectorOnMainThread:@selector(updateStatus:) withObject:userMessage waitUntilDone:NO];
                     [self performSelectorOnMainThread:@selector(readingDatabaseOn) withObject:nil waitUntilDone:NO]; 
                 }
                 
-                [simDataController getMoreDataForStartDateTime: dataRequestMinDateTime
-                                                AndEndDateTime: dataRequestMaxDateTime
-                                             AndExtraVariables: extraRequiredVariables
-                                               AndSignalSystem: [newSimulation signalSystem]
-                                        AndReturningStatsArray: nil 
-                                         IncludePrecedingTicks: leadTicsRequired
-                                      WithRequestTruncatedFlag: &dataRequestTruncatedFlag];
+                [[self dataController] getMoreDataForStartDateTime: dataRequestMinDateTime
+                                                    AndEndDateTime: dataRequestMaxDateTime
+                                                 AndExtraVariables: extraRequiredVariables
+                                                   AndSignalSystem: [newSimulation signalSystem]
+                                            AndReturningStatsArray: nil
+                                             IncludePrecedingTicks: leadTicsRequired
+                                          WithRequestTruncatedFlag: &dataRequestTruncatedFlag];
                 
                 
                 
                 if(dataRequestTruncatedFlag == 0){
-                    endDateTime = MIN(endDateTime,[simDataController getMaxDateTimeForLoadedData]);
+                    endDateTime = MIN(endDateTime,[[self dataController] getMaxDateTimeForLoadedData]);
                 }   
                 if([self doThreads]){
-                    [self performSelectorOnMainThread:@selector(readingDatabaseOff) withObject:nil waitUntilDone:NO];
+                    [self performSelectorOnMainThread:@selector(readingDatabaseOff)
+                                           withObject:nil
+                                        waitUntilDone:NO];
                 }
             }
             
             //Check we successfully have data for the required date 
-            if(simulationDateTime > [simDataController getMaxDateTimeForLoadedData]){
-                [NSException raise:@"DataSeries does not cover current date" format:@"Max: %ld current %ld",[simDataController getMaxDateTimeForLoadedData],simulationDateTime];
+            if(simulationDateTime > [[self dataController] getMaxDateTimeForLoadedData]){
+                [NSException raise:@"DataSeries does not cover current date" format:@"Max: %ld current %ld",[[self dataController] getMaxDateTimeForLoadedData],simulationDateTime];
             }
             
-            values = [simDataController getValues: fieldNames 
+            values = [[self dataController] getValues: fieldNames
                                        AtDateTime:simulationDateTime ];
             
             if(![[values objectForKey:@"SUCCESS"] boolValue])
@@ -470,10 +483,10 @@
                 [self performSelectorOnMainThread:@selector(progressAsFraction:) 
                                        withObject:[NSNumber numberWithDouble:(double)(simulationDateTime - startDateTime)/(endDateTime - startDateTime) ] waitUntilDone:NO];
             }
-        }while((simulationDateTime <= endDateTime)   && allOk && !cancelProcedure);
+        }while((simulationDateTime <= endDateTime)   && allOk && ![self cancelProcedure]);
     }
-     
-    if(!cancelProcedure){
+    
+    if(![self cancelProcedure]){
         //currentDateAsString = [EpochTime stringDateWithTime:simulationDateTime]; 
         userMessage = @"Finished Simulation - Starting Analysis....";
         if([self doThreads]){
@@ -486,27 +499,28 @@
     }
     //***END OF THE SIMULATION****//
     
-    if(!cancelProcedure)
+    if(![self cancelProcedure])
     {
         DataSeries *simulationDataSeries;
-        simulationDataSeries = [simDataController createNewDataSeriesWithXData: dateTimesData
+        simulationDataSeries = [[self dataController] createNewDataSeriesWithXData: dateTimesData
                                                                       AndYData: simulationDataDictionary 
                                                                  AndSampleRate: timeStep];
         [newSimulation setSimulationDataSeries:simulationDataSeries];
         [self summariseSimulation:newSimulation];
     }
 
-    if(!cancelProcedure)
+    if(![self cancelProcedure])
     {
         userMessage = @"Analysing The Simulation";
         if([self doThreads]){
             [self performSelectorOnMainThread:@selector(updateStatus:) withObject:userMessage waitUntilDone:NO];
         }
-        [self analyseSimulation:newSimulation];
+        [self analyseSimulation:newSimulation
+              WithPreloadedData:fullDataLoaded];
         
     }
 
-    if(cancelProcedure){
+    if([self cancelProcedure]){
         userMessage = @"Simulation Cancelled \n";
         [[[newSimulation simulationRunOutput] mutableString] appendString:userMessage];
         if([self doThreads]){
@@ -521,6 +535,7 @@
 }
 
 -(void)analyseSimulation: (Simulation *) simulation
+       WithPreloadedData: (BOOL) preloadedData;
 {
     NSString *userMessage;
     DataSeries *positionDataSeries;
@@ -703,11 +718,11 @@
             }
             
             stepDateTime = stepDateTime + timeStep;
-        }while((stepDateTime <= endDateTime || !allActivityFinished) && !cancelProcedure);
+        }while((stepDateTime <= endDateTime || !allActivityFinished) && ![self cancelProcedure]);
         
         arraySize = [dateTimesOfAnalysis count] - 1;
         
-        if(!cancelProcedure){
+        if(![self cancelProcedure]){
             dateTimesData = [[NSMutableData alloc] initWithLength:arraySize * sizeof(long)]; 
             dateTimesArray = [dateTimesData mutableBytes];
             
@@ -754,33 +769,35 @@
             }
         }
         
-        if(!cancelProcedure){
-            //This ensures that ac variables are similar and there is no problems 
-            // due to not getting the first price, which may be slightly older 
-            // than the start time of the simulation
-            dataRequestMinDateTime = [simulation dataStartDateTime];
-            dataRequestMaxDateTime = endDateTime;
-            extraRequiredVariables = [SimulationController getNamesOfRequiredVariablesForSignal: [simulation signalSystem]
-                                                                                 AndPositioning: [simulation positionSystem] 
-                                                                                       AndRules: [simulation rulesSystem]];
-            
-            if([self doThreads]){
-                [self performSelectorOnMainThread:@selector(readingDatabaseOn) withObject:nil waitUntilDone:NO]; 
-            }
-            
-            if(![simDataController getMoreDataForStartDateTime: dataRequestMinDateTime
-                                                AndEndDateTime: dataRequestMaxDateTime
-                                             AndExtraVariables: extraRequiredVariables
-                                               AndSignalSystem: [simulation signalSystem]
-                                        AndReturningStatsArray: nil
-                                         IncludePrecedingTicks: 0
-                                      WithRequestTruncatedFlag: &dataRequestTruncated]){
-                [NSException raise:@"Database problem" 
-                            format:nil];
-            }
-            
-            if([self doThreads]){
-                [self performSelectorOnMainThread:@selector(readingDatabaseOff) withObject:nil waitUntilDone:NO];
+        if(![self cancelProcedure]){
+            if(!preloadedData){
+                //This ensures that ac variables are similar and there is no problems
+                // due to not getting the first price, which may be slightly older
+                // than the start time of the simulation
+                dataRequestMinDateTime = [simulation dataStartDateTime];
+                dataRequestMaxDateTime = endDateTime;
+                extraRequiredVariables = [SimulationController getNamesOfRequiredVariablesForSignal: [simulation signalSystem]
+                                                                                     AndPositioning: [simulation positionSystem]
+                                                                                           AndRules: [simulation rulesSystem]];
+                
+                if([self doThreads]){
+                    [self performSelectorOnMainThread:@selector(readingDatabaseOn) withObject:nil waitUntilDone:NO];
+                }
+                
+                if(![[self dataController] getMoreDataForStartDateTime: dataRequestMinDateTime
+                                                        AndEndDateTime: dataRequestMaxDateTime
+                                                     AndExtraVariables: extraRequiredVariables
+                                                       AndSignalSystem: [simulation signalSystem]
+                                                AndReturningStatsArray: nil
+                                                 IncludePrecedingTicks: 0
+                                              WithRequestTruncatedFlag: &dataRequestTruncated]){
+                    [NSException raise:@"Database problem"
+                                format:nil];
+                }
+                
+                if([self doThreads]){
+                    [self performSelectorOnMainThread:@selector(readingDatabaseOff) withObject:nil waitUntilDone:NO];
+                }
             }
         }
         
@@ -795,14 +812,7 @@
         }else{
             accountCurrencyIsQuoteCurrency = NO;
         }
-        
-        // Get the first signal
-        //signalIndex = 0;
-        //signalDetails = [simulation detailsOfSignalAtIndex:signalIndex];
-        //signalStartDateTime = [[signalDetails objectForKey:@"ENTRYTIME"] longValue];
-        //signalEndDateTime = [[signalDetails objectForKey:@"EXITTIME"] longValue];
-        //signal = [[signalDetails objectForKey:@"SIGNAL"] doubleValue];
-        
+       
         cashMoveIndex = 0;
         allCashMovesFinished = NO;
         cashMoveDetails = [simulation detailsOfBalanceAdjustmentIndex:cashMoveIndex];
@@ -833,18 +843,16 @@
         for(int dateIndex = 0; dateIndex < [dateTimesOfAnalysis count]; dateIndex++)
         {
             currentDateTime = [[dateTimesOfAnalysis objectAtIndex:dateIndex] longValue];
-            //            if(currentDateTime==1075808400){
-            //                NSLog(@"STOP");
-            //            }
+     
             // Update the database if needed
-            if(currentDateTime > [simDataController getMaxDateTimeForLoadedData])
+            if(currentDateTime > [[self dataController] getMaxDateTimeForLoadedData])
             {
                 if([self doThreads]){
                     [self performSelectorOnMainThread:@selector(readingDatabaseOn) withObject:nil waitUntilDone:NO]; 
                 }
-                dataRequestMinDateTime = [simDataController getMaxDateTimeForLoadedData];
+                dataRequestMinDateTime = [[self dataController] getMaxDateTimeForLoadedData];
                 dataRequestMaxDateTime = MAX(currentDateTime,endDateTime);
-                [simDataController getMoreDataForStartDateTime: dataRequestMinDateTime
+                [[self dataController] getMoreDataForStartDateTime: dataRequestMinDateTime
                                                 AndEndDateTime: dataRequestMaxDateTime
                                              AndExtraVariables: extraRequiredVariables
                                                AndSignalSystem: [simulation signalSystem]
@@ -859,7 +867,7 @@
             }
             
             // Get the price data values for today
-            currentDataValues = [simDataController getValues:simDataFieldNames 
+            currentDataValues = [[self dataController] getValues:simDataFieldNames 
                                                   AtDateTime:currentDateTime];
             
             for(int fieldIndex = 0; fieldIndex < [simDataFieldNames count]; fieldIndex++){
@@ -1116,7 +1124,7 @@
         
         [self performSelectorOnMainThread:@selector(progressBarOff) withObject:nil waitUntilDone:NO];
         
-        if(!cancelProcedure)
+        if(![self cancelProcedure])
         {
             if(!allTradesFinished ){
                 [NSException raise:@"All trades were not included for some reason!" format:nil];
@@ -1137,7 +1145,7 @@
             [simulationDataDictionary setObject:longIndicatorData forKey:@"LONG"];
             [simulationDataDictionary setObject:positionAvePriceData forKey:@"POSAVEPRICE"];
             
-            positionDataSeries = [simDataController createNewDataSeriesWithXData: dateTimesData
+            positionDataSeries = [[self dataController] createNewDataSeriesWithXData: dateTimesData
                                                                         AndYData: simulationDataDictionary 
                                                                    AndSampleRate: timeStep];
             
@@ -1173,7 +1181,7 @@
 //            }
         }
         
-        if(!cancelProcedure)
+        if(![self cancelProcedure])
         {
             [simulation setAnalysisDataSeries:positionDataSeries];
             [simulation setIsAnalysed:YES];
@@ -1241,7 +1249,7 @@
     }
     
     //fieldNames = [simData getFieldNames];
-    values = [simDataController getValues: [NSArray arrayWithObjects:@"BID", @"ASK", nil] 
+    values = [[self dataController] getValues: [NSArray arrayWithObjects:@"BID", @"ASK", nil]
                                AtDateTime: simulationDateTime ];
             
     if(![[values objectForKey:@"SUCCESS"] boolValue])
@@ -1296,7 +1304,7 @@
         }else{
             marginUsed = fabsf([simulation currentExposure] / [[simulation basicParameters] maxLeverage]);
         }
-        nav = cashPosition + unrealisedPnl;
+        nav = [self cashPosition] + unrealisedPnl;
         marginAvailable = nav - marginUsed;
             
         requiredPositionSize = [self getRequiredExposureForSimulation: simulation
@@ -1313,9 +1321,9 @@
                                 ForSimulation: simulation
                               ForSignalAtTime: simulationDateTime];
             
-            cashPosition = cashPosition + debits;
+            [self setCashPosition:[self cashPosition] + debits];
             debits = 0.0;
-            nav = cashPosition;
+            nav = [self cashPosition];
             unrealisedPnl = 0.0;
             NSString *userMessage = [NSString stringWithFormat:@"%@ Trade from %d to %d %@ -- NAV: %5.2f %@ \n",[EpochTime stringDateWithTime:simulationDateTime + [simulation tradingLag]], keepCurrentExposure,requiredPositionSize, [simulation baseCode], nav,[simulation accCode]];
             [[[simulation simulationRunOutput] mutableString] appendString:userMessage];
@@ -1341,7 +1349,7 @@
                     unrealisedPnl = unrealisedPnl/bid;
                 }
             }
-            nav = cashPosition + unrealisedPnl;
+            nav = [self cashPosition] + unrealisedPnl;
         }
         
         if(accountCurrencyIsQuoteCurrency){
@@ -1369,11 +1377,11 @@
 {
     int requiredExposure = 0;
     PositioningSystem *posSys = [simulation positionSystem];
-    NSArray *fieldNames = [simDataController getFieldNames];
+    NSArray *fieldNames = [[self dataController] getFieldNames];
     
     
     if([[posSys type] isEqualToString:@"STP"]){
-        NSDictionary *values = [simDataController getValues: fieldNames 
+        NSDictionary *values = [[self dataController] getValues: fieldNames 
                                                  AtDateTime:currentDateTime ];
         double mid, bid, ask, dataSignal, adjustedThreshold;
         int targetAbsolutePositionSize;
@@ -1382,7 +1390,7 @@
         bid = [[values objectForKey:@"BID"] doubleValue];
         ask =  [[values objectForKey:@"ASK"] doubleValue];
         dataSignal = [[values objectForKey:@"SIGNAL"] doubleValue]; 
-        adjustedThreshold = [posSys signalThreshold] * [[simDataController dataSeries] pipSize];
+        adjustedThreshold = [posSys signalThreshold] * [[[self dataController] dataSeries] pipSize];
         
         //Get a handle on an target position size 
         if([[[simulation basicParameters] accCode] isEqualToString:[[simulation basicParameters] quoteCode]]){
@@ -1420,7 +1428,7 @@
     }
     
     if([[posSys type] isEqualToString:@"SFP"]){
-        double adjustedThreshold = [posSys signalThreshold] * [[simDataController dataSeries] pipSize];;
+        double adjustedThreshold = [posSys signalThreshold] * [[[self dataController] dataSeries] pipSize];;
         double stepProportion = [posSys stepProportion];
         NSString *stepUnit =   [posSys stepUnit];
         int perfSmoothParam = [posSys perfSmoothParam];
@@ -1434,10 +1442,10 @@
         } 
         
         
-        NSString *signalPerfField = [NSString stringWithFormat:@"EMA%d",perfSmoothParam];
+        NSString *signalPerfField = [NSString stringWithFormat:@"EMA/%d",perfSmoothParam];
         
         
-        NSDictionary *values = [simDataController getValues: fieldNames 
+        NSDictionary *values = [[self dataController] getValues: fieldNames
                                                  AtDateTime:currentDateTime];
         double mid, bid, ask, dataSignal;
         int targetAbsolutePositionSize;
@@ -1450,9 +1458,9 @@
         
         
         fieldNames = [NSArray arrayWithObjects:signalPerfField, nil];
-        NSDictionary *trailingValues = [simDataController getValues: fieldNames 
-                                                        AtDateTime: currentDateTime - dateOffset
-                                                     WithTicOffset: smoothLength]; 
+        NSDictionary *trailingValues = [[self dataController] getValues: fieldNames
+                                                             AtDateTime: currentDateTime - dateOffset
+                                                          WithTicOffset: smoothLength];
         if(smoothLength != [[trailingValues objectForKey:@"TICOFFSET"] longValue]){
             NSLog(@"Check: Tic offset %ld and %ld",smoothLength,[[trailingValues objectForKey:@"TICOFFSET"] longValue]);  
         }
@@ -1492,10 +1500,6 @@
             requiredExposure = 0;
         }
     }    
-    if(requiredExposure > 100000){
-        NSLog(@"Check this");
-    }
-     
     return requiredExposure;
 }
 
@@ -1547,7 +1551,7 @@
     for(int i = 0; i < [perfAttribKeys count]; i++){
         double amount = [[performanceAttribution objectForKey:[perfAttribKeys objectAtIndex:i]] doubleValue];
         NSString *reason = [perfAttribKeys objectAtIndex:i]; 
-        perfAttribMessage = [NSString stringWithFormat:@"Final balance value of: %5.2f     due to: %@ \n",amount,reason];
+        perfAttribMessage = [NSString stringWithFormat:@"Final balance component: %5.2f     due to: %@ \n",amount,reason];
         [[[simulation simulationRunOutput] mutableString] appendString:perfAttribMessage];
         if([self doThreads]){
             [self performSelectorOnMainThread:@selector(outputSimulationMessage:) withObject:perfAttribMessage waitUntilDone:NO];
@@ -1559,25 +1563,25 @@
 - (NSArray *) getInterestRateDataFor:(NSString *) baseCode And: (NSString *) quoteCode
 {
     NSArray *interestRateSeries; 
-    if([interestRates objectForKey:[NSString stringWithFormat:@"%@IRBID",baseCode]] == nil){
-        interestRateSeries = [simDataController getAllInterestRatesForCurrency:baseCode 
+    if([[self interestRates] objectForKey:[NSString stringWithFormat:@"%@IRBID",baseCode]] == nil){
+        interestRateSeries = [[self dataController] getAllInterestRatesForCurrency:baseCode 
                                                                       AndField:@"BID"];
-        [interestRates setValue:interestRateSeries forKey:[NSString stringWithFormat:@"%@IRBID",baseCode]];
+        [[self interestRates] setValue:interestRateSeries forKey:[NSString stringWithFormat:@"%@IRBID",baseCode]];
     }
-    if([interestRates objectForKey:[NSString stringWithFormat:@"%@IRASK",baseCode]] == nil){
-        interestRateSeries = [simDataController getAllInterestRatesForCurrency:baseCode 
+    if([[self interestRates] objectForKey:[NSString stringWithFormat:@"%@IRASK",baseCode]] == nil){
+        interestRateSeries = [[self dataController] getAllInterestRatesForCurrency:baseCode 
                                                                       AndField:@"ASK"];
-        [interestRates setValue:interestRateSeries forKey:[NSString stringWithFormat:@"%@IRASK",baseCode]];
+        [[self interestRates] setValue:interestRateSeries forKey:[NSString stringWithFormat:@"%@IRASK",baseCode]];
     }    
-    if([interestRates objectForKey:[NSString stringWithFormat:@"%@IRBID",quoteCode]] == nil){
-        interestRateSeries = [simDataController getAllInterestRatesForCurrency:quoteCode 
+    if([[self interestRates] objectForKey:[NSString stringWithFormat:@"%@IRBID",quoteCode]] == nil){
+        interestRateSeries = [[self dataController] getAllInterestRatesForCurrency:quoteCode 
                                                                       AndField:@"BID"];
-        [interestRates setValue:interestRateSeries forKey:[NSString stringWithFormat:@"%@IRBID",quoteCode]];
+        [[self interestRates] setValue:interestRateSeries forKey:[NSString stringWithFormat:@"%@IRBID",quoteCode]];
     }
-    if([interestRates objectForKey:[NSString stringWithFormat:@"%@IRASK",quoteCode]] == nil){
-        interestRateSeries = [simDataController getAllInterestRatesForCurrency:quoteCode 
+    if([[self interestRates] objectForKey:[NSString stringWithFormat:@"%@IRASK",quoteCode]] == nil){
+        interestRateSeries = [[self dataController] getAllInterestRatesForCurrency:quoteCode
                                                                       AndField:@"ASK"];
-        [interestRates setValue:interestRateSeries forKey:[NSString stringWithFormat:@"%@IRASK",quoteCode]];
+        [[self interestRates] setValue:interestRateSeries forKey:[NSString stringWithFormat:@"%@IRASK",quoteCode]];
     } 
     return interestRateSeries;
 }
@@ -1606,7 +1610,7 @@
     if([simulation currentExposure] !=0)
     {
         NSArray *fieldNames = [NSArray arrayWithObjects:@"BID",@"ASK",nil];
-        NSDictionary *dataBaseValues = [simDataController getValues: fieldNames 
+        NSDictionary *dataBaseValues = [[self dataController] getValues: fieldNames
                                                          AtDateTime: endDateTime];
         
         
@@ -1623,17 +1627,6 @@
             accQuoteAskPrice = [[dataBaseValues objectForKey:@"ASK"] doubleValue];
         }
         
-        
-        
-        
-        //accBaseAskPrice = [simDataController valueFromDataBaseForFxPair:accBaseCode 
-        //                                                    AndDateTime:endDateTime 
-        //                                                       AndField:@"ASK"];                                         
-        
-        //accQuoteAskPrice = [simDataController valueFromDataBaseForFxPair:accQuoteCode 
-        //                                                     AndDateTime:endDateTime 
-        //                                                        AndField:@"ASK"]; 
-        
         if([simulation currentExposure] >0)
         {
             borrowingCode = [[simulation basicParameters] baseCode];
@@ -1643,8 +1636,8 @@
             lendingCode = [[simulation basicParameters] baseCode];
         }
     
-        borrowingInterestRates = [interestRates objectForKey:[NSString stringWithFormat:@"%@IRASK",borrowingCode]];
-        lendingInterestRates = [interestRates objectForKey:[NSString stringWithFormat:@"%@IRBID",lendingCode]];
+        borrowingInterestRates = [[self interestRates] objectForKey:[NSString stringWithFormat:@"%@IRASK",borrowingCode]];
+        lendingInterestRates = [[self interestRates] objectForKey:[NSString stringWithFormat:@"%@IRBID",lendingCode]];
     
         long positionInterestDateTime;
         double positionEntryPrice;
@@ -1774,7 +1767,7 @@
     baseQuoteCode = [NSString stringWithFormat:@"%@%@",[[simulation basicParameters] baseCode],[[simulation basicParameters] quoteCode]]; 
     
     NSArray *fieldNames = [NSArray arrayWithObjects:@"BID",@"ASK",nil];
-    NSDictionary *dataBaseValues = [simDataController getValues: fieldNames 
+    NSDictionary *dataBaseValues = [[self dataController] getValues: fieldNames
                                                      AtDateTime: currentDateTime];
     if([[[simulation basicParameters] quoteCode] isEqualToString:[[simulation basicParameters] accCode]]){
         accQuoteBidPrice = 1;
@@ -1884,8 +1877,8 @@
     fieldNames = [NSArray arrayWithObject:priceField];
     
     //laggedTime = dateTime + STATIC_LAG;
-    NSDictionary *dataBaseValues = [simDataController getValues: fieldNames 
-                                                     AtDateTime:dateTime];
+    NSDictionary *dataBaseValues = [[self dataController] getValues: fieldNames
+                                                         AtDateTime:dateTime];
     if([[dataBaseValues objectForKey:@"SUCCESS"] boolValue])
     {
         price = [[dataBaseValues objectForKey:priceField] doubleValue];
@@ -1915,28 +1908,65 @@
     return [simulation currentExposure];
 }
      
--(BOOL)exportWorkingSimulationDataToFile: (NSURL *) urlOfFile
+-(BOOL)exportWorkingSimulation: (Simulation *) sim
+                    DataToFile: (NSURL *) urlOfFile
 {
     BOOL allOk;
-    DataSeries* analysisData = [[self workingSimulation] analysisDataSeries]; 
+    DataSeries* analysisData = [sim analysisDataSeries];
     allOk = [analysisData writeDataSeriesToFile:urlOfFile];
     return allOk;
 }
 
-- (BOOL) exportWorkingSimulationTradesToFile: (NSURL *) urlOfFile
+- (BOOL) exportWorkingSimulationTrades: (Simulation *) sim
+                                ToFile: (NSURL *) urlOfFile
 {
     BOOL allOk;
-    allOk = [[self workingSimulation] writeTradesToFile:urlOfFile]; 
+    allOk = [sim writeTradesToFile:urlOfFile];
     return allOk;
 }
 
-- (BOOL) exportWorkingSimulationBalAdjmtsToFile: (NSURL *) urlOfFile
+- (BOOL) exportWorkingSimulationBalAdjmts: (Simulation *) sim
+                                   ToFile: (NSURL *) urlOfFile
 {
     BOOL allOk;
-    allOk = [[self workingSimulation] writeBalanceAdjustmentsToFile:urlOfFile]; 
+    allOk = [sim writeBalanceAdjustmentsToFile:urlOfFile];
     return allOk;
     
 }
+
+- (BOOL) exportWorkingSimulationReport:(Simulation *) sim
+                                ToFile:(NSURL *) urlOfFile
+{
+    NSArray *dataFieldNames = [sim reportDataFieldsArray];
+    BOOL allOk = YES;
+    NSFileHandle *outFile;
+    
+    // Create the output file first if necessary
+    // Need to remove file: //localhost for some reason
+    NSString *filePathString = [urlOfFile path];//[[fileNameAndPath absoluteString] substringFromIndex:16];
+    allOk = [[NSFileManager defaultManager] createFileAtPath: filePathString
+                                                    contents: nil
+                                                  attributes: nil];
+    if(allOk){
+        outFile = [NSFileHandle fileHandleForWritingAtPath:filePathString];
+        [outFile truncateFileAtOffset:0];
+        
+        NSString *lineOfFile;
+        for(int fieldIndex = 0; fieldIndex < [dataFieldNames count]; fieldIndex++){
+            if([[dataFieldNames objectAtIndex:fieldIndex] isEqualToString:@"BLANK"]){
+                lineOfFile = @",\r\n";
+            }else{
+                lineOfFile = [NSString stringWithFormat:@"%@ , %@\r\n",[dataFieldNames objectAtIndex:fieldIndex],[sim getReportDataFieldAtIndex:fieldIndex]];
+            }
+            [outFile writeData:[lineOfFile dataUsingEncoding:NSUTF8StringEncoding]];
+        }
+        [outFile closeFile];
+        
+    }
+    return allOk;
+}
+
+
 
 #pragma mark -
 #pragma mark Methods For Delegate
@@ -1998,15 +2028,27 @@
     
 }
 
-- (void) readingRecordSetsProgress: (NSNumber *) progressFraction
+- (void) readingRecordSetProgress: (NSNumber *) progressFraction
 {
-    if([[self delegate] respondsToSelector:@selector(readingRecordSetsProgress:)])
+    if([[self delegate] respondsToSelector:@selector(readingRecordSetProgress:)])
     {
-        [[self delegate] readingRecordSetsProgress:progressFraction]; 
+        [[self delegate] readingRecordSetProgress:progressFraction]; 
     }else{
-        NSLog(@"Delegate doesn't respond to \'readingRecordSetsProgress\'");
+        NSLog(@"Delegate doesn't respond to \'readingRecordSetProgress\'");
     }
 }
+
+- (void) readingRecordSetMessage: (NSString *) progressMessage
+{
+    if([[self delegate] respondsToSelector:@selector(readingRecordSetMessage:)])
+    {
+        [[self delegate] readingRecordSetMessage:progressMessage];
+    }else{
+        NSLog(@"Delegate doesn't respond to \'readingRecordSetMessage\'");
+    }
+    
+}
+
 
 -(void) registerSimulation: (Simulation *) sim
 {
@@ -2055,42 +2097,15 @@
     }
 }
 
-- (BOOL) exportWorkingSimulationReportToFile:(NSURL *) urlOfFile
-{
-    NSArray *dataFieldNames = [[self workingSimulation] reportDataFieldsArray];
-    BOOL allOk = YES;
-    NSFileHandle *outFile;
-    
-    // Create the output file first if necessary
-    // Need to remove file: //localhost for some reason
-    NSString *filePathString = [urlOfFile path];//[[fileNameAndPath absoluteString] substringFromIndex:16];
-    allOk = [[NSFileManager defaultManager] createFileAtPath: filePathString
-                                                    contents: nil 
-                                                  attributes: nil];
-    if(allOk){
-        outFile = [NSFileHandle fileHandleForWritingAtPath:filePathString];
-        [outFile truncateFileAtOffset:0];
-        
-        NSString *lineOfFile;
-        for(int fieldIndex = 0; fieldIndex < [dataFieldNames count]; fieldIndex++){
-            if([[dataFieldNames objectAtIndex:fieldIndex] isEqualToString:@"BLANK"]){
-                lineOfFile = @",\r\n";
-            }else{
-                lineOfFile = [NSString stringWithFormat:@"%@ , %@\r\n",[dataFieldNames objectAtIndex:fieldIndex],[[self workingSimulation] getReportDataFieldAtIndex:fieldIndex]];
-            }
-            [outFile writeData:[lineOfFile dataUsingEncoding:NSUTF8StringEncoding]];
-        }
-        [outFile closeFile];
-        
-    }
-    return allOk;
-}
 
 #pragma mark -
 #pragma mark Variables 
 
-@synthesize cancelProcedure;
-@synthesize workingSimulation = _workingSimulation;
+@synthesize cancelProcedure = _cancelProcedure;
+//@synthesize workingSimulation = _workingSimulation;
 @synthesize doThreads = _doThreads;
-
+@synthesize dataController = _dataController;
+@synthesize cashPosition = _cashPosition;
+@synthesize interestRates = _interestRates;
+@synthesize loadAllData = _loadAllData;
 @end

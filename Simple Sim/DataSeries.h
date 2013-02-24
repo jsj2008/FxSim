@@ -9,9 +9,6 @@
 #import <Foundation/Foundation.h> 
 #import <corePlot/corePlot.h> 
 @class DataView;
-//@class SignalSystem;
-//@class PositioningSystem;
-//@class RulesSystem;
 
 @interface DataSeries: NSObject<NSCoding>{
     NSString *_name;
@@ -26,9 +23,9 @@
 @property (retain) NSString *name;
 @property (assign) NSUInteger dbId;
 @property (assign) double pipSize; 
-@property (nonatomic, retain) CPTNumericData * xData; 
-@property (atomic, retain) NSMutableDictionary * yData;
-@property (atomic, retain) NSMutableDictionary * dataViews;  
+@property (nonatomic, retain) CPTNumericData *xData;
+@property (atomic, retain) NSMutableDictionary *yData;
+@property (atomic, retain) NSMutableDictionary *dataViews;
 @property (assign) long sampleRate;
  
 
@@ -48,9 +45,9 @@
                   AndStartDateTime: (long) startDateTime 
                     AndEndDateTime: (long) endDateTime;
 
-- (void) setDataSeriesWithFieldName: (NSString *) fieldName 
-                           AndDates: (CPTNumericData *) epochdates 
-                            AndData: (CPTNumericData *) dataSeries;
+//- (void) setDataSeriesWithFieldName: (NSString *) fieldName 
+//                           AndDates: (CPTNumericData *) epochdates 
+//                            AndData: (CPTNumericData *) dataSeries;
 
 - (void) reduceDataSeriesToSampledSeconds: (int) numberOfSeconds;
 

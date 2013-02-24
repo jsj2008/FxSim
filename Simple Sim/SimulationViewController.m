@@ -52,7 +52,8 @@
 - (void) outputSimulationMessage:(NSString *) message;
 - (void) gettingDataIndicatorSwitchOn;
 - (void) gettingDataIndicatorSwitchOff;
-- (void) readingRecordSetsProgress: (NSNumber *) progressFraction;
+- (void) readingRecordSetProgress: (NSNumber *) progressFraction;
+- (void) readingRecordSetMessage: (NSString *) progressMessage;
 - (void) progressAsFraction:(NSNumber *) progressValue;
 - (void) progressBarOn;
 - (void) progressBarOff;
@@ -84,7 +85,6 @@
         _simulationSignalTimeSeries = [[NSMutableArray alloc] init]; 
         _signalTableViewSortedAscending = YES;
         _allSimulations = [[NSMutableArray alloc] init];
-        
         _simulationController = [[SimulationController alloc] init];
         [_simulationController setDelegate:self];
         [_simulationController setDoThreads:_doThreads];
@@ -646,7 +646,6 @@
         NSUInteger tradingLag = [[self workingSimulation] tradingLag];
         
         if([simulationSignalTableView numberOfSelectedRows] > 1){
-            NSLog(@"%ld : %ld",selectedRow,[simulationSignalTableView numberOfSelectedRows]);
             NSIndexSet *selectedIndexes = [simulationSignalTableView selectedRowIndexes];
             NSUInteger minSelected, maxSelected;
             if([selectedIndexes firstIndex] <= [selectedIndexes lastIndex])
@@ -743,8 +742,8 @@
     [registeredSimsTableView5 selectRowIndexes:indexSet byExtendingSelection:NO];
     
     
-    [self setWorkingSimulation:sim];
-    [self displayWorkingSim];
+    //[self setWorkingSimulation:sim];
+    //[self displayWorkingSim];
     
     [removeSimulationButton setEnabled:YES];
     [exportSimulationButton setEnabled:YES];
@@ -931,9 +930,10 @@
     if ( [saveDlg runModal] == NSOKButton ) {
         // Gets list of all files selected
         NSURL *fileToSaveTo = [saveDlg URL];
-        allOk = [[self simulationController] exportWorkingSimulationDataToFile:fileToSaveTo];
+        allOk = [[self simulationController] exportWorkingSimulation: [self workingSimulation]
+                                                          DataToFile: fileToSaveTo];
         if(!allOk){
-            [self updateStatus:@"Problem trying to write data to file"];
+            [self updateStatus:@"Problem trying to write data to file"]; 
         }
     }
 }
@@ -960,7 +960,8 @@
     if ( [saveDlg runModal] == NSOKButton ) {
         // Gets list of all files selected
         NSURL *fileToSaveTo = [saveDlg URL];
-        allOk = [[self simulationController] exportWorkingSimulationTradesToFile:fileToSaveTo];
+        allOk = [[self simulationController] exportWorkingSimulationTrades: [self workingSimulation]
+                                                                    ToFile:fileToSaveTo];
         if(!allOk){
             [self updateStatus:@"Problem trying to write data to file"];
         }
@@ -990,7 +991,8 @@
     if ( [saveDlg runModal] == NSOKButton ) {
         // Gets list of all files selected
         NSURL *fileToSaveTo = [saveDlg URL];
-        allOk = [[self simulationController] exportWorkingSimulationBalAdjmtsToFile:fileToSaveTo];
+        allOk = [[self simulationController] exportWorkingSimulationBalAdjmts: [self workingSimulation]
+                                                                       ToFile: fileToSaveTo];
         if(!allOk){
             [self updateStatus:@"Problem trying to write data to file"];
         }
@@ -1028,7 +1030,8 @@
     if ( [saveDlg runModal] == NSOKButton ) {
         // Gets list of all files selected
         NSURL *fileToSaveTo = [saveDlg URL];
-        allOk = [[self simulationController] exportWorkingSimulationReportToFile:fileToSaveTo];
+        allOk = [[self simulationController] exportWorkingSimulationReport: [self workingSimulation]
+                                                                    ToFile:fileToSaveTo];
         if(!allOk){
             [self updateStatus:@"Problem trying to write data to file"];
         }
@@ -1077,7 +1080,7 @@
                 }
                 NSTableColumn *newTableColumn;
                 NSCell *newColumnCell;
-                int tableViewWidth;
+               // int tableViewWidth = 0;
                 NSArray *dataRow = [[self importDataArray] objectAtIndex:0];
                 for(int i = 0; i < [dataRow count]; i++){
                     newTableColumn = [[NSTableColumn alloc] initWithIdentifier:[NSString stringWithFormat:@"Col%d",i]];
@@ -1089,7 +1092,7 @@
                         width = MAX(50, (280-150)/([dataRow count]-1));
                         [newTableColumn setWidth:width];
                     }
-                    tableViewWidth = tableViewWidth + [newTableColumn width];
+                //    tableViewWidth = tableViewWidth + [newTableColumn width];
                     newColumnCell = [newTableColumn dataCell];
                     if(i == 0){
                         [newColumnCell setAlignment:NSLeftTextAlignment];
@@ -1168,7 +1171,7 @@
     }
 }
 
-- (IBAction)importSimulation:(id)sender {
+- (IBAction) importSimulation:(id)sender {
     NSData *importedData;
     NSArray *fileTypesArray;
     Simulation *importedSimulation;
@@ -1187,7 +1190,7 @@
     }
 }
 
-- (IBAction)removeWorkingSimulation:(id)sender {
+- (IBAction) removeWorkingSimulation:(id)sender {
     NSMutableArray *allSims = [self allSimulations];
     if([allSims count] > 0)
     {
@@ -1204,13 +1207,19 @@
     if([allSims count] > 0){
         [self setWorkingSimulation:[allSims objectAtIndex:0]];
     }
+    
     if([self workingSimulation] != Nil)
     {
         [self displayWorkingSim];
     }
+    [registeredSimsTableView reloadData];
+    [registeredSimsTableView1 reloadData];
+    [registeredSimsTableView2 reloadData];
+    [registeredSimsTableView3 reloadData];
+    [registeredSimsTableView5 reloadData];
 }
 
-- (IBAction)changeSelectedTradingPair:(id)sender {
+- (IBAction) changeSelectedTradingPair:(id)sender {
     NSString *selectedPair = [[setupTradingPairPopup selectedItem] title];
     [setupAccountCurrencyPopup removeAllItems];
     [setupAccountCurrencyPopup addItemWithTitle:[selectedPair substringFromIndex:3]];
@@ -1759,7 +1768,7 @@
         plot = [self signalAnalysisPlot];
     }
     
-    NSString *column = [tableColumn identifier];
+    //NSString *column = [tableColumn identifier];
     if([[tableColumn identifier] isEqualToString:@"plot0"]){
         if([obj boolValue]){
             [tsl setLayerIndex:0];
@@ -1779,9 +1788,13 @@
             [tsl setLayerIndex:-1];
         }
     }else {
-        [tsl setValue:obj forKey:column];
+        [tsl setValue:obj forKey:[tableColumn identifier]];
     }
-    [plot plotLineUpdated];
+    if([[tableColumn identifier] isEqualToString:@"colourId"]){
+        [plot plotLineUpdated:NO];
+    }else{
+        [plot plotLineUpdated:YES];
+    }
     [tableView reloadData];
     
     //the tableview which shows the selected is set up
@@ -1839,18 +1852,17 @@
 
 -(void)tableViewSelectionDidChange:(NSNotification *)notification
 {
-    NSTableView *tableView = [notification object];
-    
-    if([[tableView identifier] isEqualToString:@"SIGANALTV"]){
+    if([[[notification object] identifier] isEqualToString:@"SIGANALTV"]){
         [self makeSignalAnalysisPlot];
     }
    
-    if([[tableView identifier] length] >= 10){
-        if([[[tableView identifier] substringToIndex:10] isEqualToString:@"SAVEDSIMTV"]){
+    if([[[notification object] identifier] length] >= 10){
+        if([[[[notification object] identifier] substringToIndex:10] isEqualToString:@"SAVEDSIMTV"]){
             
             if([registeredSimsTableView selectedRow] > -1){
+                
                 Simulation *selectedSim=[[self allSimulations] objectAtIndex:[registeredSimsTableView selectedRow]];
-                if(selectedSim != [self workingSimulation]){
+                if(selectedSim != [self workingSimulation] && [notification object] == registeredSimsTableView){
                     [self setWorkingSimulation:selectedSim];
                     [self displayWorkingSim];
                     NSMutableString *outputTextField = [[simulationMessagesTextView textStorage] mutableString];
@@ -1860,14 +1872,26 @@
                     [simulationCashFlowsTableView reloadData];
                 }
             }
-            NSInteger selectedRow = [tableView selectedRow];
+            NSInteger selectedRow = [[notification object] selectedRow];
             NSIndexSet *indexSet = [NSIndexSet indexSetWithIndex:selectedRow];
-            [registeredSimsTableView1 selectRowIndexes:indexSet byExtendingSelection:NO];
-            [registeredSimsTableView2 selectRowIndexes:indexSet byExtendingSelection:NO];
-            [registeredSimsTableView3 selectRowIndexes:indexSet byExtendingSelection:NO];
-            [registeredSimsTableView selectRowIndexes:indexSet byExtendingSelection:NO];
-            [registeredSimsTableView5 selectRowIndexes:indexSet byExtendingSelection:NO];
             
+            if([notification object] != registeredSimsTableView1){
+                [registeredSimsTableView1 selectRowIndexes:indexSet byExtendingSelection:NO];
+            }
+            if([notification object] != registeredSimsTableView2){
+                [registeredSimsTableView2 selectRowIndexes:indexSet byExtendingSelection:NO];
+            }
+            if([notification object] != registeredSimsTableView3)
+            {
+                [registeredSimsTableView3 selectRowIndexes:indexSet byExtendingSelection:NO];
+            }
+            if([notification object] != registeredSimsTableView)
+            {
+                [registeredSimsTableView selectRowIndexes:indexSet byExtendingSelection:NO];
+            }
+            if([notification object] != registeredSimsTableView5){
+                [registeredSimsTableView5 selectRowIndexes:indexSet byExtendingSelection:NO];
+            }
         }
     }
     return;
@@ -2021,15 +2045,26 @@
     }
 }
 
-- (void) readingRecordSetsProgress: (NSNumber *) progressFraction
+- (void) readingRecordSetProgress: (NSNumber *) progressFraction
 {
-    if([[self delegate] respondsToSelector:@selector(readingRecordSetsProgress:)])
+    if([[self delegate] respondsToSelector:@selector(readingRecordSetProgress:)])
     {
-        [[self delegate] readingRecordSetsProgress:progressFraction];
+        [[self delegate] readingRecordSetProgress:progressFraction];
     }else{
-        NSLog(@"Delegate does not respond to \'readingRecordSetsProgress:\'");
+        NSLog(@"Delegate does not respond to \'readingRecordSetProgress:\'");
     }
 }
+
+- (void) readingRecordSetMessage: (NSString *) progressMessage
+{
+    if([[self delegate] respondsToSelector:@selector(readingRecordSetMessage:)])
+    {
+        [[self delegate] readingRecordSetMessage:progressMessage];
+    }else{
+        NSLog(@"Delegate does not respond to \'readingRecordSetMessage:\'");
+    }
+}
+
 
 - (void) disableMainButtons
 {
@@ -2221,6 +2256,5 @@
 @synthesize doThreads = _doThreads;
 @synthesize firstTimeSetup = _firstTimeSetup;
 @synthesize workingSimulation = _workingSimulation;
-
 
 @end

@@ -87,17 +87,19 @@
                 //rightIndex--;
             }
         }
-        [self swapDoublesA:&arrayToSort[startIndex] AndB:&arrayToSort[rightIndex]];
-        [self swapIntsA:&sortIndexArray[startIndex] AndB:&sortIndexArray[rightIndex]];
+        if(rightIndex != startIndex){
+            [self swapDoublesA:&arrayToSort[startIndex] AndB:&arrayToSort[rightIndex]];
+            [self swapIntsA:&sortIndexArray[startIndex] AndB:&sortIndexArray[rightIndex]];
         
-        [self calcSortIndexForDoubleArray:arrayToSort 
-                           WithStartIndex:startIndex 
-                              AndEndIndex:rightIndex-1
-                    AndReturningSortIndex:sortIndexArray];
-        [self calcSortIndexForDoubleArray:arrayToSort 
-                           WithStartIndex:rightIndex+1 
-                              AndEndIndex:endIndex
-                    AndReturningSortIndex:sortIndexArray];
+            [self calcSortIndexForDoubleArray:arrayToSort
+                               WithStartIndex:startIndex
+                                  AndEndIndex:rightIndex-1
+                        AndReturningSortIndex:sortIndexArray];
+            [self calcSortIndexForDoubleArray:arrayToSort
+                               WithStartIndex:rightIndex+1
+                                  AndEndIndex:endIndex
+                        AndReturningSortIndex:sortIndexArray];
+        }
     }else{
         if(endIndex == (startIndex + 1)){
             if(arrayToSort[startIndex]>arrayToSort[endIndex]){

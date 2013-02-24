@@ -11,7 +11,8 @@
 		5B01B0D514C130150032A301 /* DataController.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B01B0D414C130150032A301 /* DataController.m */; };
 		5B147E74160AB59B0016C04A /* RulesSystem.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B147E73160AB59B0016C04A /* RulesSystem.m */; };
 		5B2EDCC014CD979600EC26B8 /* OCR2.icns in Resources */ = {isa = PBXBuildFile; fileRef = 5B2EDCBF14CD979600EC26B8 /* OCR2.icns */; };
-		5B6D9C8916259FFE00B379D4 /* CorePlot in Frameworks */ = {isa = PBXBuildFile; fileRef = 5B6D9C8816259FFE00B379D4 /* CorePlot */; };
+		5B5A07DA1632AE1A00DBB2E8 /* CorePlot.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5B5A07D71632AD9700DBB2E8 /* CorePlot.framework */; };
+		5B5A07DC1632AE7900DBB2E8 /* CorePlot.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 5B5A07D71632AD9700DBB2E8 /* CorePlot.framework */; };
 		5B7B774A15DDFC9C003911FB /* PositioningSystem.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B7B774915DDFC9C003911FB /* PositioningSystem.m */; };
 		5B85EFD615EC557C004B5381 /* SignalSystem.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B85EFD515EC557C004B5381 /* SignalSystem.m */; };
 		5B88332314BAC44000352C83 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5B88332214BAC44000352C83 /* QuartzCore.framework */; };
@@ -50,6 +51,23 @@
 		5BFF896114D81F7B00F68453 /* TimeSeriesLine.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BFF896014D81F7B00F68453 /* TimeSeriesLine.m */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		5B5A07D61632AD9700DBB2E8 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5B5A07CD1632AD9700DBB2E8 /* CorePlot.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 8DC2EF5B0486A6940098B216;
+			remoteInfo = CorePlot;
+		};
+		5B5A07D81632AD9700DBB2E8 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5B5A07CD1632AD9700DBB2E8 /* CorePlot.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 0730F600109492D800E95162;
+			remoteInfo = UnitTests;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXCopyFilesBuildPhase section */
 		5B88333314BAD6C700352C83 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
@@ -57,6 +75,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				5B5A07DC1632AE7900DBB2E8 /* CorePlot.framework in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -70,7 +89,7 @@
 		5B147E72160AB59B0016C04A /* RulesSystem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RulesSystem.h; sourceTree = "<group>"; };
 		5B147E73160AB59B0016C04A /* RulesSystem.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RulesSystem.m; sourceTree = "<group>"; };
 		5B2EDCBF14CD979600EC26B8 /* OCR2.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = OCR2.icns; path = ../OCR2.icns; sourceTree = "<group>"; };
-		5B6D9C8816259FFE00B379D4 /* CorePlot */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = CorePlot; path = ../CorePlot_1.0/Binaries/MacOS/CorePlot.framework/Versions/A/CorePlot; sourceTree = "<group>"; };
+		5B5A07CD1632AD9700DBB2E8 /* CorePlot.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = CorePlot.xcodeproj; path = ../CorePlot_1.0/Source/framework/CorePlot.xcodeproj; sourceTree = "<group>"; };
 		5B7B774815DDFC9C003911FB /* PositioningSystem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PositioningSystem.h; sourceTree = "<group>"; };
 		5B7B774915DDFC9C003911FB /* PositioningSystem.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PositioningSystem.m; sourceTree = "<group>"; };
 		5B85EFD415EC557C004B5381 /* SignalSystem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SignalSystem.h; sourceTree = "<group>"; };
@@ -145,8 +164,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5B6D9C8916259FFE00B379D4 /* CorePlot in Frameworks */,
 				5B88332314BAC44000352C83 /* QuartzCore.framework in Frameworks */,
+				5B5A07DA1632AE1A00DBB2E8 /* CorePlot.framework in Frameworks */,
 				5B9049F314B2DA3D008A20AA /* libsqlite3.dylib in Frameworks */,
 				5B8C03DD149ECEC60071189F /* Cocoa.framework in Frameworks */,
 			);
@@ -207,10 +226,19 @@
 			name = "General UI";
 			sourceTree = "<group>";
 		};
+		5B5A07CE1632AD9700DBB2E8 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				5B5A07D71632AD9700DBB2E8 /* CorePlot.framework */,
+				5B5A07D91632AD9700DBB2E8 /* UnitTests.octest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
 		5B8C03CD149ECEC60071189F = {
 			isa = PBXGroup;
 			children = (
-				5B6D9C8816259FFE00B379D4 /* CorePlot */,
+				5B5A07CD1632AD9700DBB2E8 /* CorePlot.xcodeproj */,
 				5B8C03E2149ECEC70071189F /* Simple Sim */,
 				5B8C03DB149ECEC60071189F /* Frameworks */,
 				5B8C03D9149ECEC60071189F /* Products */,
@@ -365,12 +393,35 @@
 			mainGroup = 5B8C03CD149ECEC60071189F;
 			productRefGroup = 5B8C03D9149ECEC60071189F /* Products */;
 			projectDirPath = "";
+			projectReferences = (
+				{
+					ProductGroup = 5B5A07CE1632AD9700DBB2E8 /* Products */;
+					ProjectRef = 5B5A07CD1632AD9700DBB2E8 /* CorePlot.xcodeproj */;
+				},
+			);
 			projectRoot = "";
 			targets = (
 				5B8C03D7149ECEC60071189F /* Simple Sim */,
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXReferenceProxy section */
+		5B5A07D71632AD9700DBB2E8 /* CorePlot.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = CorePlot.framework;
+			remoteRef = 5B5A07D61632AD9700DBB2E8 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		5B5A07D91632AD9700DBB2E8 /* UnitTests.octest */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.cfbundle;
+			path = UnitTests.octest;
+			remoteRef = 5B5A07D81632AD9700DBB2E8 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+/* End PBXReferenceProxy section */
 
 /* Begin PBXResourcesBuildPhase section */
 		5B8C03D6149ECEC60071189F /* Resources */ = {
@@ -500,6 +551,7 @@
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
 			};
 			name = Release;
@@ -507,18 +559,16 @@
 		5B8C03F7149ECEC70071189F /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = "$(NATIVE_ARCH_ACTUAL)";
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
-					"\"$(HOME)/Projects/core-plot/build/Debug\"",
+					"\"$(SRCROOT)/../CorePlot_1.0/Binaries/MacOS\"",
 				);
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "Simple Sim/Simple Sim-Prefix.pch";
 				INFOPLIST_FILE = "Simple Sim/Simple Sim-Info.plist";
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"\"$(SRCROOT)/../CorePlot_1.0/Binaries/MacOS/CorePlot.framework/Versions/A\"",
-				);
+				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = app;
 			};
@@ -527,18 +577,16 @@
 		5B8C03F8149ECEC70071189F /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = "$(NATIVE_ARCH_ACTUAL)";
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
-					"\"$(HOME)/Projects/core-plot/build/Debug\"",
+					"\"$(SRCROOT)/../CorePlot_1.0/Binaries/MacOS\"",
 				);
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "Simple Sim/Simple Sim-Prefix.pch";
 				INFOPLIST_FILE = "Simple Sim/Simple Sim-Info.plist";
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"\"$(SRCROOT)/../CorePlot_1.0/Binaries/MacOS/CorePlot.framework/Versions/A\"",
-				);
+				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = app;
 			};

@@ -24,10 +24,9 @@
     NSString *fileDataFileName;
     NSArray *fileData;
     DataSeries *_dataSeries;
-    //NSArray *fileDataFieldNames;
-    //long *fileDataDateTimes;
-    //double **fileDataValues;
+    
 }
+@property (retain) NSMutableDictionary *archive;
 @property(readonly) BOOL connected;
 @property DataSeries *dataSeries;
 @property(readonly, retain) NSDictionary *fxPairs;
@@ -49,9 +48,6 @@
 - (long) leadTimeRequired:(NSString *) strategyString;
 - (long) leadTicsRequired:(NSString *) strategyString;
 - (BOOL) setupDataSeriesForName: (NSString *) dataSeriesName; 
-//                AndSignalSystem: (SignalSystem *) sigSystem
-//              AndPositionSystem: (PositioningSystem *) posSystem
-//                  AndRuleSystem: (RulesSystem *) ruleSystem;
 - (long) getMinDateTimeForLoadedData;
 - (long) getMaxDateTimeForLoadedData;
 - (long) getMinDateTimeForFullData;
@@ -59,7 +55,6 @@
 - (NSArray *) getFieldNames;
 - (void) setData: (NSArray *) adhocDataToAdd 
         FromFile: (NSString *) filename;
-//- (void) addUserData:(NSArray *) userData WithFileName:(NSString *) userDataFileName;
 
 - (DataSeries *) retrieveDataForStartDateTime: (long) requestedStartDate 
                                AndEndDateTime: (long) requestedEndDate 
@@ -103,5 +98,7 @@
                                AndSampleRate: (long) newSampleRate;
 
 -(long) getDataSeriesLength;
+
++ (long) getMaxDataLength;
 
 @end

@@ -22,18 +22,24 @@ typedef enum {
     
 @interface SimulationController : NSObject {
     BOOL _doThreads;
-    DataController *simDataController;
-    NSMutableDictionary *interestRates;
-    BOOL simulationDone;
-    double cashPosition;
+    DataController *_dataController;
+    NSMutableDictionary *_interestRates;
+    BOOL _simulationDone;
+    BOOL _cancelProcedure;
+    BOOL _loadAllData;
+    double _cashPosition;
 
-    Simulation *_workingSimulation;
-    id<SimulationOutput> delegate;
+    //Simulation *_workingSimulation;
+    id _delegate;
 }
 
+@property double cashPosition;
 @property BOOL cancelProcedure;
-@property (retain) Simulation* workingSimulation;
+//@property (retain) Simulation* workingSimulation;
 @property BOOL doThreads;
+@property BOOL loadAllData;
+@property (retain) DataController *dataController;
+@property (retain) NSMutableDictionary *interestRates;
 
 + (BOOL) positioningUnderstood:(NSString *) positioningString;
 + (BOOL) signalingUnderstood: (NSString *) signalString;
@@ -50,9 +56,13 @@ typedef enum {
 
 - (void) askSimulationToCancel;
 
-- (BOOL) exportWorkingSimulationDataToFile: (NSURL *) urlOfFile;
-- (BOOL) exportWorkingSimulationTradesToFile: (NSURL *) urlOfFile;
-- (BOOL) exportWorkingSimulationBalAdjmtsToFile:  (NSURL *) urlOfFile;
-- (BOOL) exportWorkingSimulationReportToFile:(NSURL *) urlOfFile;
+- (BOOL)exportWorkingSimulation: (Simulation *) sim
+                     DataToFile: (NSURL *) urlOfFile;
+- (BOOL) exportWorkingSimulationTrades:(Simulation *) sim
+                                ToFile: (NSURL *) urlOfFile;
+- (BOOL) exportWorkingSimulationBalAdjmts:(Simulation *) sim
+                                   ToFile:  (NSURL *) urlOfFile;
+- (BOOL) exportWorkingSimulationReport:(Simulation *) sim
+                                ToFile:(NSURL *) urlOfFile;
 
 @end

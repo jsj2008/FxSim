@@ -115,7 +115,7 @@
     }else{
         if([[self type] isEqualToString:@"SFP"])
         {
-            [varsNeeded addObject:[NSString stringWithFormat:@"EMA%d",[self perfSmoothParam]]];
+            [varsNeeded addObject:[NSString stringWithFormat:@"EMA/%d",[self perfSmoothParam]]];
         }
     }
     return varsNeeded;

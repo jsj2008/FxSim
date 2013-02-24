@@ -59,8 +59,7 @@
 - (id)   initWithIdentifier:(NSString*) identifierString;
 - (void) initialGraphAndAddAnnotation: (BOOL) doAnnotation;
 - (void) setData:(DataSeries  *) newData WithViewName: (NSString *) viewName;
-//- (void) showSeries:(NSString *)seriesName;
-- (void) plotLineUpdated;
+- (void) plotLineUpdated: (BOOL) updateAxes;
 - (void) togglePositionIndicator;
 - (void) leftSideExpand;
 - (void) leftSideContract;
@@ -75,7 +74,6 @@
 - (void) toggleAxisLabelsForLayer: (int) layerIndex;
 
 @property (retain) CPTGraphHostingView *hostingView;
-//@property (readonly, retain) NSMutableArray *graphs;
 @property (readonly, retain) NSString *identifier;
 @property (readonly, retain) DataView *dataView;
 @property (readonly, retain) DataSeries *plotData;

@@ -13,11 +13,6 @@
 
 @interface DataProcessor : NSObject
 
-//+(NSDictionary *)processWithDataSeries: (NSDictionary *) dataSeries
-//                             AndSignal: (NSString *) strategyString
-//                        AndProcessInfo: (NSDictionary *) parameters
-//                     AndReturningStats: (NSMutableArray *) statsArray;
-
 + (NSDictionary *) addToDataSeries: (NSDictionary *) dataDictionary
                   DerivedVariables: (NSArray *) derivedVariables
                   WithTrailingData: (NSDictionary *) previousDataDetails

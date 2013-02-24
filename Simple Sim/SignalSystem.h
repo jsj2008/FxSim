@@ -12,8 +12,10 @@
 {
     NSString *_signalString;
     NSString *_type;
-    int fastCode;
-    int slowCode;
+    int _fastCode;
+    int _slowCode;
+    int _signalSmooth;
+    NSArray *_extras;
 }
 
 
@@ -26,4 +28,6 @@
 @property (readonly) NSString *type;
 @property (readonly) int fastCode;
 @property (readonly) int slowCode;
+@property (readonly) int signalSmooth;
+@property (readonly) NSArray *extras;
 @end

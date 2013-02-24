@@ -116,10 +116,6 @@
 @property (retain) NSArray *coloursForPlots;
 @property (retain) NSDictionary *fxPairsAndDbIds;
 @property (retain) DataController *dataControllerForUI;
-//@property (retain) NSMutableDictionary *_allSimulations;
-//@property (retain) NSArray *hideObjectsOnStartup;
-//@property (retain) NSMutableArray *signalTableViewOrdering;
-//@property BOOL initialSetupComplete;
 @property BOOL doThreads;
 @property BOOL firstTimeSetup;
 
@@ -230,7 +226,7 @@
 - (void) simulationEnded;
 //- (void) prepareForSimulationReport;
 - (void) setupResultsReport;
-- (void) readingRecordSetsProgress: (NSNumber *) progressFraction;
+- (void) readingRecordSetProgress: (NSNumber *) progressFraction;
 - (void) progressAsFraction:(NSNumber *) progressValue;
 - (void) progressBarOn;
 - (void) progressBarOff;

@@ -10,14 +10,20 @@
 
 @interface EpochTime : NSObject
 
-+(long)epochTimeAtZeroHour:(long) epochDate;
-+(long)epochTimeNextDayAtZeroHour:(long) epochDate;
-+(NSString *)stringDateWithDayOfWeek:(long) epochDate;
-+(NSString *)stringDateWithTime:(long) epochDate;
-+(NSString *)stringHoursMinutesSeconds:(long) epochDate;
-+(NSString *)stringOfDateTimeForTime:(long) epochDate WithFormat:(NSString *)formatString;
++ (long) epochTimeAtZeroHour:(long) epochDate;
++ (long) epochTimeNextDayAtZeroHour:(long) epochDate;
++ (NSString *) stringDateWithDayOfWeek:(long) epochDate;
++ (NSString *) stringDateWithTime:(long) epochDate;
++ (NSString *) stringHoursMinutesSeconds:(long) epochDate;
++ (NSString *) stringOfDateTimeForTime:(long) epochDate WithFormat:(NSString *)formatString;
 
-+(NSString *)stringDate:(long) epochDate;
++ (NSString *) stringDate:(long) epochDate;
++ (int) daysSinceEpoch:(long) epochDate;
++ (int) dayOfWeek:(long) epochDate;
++ (BOOL) isWeekday:(long) epochDate;
++ (int) daysBetweenInclusiveFrom: (long) startDateTime
+                              To: (long) endDateTime
+                CountingWeekends:(BOOL) countWeekendDays;
 //-(id)init;
 
 @end
