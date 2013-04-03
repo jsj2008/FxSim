@@ -142,7 +142,7 @@ AndTradingTimeStart: (int) tradingTimeStart
 
 +(NSArray *)getReportFields
 {
-    NSArray *reportFields = [NSArray arrayWithObjects:@"NAME", @"TRADINGPAIR",@"ACCOUNTCURRENCY",@"BLANK",@"--RESULTS--", @"CASHTRANSFERS", @"FINALNAV", @"TRADE PNL", @"INTEREST",  @"BIGGESTDRAWDOWN", @"DRAWDOWNTIME", @"NUMBEROFTRADES", @"SPREADCOST", @"BLANK", @"--PARAMETERS--",@"STARTTIME", @"ENDTIME", @"STRATEGY",@"POSITIONING", @"RULES", @"MAXLEVERAGE", @"TIMESTEP", @"TRADINGLAG", @"TRADINGDAYSTART",@"TRADINGDAYEND", @"USERADDEDDATA", nil];
+    NSArray *reportFields = [NSArray arrayWithObjects:@"NAME", @"TRADINGPAIR",@"ACCOUNTCURRENCY",@"BLANK",@"--RESULTS--", @"CASHTRANSFERS", @"FINALNAV", @"TRADE PNL", @"INTEREST",  @"BIGGESTDRAWDOWN", @"DRAWDOWNTIME", @"NUMBEROFTRADES", @"SPREADCOST", @"BLANK", @"--PARAMETERS--",@"STARTTIME", @"ENDTIME", @"STRATEGY",@"EXTRASERIES",@"POSITIONING", @"RULES", @"MAXLEVERAGE", @"TIMESTEP", @"TRADINGLAG", @"TRADINGDAYSTART",@"TRADINGDAYEND", @"USERADDEDDATA", nil];
     return reportFields;
 }
 
@@ -153,23 +153,16 @@ AndTradingTimeStart: (int) tradingTimeStart
     if([trimmedRulesString length] > 0)
     {
         NSString *singleRuleString;
-        RulesSystem *newRule;
         NSArray *separatedRules  = [trimmedRulesString componentsSeparatedByString:@";"];
         
         for(int i = 0; i < [separatedRules count]; i++){
             singleRuleString = [separatedRules objectAtIndex:i];
             allOk = [RulesSystem basicCheck:singleRuleString];
             if(allOk){
-                newRule = [[RulesSystem alloc] initWithString:singleRuleString];
-                if(newRule == Nil){
-                    allOk = NO;
-                }else{
-                    [[self rulesSystem] addObject:newRule];
-                }
+                [[self rulesSystem] addObject:singleRuleString];
             }else{
                 break;
             }
-            
         }
     }
     return allOk;
@@ -676,7 +669,22 @@ AndTradingTimeStart: (int) tradingTimeStart
         return [EpochTime stringDateWithTime:[self endDate]];
     }
     if([dataFieldIdentifier isEqualToString:@"STRATEGY"]){
-        return [[self signalSystem] signalString];
+        NSString *strategyAndSeriesString = [[self signalSystem] signalString];
+        NSArray *strategyAndSeriesComponents = [strategyAndSeriesString componentsSeparatedByString:@";"];
+        if([strategyAndSeriesComponents count] == 1){
+            return strategyAndSeriesString;
+        }else{
+            return [strategyAndSeriesComponents objectAtIndex:0];
+        }
+    }
+    if([dataFieldIdentifier isEqualToString:@"EXTRASERIES"]){
+        NSString *strategyAndSeriesString = [[self signalSystem] signalString];
+        NSArray *strategyAndSeriesComponents = [strategyAndSeriesString componentsSeparatedByString:@";"];
+        if([strategyAndSeriesComponents count] == 1){
+            return @"";
+        }else{
+            return [strategyAndSeriesString substringFromIndex:[[strategyAndSeriesComponents objectAtIndex:0] length]+1];
+        }
     }
     if([dataFieldIdentifier isEqualToString:@"POSITIONING"]){
         return [[self positionSystem] positioningString];
@@ -758,8 +766,20 @@ AndTradingTimeStart: (int) tradingTimeStart
     [signalInfoDetails setObject:[NSNumber numberWithLong:[signalRecord endTime]] forKey:@"EXITTIME"]; 
     [signalInfoDetails setObject:[NSNumber numberWithDouble:[signalRecord entryPrice]] forKey:@"ENTRYPRICE"];
     [signalInfoDetails setObject:[NSNumber numberWithDouble:[signalRecord exitPrice]] forKey:@"EXITPRICE"];
+    [signalInfoDetails setObject:[NSNumber numberWithDouble:[signalRecord pnl]] forKey:@"PNL"];
     return signalInfoDetails;
 }
+
+-(void) addToSignalInfoAtIndex:(NSUInteger)signalInfoIndex
+                  EstimatedPnl: (double) pnl
+
+{
+    SignalRecord *signalRecord;
+    signalRecord = [[self signalInfoArray] objectAtIndex:signalInfoIndex];
+    [signalRecord setPnl:pnl];
+    
+}
+
 
 #pragma mark -
 #pragma mark General Methods, Data Output
@@ -909,6 +929,10 @@ AndTradingTimeStart: (int) tradingTimeStart
     return [[self basicParameters] samplingRate];
 }
 
+- (void) setSimName:(NSString *)name
+{
+    [[self basicParameters] setName:name];
+}
 
 #pragma mark -
 #pragma mark Properties

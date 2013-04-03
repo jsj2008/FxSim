@@ -15,6 +15,8 @@
     double _stepProportion;
     double _stepLength;
     int _perfSmoothParam;
+    int _maxPos;
+    BOOL _stopEntryOnWeakening;
     NSString *_stepUnit;
 }
 
@@ -26,6 +28,8 @@
 @property (retain, readonly) NSString *stepUnit;
 @property (readonly) double positionCushion;
 @property (readonly) int perfSmoothParam;
+@property (readonly) int maxPos;
+@property (readonly) BOOL stopEntryOnWeakening;
 
 - (id) init;
 - (id) initWithString: (NSString *) initString;

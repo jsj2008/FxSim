@@ -79,5 +79,9 @@
 
 - (BOOL) writeDataSeriesToFile: (NSURL *) fileNameAndPath;
 
+- (BOOL) writeDataSeriesToFile: (NSURL *) fileNameAndPath
+                  ForStartTime: (long) startDateTime
+                    AndEndTime: (long) endDateTime;
+
 @end 
 

@@ -141,6 +141,7 @@
 @property (weak) IBOutlet NSTextField *setupSamplingMinutesTextField;
 @property (weak) IBOutlet NSTextField *dataAvailabilityFromLabel;
 @property (weak) IBOutlet NSTextField *dataAvailabilityToLabel;
+@property (weak) IBOutlet NSTextField *setupTradingPairPipSizeLabel;
 @property (weak) IBOutlet NSTextField *startDateDoWLabel;
 @property (weak) IBOutlet NSTextField *endDateDoWLabel;
 @property (weak) IBOutlet NSTextField *setupTradingLagTextField;
@@ -214,6 +215,8 @@
 @property (weak) IBOutlet NSButton *setupSheetImportDataButton;
 @property (weak) IBOutlet NSButton *setupSheetShowButton;
 @property (weak) IBOutlet NSTextField *setupPositioningTextField;
+@property (weak) IBOutlet NSTextField *setupExtraSeriesTextField;
+
 @property (weak) IBOutlet NSBox *fullScreenBox;
 @property (weak) IBOutlet NSBox *signalAnalysisPlotBox;
 @property (weak) IBOutlet NSBox *simPlotBox;

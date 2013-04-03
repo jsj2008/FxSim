@@ -17,7 +17,7 @@
                   DerivedVariables: (NSArray *) derivedVariables
                   WithTrailingData: (NSDictionary *) previousDataDetails
                    AndSignalSystem: (SignalSystem *) signalSystem;
-+ (BOOL)strategyUnderstood:(NSString *) strategyString;
+//+ (BOOL)strategyUnderstood:(NSString *) strategyString;
 + (long)leadTimeRequired:(NSString *) strategyString;
 + (long)leadTicsRequired:(NSString *) strategyString;
 @end

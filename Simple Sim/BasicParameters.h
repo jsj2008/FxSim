@@ -40,7 +40,7 @@ AndTradingDayStart: (NSUInteger) tradingDayStart
 
 - (NSString *)description;
 
-@property (readonly, retain) NSString *name;
+@property (retain) NSString *name;
 @property (readonly, retain) NSString *accCode;
 @property (readonly, retain) NSString *baseCode;
 @property (readonly, retain) NSString *quoteCode;

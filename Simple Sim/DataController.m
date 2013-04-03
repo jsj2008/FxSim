@@ -111,6 +111,31 @@ FMDatabase *db;
     return success;
 }
 
+- (double) getPipsizeForSeriesName: (NSString *) dataSeriesName
+{
+    BOOL success = YES;
+    double pipSize = 0.0;
+    NSString *seriesName;
+    int dbid = [[fxPairs objectForKey:dataSeriesName] intValue];
+    @try
+    {
+        if([self connected] == YES)
+        {
+            seriesName = [db stringForQuery:[NSString stringWithFormat:@"SELECT SeriesName FROM SeriesName WHERE SeriesId = %d", dbid]];
+            pipSize = [db doubleForQuery:[NSString stringWithFormat:@"SELECT PipSize FROM SeriesName WHERE SeriesId = %d", dbid]];
+        }else{
+            success = NO;
+            NSLog(@"Database error");
+        }
+    }
+    @catch (NSException *exception) {
+        NSLog(@"main: Caught %@: %@", [exception name], [exception reason]);
+        success = NO;
+    }
+      return pipSize;
+}
+
+
 
 -(int)dataGranularity
 {
@@ -194,10 +219,10 @@ FMDatabase *db;
     return [[self dataSeries] getFieldNames];
 }
 
-- (BOOL) strategyUnderstood:(NSString *) strategyString
-{
-    return [DataProcessor strategyUnderstood:strategyString];
-}
+//- (BOOL) strategyUnderstood:(NSString *) strategyString
+//{
+//    return [DataProcessor strategyUnderstood:strategyString];
+//}
 
 - (long) leadTimeRequired:(NSString *) strategyString
 {
@@ -686,6 +711,7 @@ FMDatabase *db;
     adjustedStartDate = requestedStartDate;
     adjustedEndDate = requestedEndDate;
     
+    
     if([[self dataSeries] length] != 0){
         oldStart = [[self dataSeries] minDateTime];
         oldEnd = [[self dataSeries] maxDateTime];
@@ -886,6 +912,7 @@ FMDatabase *db;
                 indexOnNew++;
             }
         }
+        
     }
     
     NSMutableDictionary *fileDataDictionary;     

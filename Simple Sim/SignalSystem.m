@@ -55,7 +55,13 @@
                 NSString *extra = [signalComponentsPlusExtras objectAtIndex:i];
                 NSArray *components = [extra componentsSeparatedByString:@"/"];
                 NSString *typeOfExtra = [components objectAtIndex:0];
-                if(!([typeOfExtra isEqualToString:@"EMA"] || [typeOfExtra isEqualToString:@"ATR"] || [typeOfExtra isEqualToString:@"HLC"] || [typeOfExtra isEqualToString:@"TR2"])){
+                if(!([typeOfExtra isEqualToString:@"EMA"] ||
+                     [typeOfExtra isEqualToString:@"ATR"] ||
+                     [typeOfExtra isEqualToString:@"OHLC"] ||
+                     [typeOfExtra isEqualToString:@"TR2"] ||
+                     [typeOfExtra isEqualToString:@"FDIM"] ||
+                     [typeOfExtra isEqualToString:@"MACD"] ||
+                     [typeOfExtra isEqualToString:@"TICN"])){
                     initStringUnderstood = NO;
                 }
             }
@@ -73,13 +79,13 @@
     return self;
 }
 
-+(BOOL)basicCheck: (NSString *) signalString
++(BOOL)basicSignalCheck: (NSString *) signalString
 {
     BOOL understood = NO;
-    NSArray *signalComponentsPlusExtras = [signalString componentsSeparatedByString:@";"];
-    NSString *signalStripped = [signalComponentsPlusExtras objectAtIndex:0];
-    
-    NSArray *signalComponents = [signalStripped componentsSeparatedByString:@"/"];
+//    NSArray *signalComponentsPlusExtras = [signalString componentsSeparatedByString:@";"];
+//    NSString *signalStripped = [signalComponentsPlusExtras objectAtIndex:0];
+//    
+    NSArray *signalComponents = [signalString componentsSeparatedByString:@"/"];
     if([[signalComponents objectAtIndex:0] isEqualToString:@"SECO"]  && [signalComponents count] == 3){
         understood = YES;
     }
@@ -90,13 +96,26 @@
         understood = YES;
     }
     
-    if([signalComponentsPlusExtras count] > 1){
-        for( int i = 1; i < [signalComponentsPlusExtras count];i++ )
+       return understood;
+}
++(BOOL)basicSeriesCheck: (NSString *) seriesString
+{
+    BOOL understood = YES;
+    NSArray *seriesArray = [seriesString componentsSeparatedByString:@";"];
+    
+    if([seriesArray count] > 0){
+        for( int i = 1; i < [seriesArray count];i++ )
         {
-            NSString *extra = [signalComponentsPlusExtras objectAtIndex:i];
-            NSArray *components = [extra componentsSeparatedByString:@"/"];
-            NSString *typeOfExtra = [components objectAtIndex:0];
-            if(!([typeOfExtra isEqualToString:@"EMA"] || [typeOfExtra isEqualToString:@"ATR" ] || [typeOfExtra isEqualToString:@"HLC"] || [typeOfExtra isEqualToString:@"TR2" ] )){
+            NSString *singleSeries = [seriesArray objectAtIndex:i];
+            NSArray *components = [singleSeries componentsSeparatedByString:@"/"];
+            NSString *typeOfSeries = [components objectAtIndex:0];
+            if(!([typeOfSeries isEqualToString:@"EMA"] ||
+                 [typeOfSeries isEqualToString:@"ATR" ] ||
+                 [typeOfSeries isEqualToString:@"OHLC"] ||
+                 [typeOfSeries isEqualToString:@"TR2" ] ||
+                 [typeOfSeries isEqualToString:@"FDIM" ] ||
+                 [typeOfSeries isEqualToString:@"MACD" ] ||
+                 [typeOfSeries isEqualToString:@"TICN" ])){
                 understood = NO;
             }
         }
@@ -113,12 +132,22 @@
         [varsNeeded addObject:[NSString stringWithFormat:@"EMA/%d",[self fastCode]]];
         [varsNeeded addObject:[NSString stringWithFormat:@"EMA/%d",[self slowCode]]];
     }
-    
+    if([[self type] isEqualToString:@"MACD"]){
+        [varsNeeded addObject:[NSString stringWithFormat:@"MACD/%d/%d/%d",[self fastCode],[self slowCode],[self signalSmooth]]];
+    }
+        
     if([self extras] != Nil){
         for( int i = 0; i < [[self extras] count];i++ )
         {
             NSString *extra = [[self extras] objectAtIndex:i];
             [varsNeeded addObject:extra];
+            NSArray *components = [extra componentsSeparatedByString:@"/"];
+            if([[components objectAtIndex:0] isEqualToString:@"MACD"])
+            {
+                [varsNeeded addObject:[NSString stringWithFormat:@"EMA/%@",[components objectAtIndex:1]]];
+                [varsNeeded addObject:[NSString stringWithFormat:@"EMA/%@",[components objectAtIndex:2]]];
+            }
+            
         }
     }
     return varsNeeded;

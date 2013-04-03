@@ -42,7 +42,8 @@ typedef enum {
 @property (retain) NSMutableDictionary *interestRates;
 
 + (BOOL) positioningUnderstood:(NSString *) positioningString;
-+ (BOOL) signalingUnderstood: (NSString *) signalString;
++ (BOOL) simulationUnderstood: (NSString *) signalString;
++ (BOOL) seriesUnderstood:(NSString *) seriesString;
 + (BOOL) rulesUnderstood:(NSString *) rulesString;
 + (NSArray *) getNamesOfRequiredVariablesForSignal: (SignalSystem *) signalSystem
                                     AndPositioning: (PositioningSystem *) positionSystem

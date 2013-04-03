@@ -44,7 +44,7 @@
 - (void) setDelegate:(id)del;
 - (BOOL) doThreads;
 - (void) setDoThreads:(BOOL)doThreadedProcedures;
-- (BOOL) strategyUnderstood:(NSString *) strategyString;
+//- (BOOL) strategyUnderstood:(NSString *) strategyString;
 - (long) leadTimeRequired:(NSString *) strategyString;
 - (long) leadTicsRequired:(NSString *) strategyString;
 - (BOOL) setupDataSeriesForName: (NSString *) dataSeriesName; 
@@ -91,13 +91,13 @@
 - (DataSeriesValue *) valueFromDataBaseForFxPair: (NSString *) name 
                                      AndDateTime: (long) dateTime 
                                         AndField: (NSString *) field;
--(NSArray *) getAllInterestRatesForCurrency: (NSString *) currencyCode 
+- (NSArray *) getAllInterestRatesForCurrency: (NSString *) currencyCode
                                    AndField: (NSString *) bidOrAsk;
--(DataSeries *) createNewDataSeriesWithXData: (NSMutableData *) dateTimes 
+- (DataSeries *) createNewDataSeriesWithXData: (NSMutableData *) dateTimes
                                     AndYData: (NSDictionary *) dataValues 
                                AndSampleRate: (long) newSampleRate;
-
--(long) getDataSeriesLength;
+- (double) getPipsizeForSeriesName: (NSString *) dataSeriesName;
+- (long) getDataSeriesLength;
 
 + (long) getMaxDataLength;
 

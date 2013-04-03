@@ -58,13 +58,13 @@
 }
 
 +(void) calcSortIndexForDoubleArray:(double *) arrayToSort 
-                     WithStartIndex:(NSUInteger) startIndex
-                        AndEndIndex:(NSUInteger) endIndex
+                     WithStartIndex:(long) startIndex
+                        AndEndIndex:(long) endIndex
                  AndReturningSortIndex:(int *) sortIndexArray
 {
     double pivotValue = arrayToSort[startIndex]; 
-    NSUInteger leftIndex = startIndex + 1;
-    NSUInteger rightIndex = endIndex;
+    long leftIndex = startIndex + 1;
+    long rightIndex = endIndex;
     
     if (endIndex > startIndex + 1)
     {
@@ -90,16 +90,17 @@
         if(rightIndex != startIndex){
             [self swapDoublesA:&arrayToSort[startIndex] AndB:&arrayToSort[rightIndex]];
             [self swapIntsA:&sortIndexArray[startIndex] AndB:&sortIndexArray[rightIndex]];
-        
-            [self calcSortIndexForDoubleArray:arrayToSort
-                               WithStartIndex:startIndex
-                                  AndEndIndex:rightIndex-1
-                        AndReturningSortIndex:sortIndexArray];
-            [self calcSortIndexForDoubleArray:arrayToSort
-                               WithStartIndex:rightIndex+1
-                                  AndEndIndex:endIndex
-                        AndReturningSortIndex:sortIndexArray];
         }
+        
+        [self calcSortIndexForDoubleArray:arrayToSort
+                           WithStartIndex:startIndex
+                              AndEndIndex:rightIndex-1
+                    AndReturningSortIndex:sortIndexArray];
+        [self calcSortIndexForDoubleArray:arrayToSort
+                           WithStartIndex:rightIndex+1
+                              AndEndIndex:endIndex
+                    AndReturningSortIndex:sortIndexArray];
+        
     }else{
         if(endIndex == (startIndex + 1)){
             if(arrayToSort[startIndex]>arrayToSort[endIndex]){

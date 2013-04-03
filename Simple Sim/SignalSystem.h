@@ -21,7 +21,8 @@
 
 - (id) init;
 - (id) initWithString: (NSString *) signalString;
-+ (BOOL) basicCheck: (NSString *) signalString;
++ (BOOL) basicSignalCheck: (NSString *) signalString;
++ (BOOL) basicSeriesCheck: (NSString *) signalString;
 - (NSArray *) variablesNeeded;
 
 @property (readonly) NSString *signalString;

@@ -24,6 +24,7 @@
         _endTime = endTime;
         _entryPrice = entryPrice;
         _exitPrice = exitPrice;
+        _pnl = 0.0;
     }
     return self;
 }
@@ -35,6 +36,7 @@
     [encoder encodeObject:[NSNumber numberWithLong:_endTime] forKey:@"ENDTIME"];
     [encoder encodeObject:[NSNumber numberWithDouble:_entryPrice] forKey:@"ENTRYPRICE"];
     [encoder encodeObject:[NSNumber numberWithDouble:_exitPrice] forKey:@"EXITPRICE"];
+    [encoder encodeObject:[NSNumber numberWithDouble:_pnl] forKey:@"PNL"];
 }
 
 - (id) initWithCoder:(NSCoder*)decoder
@@ -49,6 +51,7 @@
         _endTime = [[decoder decodeObjectForKey:@"ENDTIME"] longValue];
         _entryPrice = [[decoder decodeObjectForKey:@"ENTRYPRICE"] doubleValue];
         _exitPrice = [[decoder decodeObjectForKey:@"EXITPRICE"] doubleValue];
+        _pnl = [[decoder decodeObjectForKey:@"PNL"] doubleValue];
     }
     return self;   
 }
@@ -59,5 +62,5 @@
 @synthesize endTime = _endTime;
 @synthesize entryPrice = _entryPrice;
 @synthesize exitPrice = _exitPrice;
-
+@synthesize pnl = _pnl;
 @end

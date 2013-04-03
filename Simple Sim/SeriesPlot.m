@@ -156,8 +156,17 @@
     graph.plotAreaFrame.paddingTop = graph.plotAreaFrame.paddingTop - 5;
 }
 
+-(void)removeLineAnnotation
+{
+    while([lineAnnotationArray count] > 0){
+        [graph.plotAreaFrame.plotArea removeAnnotation:[lineAnnotationArray objectAtIndex:0]];
+        [lineAnnotationArray removeObjectAtIndex:0];
+        [lineAnnotationLevelArray removeObjectAtIndex:0];
+    }
+}
 
--(void)renderPlotWithFields: (NSArray *) linesToPlot 
+
+-(void)renderPlotWithFields: (NSArray *) linesToPlot
 {
     // Make sure there 
     clickDateAnnotation = nil;
@@ -1045,7 +1054,8 @@
 	return NO;
 }
 
--(BOOL)plotSpace:(CPTPlotSpace *)plotSpace shouldHandlePointingDeviceDownEvent:(id)event atPoint:(CGPoint)interactionPoint
+-(BOOL)plotSpace:(CPTPlotSpace *)plotSpace shouldHandlePointingDeviceDownEvent:(id)event
+         atPoint:(CGPoint)interactionPoint
 {
   	
     if([NSEvent modifierFlags] == NSCommandKeyMask){
@@ -1061,64 +1071,66 @@
         [self addHorizontalLineAt:dataCoords[CPTCoordinateY] ForPlotspace:plotSpace0];
         
     }else{    
-    dragStart = interactionPoint;
-
-    //CPTXYPlotSpace *plotSpace = (CPTXYPlotSpace *)graph.defaultPlotSpace;
-    TimeSeriesLine *tsLine = [timeSeriesLines objectAtIndex:0];
-    NSString *plotIdentifier = [NSString stringWithFormat:@"P0_%@",[tsLine name]];
-    CPTScatterPlot *plot = (CPTScatterPlot *)[graph plotWithIdentifier:plotIdentifier];
-    //CPTPlotSpaceAnnotation *test;
-    
-    CGPoint clickInPlotArea = [graph convertPoint:interactionPoint 
-                                          toLayer:plot];
-    double dataCoords[2];
-    [plotSpace doublePrecisionPlotPoint:dataCoords 
-                    forPlotAreaViewPoint:clickInPlotArea];
-    
-    // Add annotation
-    // First make a string for the y value
-    NSString *currentValue;
-    if([NSEvent modifierFlags] == NSAlternateKeyMask){
-        currentValue = [NSString stringWithFormat:@"%5.4f",dataCoords[CPTCoordinateY]];
-    }else{
-        currentValue = [EpochTime stringOfDateTimeForTime:(long)dataCoords[CPTCoordinateX] 
-                                               WithFormat: @"%a %Y-%m-%d %H:%M:%S"];
-    }
-    //    
-    NSNumber *x            = [NSNumber numberWithDouble:dataCoords[CPTCoordinateX]];
-    NSNumber *y            = [NSNumber numberWithDouble:dataCoords[CPTCoordinateY]];
-    NSArray *anchorPoint = [NSArray arrayWithObjects: x,y, nil];
-    //    
-    if ( clickDateAnnotation ) {
-		[graph.plotAreaFrame.plotArea removeAnnotation:clickDateAnnotation];
-		clickDateAnnotation = nil;
-	}
-    
-	// Setup a style for the annotation
-	CPTMutableTextStyle *hitAnnotationTextStyle = [CPTMutableTextStyle textStyle];
-	hitAnnotationTextStyle.color	= [CPTColor grayColor];
-	hitAnnotationTextStyle.fontSize = 12.0f;
-	hitAnnotationTextStyle.fontName = @"Courier";
-   
-	// Now add the annotation to the plot area
-	CPTTextLayer *textLayer = [[CPTTextLayer alloc] initWithText:currentValue style:hitAnnotationTextStyle];
-	clickDateAnnotation			  = [[CPTPlotSpaceAnnotation alloc] initWithPlotSpace:graph.defaultPlotSpace anchorPlotPoint:anchorPoint];
-	clickDateAnnotation.contentLayer = textLayer;
-	clickDateAnnotation.displacement = CGPointMake(0.0f, 10.0f);
-	[graph.plotAreaFrame.plotArea addAnnotation:clickDateAnnotation];
+        dragStart = interactionPoint;
+        
+        //CPTXYPlotSpace *plotSpace = (CPTXYPlotSpace *)graph.defaultPlotSpace;
+        TimeSeriesLine *tsLine = [timeSeriesLines objectAtIndex:0];
+        NSString *plotIdentifier = [NSString stringWithFormat:@"P0_%@",[tsLine name]];
+        CPTScatterPlot *plot = (CPTScatterPlot *)[graph plotWithIdentifier:plotIdentifier];
+        //CPTPlotSpaceAnnotation *test;
+        
+        CGPoint clickInPlotArea = [graph convertPoint:interactionPoint
+                                              toLayer:plot];
+        double dataCoords[2];
+        [plotSpace doublePrecisionPlotPoint:dataCoords
+                       forPlotAreaViewPoint:clickInPlotArea];
+        
+        // Add annotation
+        // First make a string for the y value
+        NSString *currentValue;
+        if([NSEvent modifierFlags] == NSAlternateKeyMask){
+            currentValue = [NSString stringWithFormat:@"%5.4f",dataCoords[CPTCoordinateY]];
+        }else{
+            currentValue = [EpochTime stringOfDateTimeForTime:(long)dataCoords[CPTCoordinateX]
+                                                   WithFormat: @"%a %Y-%m-%d %H:%M:%S"];
+        }
+        //
+        NSNumber *x            = [NSNumber numberWithDouble:dataCoords[CPTCoordinateX]];
+        NSNumber *y            = [NSNumber numberWithDouble:dataCoords[CPTCoordinateY]];
+        NSArray *anchorPoint = [NSArray arrayWithObjects: x,y, nil];
+        //
+        if ( clickDateAnnotation ) {
+            [graph.plotAreaFrame.plotArea removeAnnotation:clickDateAnnotation];
+            clickDateAnnotation = nil;
+        }
+        
+        // Setup a style for the annotation
+        CPTMutableTextStyle *hitAnnotationTextStyle = [CPTMutableTextStyle textStyle];
+        hitAnnotationTextStyle.color	= [CPTColor grayColor];
+        hitAnnotationTextStyle.fontSize = 12.0f;
+        hitAnnotationTextStyle.fontName = @"Courier";
+        
+        // Now add the annotation to the plot area
+        CPTTextLayer *textLayer = [[CPTTextLayer alloc] initWithText:currentValue style:hitAnnotationTextStyle];
+        clickDateAnnotation			  = [[CPTPlotSpaceAnnotation alloc] initWithPlotSpace:graph.defaultPlotSpace anchorPlotPoint:anchorPoint];
+        clickDateAnnotation.contentLayer = textLayer;
+        clickDateAnnotation.displacement = CGPointMake(0.0f, 10.0f);
+        [graph.plotAreaFrame.plotArea addAnnotation:clickDateAnnotation];
     }
 	return NO;
 }
 
--(BOOL)plotSpace:(CPTPlotSpace *)plotSpace shouldHandlePointingDeviceUpEvent:(id)event atPoint:(CGPoint)point
+-(BOOL)plotSpace:(CPTPlotSpace *)plotSpace shouldHandlePointingDeviceUpEvent:(id)event
+         atPoint:(CGPoint)point
 {
     if([NSEvent modifierFlags] == NSCommandKeyMask){
         if([event clickCount] == 2){
-            while([lineAnnotationArray count] > 0){
-                [graph.plotAreaFrame.plotArea removeAnnotation:[lineAnnotationArray objectAtIndex:0]];
-                [lineAnnotationArray removeObjectAtIndex:0];
-                [lineAnnotationLevelArray removeObjectAtIndex:0];
-            }
+            [self removeLineAnnotation];
+//            while([lineAnnotationArray count] > 0){
+//                [graph.plotAreaFrame.plotArea removeAnnotation:[lineAnnotationArray objectAtIndex:0]];
+//                [lineAnnotationArray removeObjectAtIndex:0];
+//                [lineAnnotationLevelArray removeObjectAtIndex:0];
+//            }
         }
     }else{
         

@@ -10,19 +10,17 @@
 
 @interface RulesSystem : NSObject
 {
-    NSString *_type;
-    int _historyDays;
-    double _cutoff;
-
+//    NSString *_ruleString;
+//    NSString *_type;
+//    int _historyDays;
+//    double _cutoff;
 }
 
-- (id) initWithString: (NSString *) ruleString;
+//- (id) initWithString: (NSString *) ruleString;
 + (BOOL) basicCheck: (NSString *) rulesString;
 + (NSString *) combinedRulesString: (NSArray *)rulesArray;
-- (NSArray *) variablesNeeded;
-
-@property (readonly) NSString *ruleString;
-@property (readonly) NSString *type;
-@property (readonly) int historyDays;
-@property (readonly) double cutoff;
++ (double) fridayRule: (NSArray *)rulesArray;
++ (BOOL) outOfHoursCloseRule: (NSArray *)rulesArray;
++ (NSArray *) variablesNeeded: (NSString *) rulesString;
+//+ (BOOL) weakSignalOverride: (NSArray *)rulesArray;
 @end

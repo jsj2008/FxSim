@@ -14,6 +14,7 @@
     long _endTime;
     double _entryPrice;
     double _exitPrice;
+    double _pnl;
 }
 
 - (id) initWithSignal:(double) signal
@@ -31,5 +32,5 @@
 @property    long   endTime;
 @property    double entryPrice;
 @property    double exitPrice;
-
+@property    double pnl;
 @end

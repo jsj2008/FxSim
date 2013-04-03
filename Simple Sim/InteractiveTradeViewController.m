@@ -890,24 +890,24 @@
     //DataSeries *dataForPanel1Plot;
     
     if(![strategyFields isEqualToString:@""]){
-        success = [panel1DataController strategyUnderstood:strategyFields];
-        if(!success){
-            NSMutableDictionary *alertInfo = [[NSMutableDictionary alloc] init];
-            [alertInfo setValue: @"Problem setting up the data" forKey:@"TITLE"];
-            [alertInfo setValue: @"Extra fields not understood" forKey:@"MSGFORMAT"];
-            [alertInfo setValue: @"OK" forKey:@"DEFAULTBUTTON"];
-            if(doThreads){
-                [self performSelectorOnMainThread:@selector(showAlertPanelWithInfo:) withObject:alertInfo waitUntilDone:YES];
-            }else{
-                [self showAlertPanelWithInfo:alertInfo];
-            }
-        }else{
+//        success = [panel1DataController strategyUnderstood:strategyFields];
+//        if(!success){
+//            NSMutableDictionary *alertInfo = [[NSMutableDictionary alloc] init];
+//            [alertInfo setValue: @"Problem setting up the data" forKey:@"TITLE"];
+//            [alertInfo setValue: @"Extra fields not understood" forKey:@"MSGFORMAT"];
+//            [alertInfo setValue: @"OK" forKey:@"DEFAULTBUTTON"];
+//            if(doThreads){
+//                [self performSelectorOnMainThread:@selector(showAlertPanelWithInfo:) withObject:alertInfo waitUntilDone:YES];
+//            }else{
+//                [self showAlertPanelWithInfo:alertInfo];
+//            }
+//        }else{
             newSigSystem = [[SignalSystem alloc] initWithString:strategyFields];
             extraRequiredVariables = [SimulationController getNamesOfRequiredVariablesForSignal: newSigSystem 
                                                                                  AndPositioning: Nil 
                                                                                        AndRules: Nil];
             [self setSignalSystem:newSigSystem];
-        }
+//        }
     }else{
         extraRequiredVariables = [[NSArray alloc] init];
     }

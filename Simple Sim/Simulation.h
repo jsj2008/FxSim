@@ -112,7 +112,8 @@ AndTradingTimeStart: (int) tradingTimeStart
                                AndEntryPrice: (double)entryPrice
                                 AndExitPrice: (double) exitPrice;
 
-
+-(void) addToSignalInfoAtIndex:(NSUInteger)signalInfoIndex
+                  EstimatedPnl: (double) pnl;
 
 
 - (long) timeDateOfEarliestPosition;
@@ -128,7 +129,6 @@ AndTradingTimeStart: (int) tradingTimeStart
 - (long) getDateTimeForTradeAtIndex:(NSUInteger) tradeIndex;
 - (double) getPriceForTradeAtIndex:(NSUInteger) tradeIndex;
 - (int) getResultingMarketExposureForTradeAtIndex:(NSUInteger) tradeIndex;
-//- (double) getTotalSpreadCostForTradeAtIndex:(int) tradeIndex;
 - (BOOL) writeTradesToFile:(NSURL *) urlOfFile;
 
 - (int) numberOfBalanceAdjustments;
@@ -141,16 +141,17 @@ AndTradingTimeStart: (int) tradingTimeStart
 
 - (NSUInteger) numberOfSignals;
 - (NSDictionary *) detailsOfSignalAtIndex:(NSUInteger)signalInfoIndex;
-//- (BOOL) isTransferBalanceAdjustmentAtIndex:(int) balAdjIndex;
 
-//- (void) clearSimulationResults;
 - (void) addObjectToSimulationResults:(id) datum ForKey:(NSString *) key;
+- (void) setSimName:(NSString *)name;
 
--(NSUInteger) getNumberOfReportDataFields;
--(NSString *) getReportNameFieldAtIndex: (NSUInteger) nameFieldIndex;
--(NSString *) getReportDataFieldAtIndex: (NSUInteger) dataFieldIndex;
+- (NSUInteger) getNumberOfReportDataFields;
+- (NSString *) getReportNameFieldAtIndex: (NSUInteger) nameFieldIndex;
+- (NSString *) getReportDataFieldAtIndex: (NSUInteger) dataFieldIndex;
 
 - (void) encodeWithCoder:(NSCoder *)aCoder;
 - (id) initWithCoder:(NSCoder *)aDecoder;
+
+
 
 @end

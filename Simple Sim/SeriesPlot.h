@@ -72,6 +72,8 @@
 - (void) setZoomDataViewFrom:(long)startDateTime To:(long) endDateTime;
 - (void) renderPlotWithFields: (NSArray *) linesToPlot; 
 - (void) toggleAxisLabelsForLayer: (int) layerIndex;
+- (void) removeLineAnnotation;
+
 
 @property (retain) CPTGraphHostingView *hostingView;
 @property (readonly, retain) NSString *identifier;

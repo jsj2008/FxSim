@@ -65,32 +65,32 @@
     }
     return self;
 }
-
-- (id) initWithSignal: (double) sigSignal
-         AndStartTime: (long)sigStartTime
-        AndUpdateTime: (long) lastUpdateTime
-        AndEntryPrice: (double) sigEntryPrice
-       AndLatestPrice: (double) sigLatestPrice
-   AndSamplesInProfit: (long) sigSamplesInProfit
-      AndTotalSamples: (long) sigTotalSamples
-          AndMaxPrice: (double) sigMaxPrice
-          AndMinPrice: (double) sigMinPrice
-{
-    self = [super init];
-    if(self){
-        signal = sigSignal;
-        startTime = sigStartTime;
-        updateTime = lastUpdateTime;
-        entryPrice = sigEntryPrice;
-        exitPrice = sigLatestPrice;
-        samplesInProfit = sigSamplesInProfit;
-        totalSamples = sigTotalSamples;
-        maxPrice = sigMaxPrice;
-        minPrice = sigMinPrice;
-        endTime = 0;
-    }
-    return self;
-}
+//
+//- (id) initWithSignal: (double) sigSignal
+//         AndStartTime: (long)sigStartTime
+//        AndUpdateTime: (long) lastUpdateTime
+//        AndEntryPrice: (double) sigEntryPrice
+//       AndLatestPrice: (double) sigLatestPrice
+//   AndSamplesInProfit: (long) sigSamplesInProfit
+//      AndTotalSamples: (long) sigTotalSamples
+//          AndMaxPrice: (double) sigMaxPrice
+//          AndMinPrice: (double) sigMinPrice
+//{
+//    self = [super init];
+//    if(self){
+//        signal = sigSignal;
+//        startTime = sigStartTime;
+//        updateTime = lastUpdateTime;
+//        entryPrice = sigEntryPrice;
+//        exitPrice = sigLatestPrice;
+//        samplesInProfit = sigSamplesInProfit;
+//        totalSamples = sigTotalSamples;
+//        maxPrice = sigMaxPrice;
+//        minPrice = sigMinPrice;
+//        endTime = 0;
+//    }
+//    return self;
+//}
 
 - (NSString *)description
 {

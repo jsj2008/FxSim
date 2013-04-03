@@ -157,6 +157,9 @@
     [setupAccountCurrencyPopup selectItemAtIndex:0];
     [setupAccountCurrencyLabel setStringValue:[[setupAccountCurrencyPopup selectedItem] title]];
     
+    double pipsize = [[self dataControllerForUI] getPipsizeForSeriesName:selectedPair] ;
+    [setupTradingPairPipSizeLabel setStringValue:[NSString stringWithFormat:@"%6.4f",pipsize]];
+    
     long minDataDateTime = [[self dataControllerForUI] getMinDateTimeForFullData];
     long maxDataDateTime = [[self dataControllerForUI] getMaxDateTimeForFullData];
     
@@ -223,12 +226,12 @@
         [[[self hideObjectsOnStartup] objectAtIndex:i] setHidden:YES];
     }
     
-    int nColumns = 6;
-    NSArray *sigTableHeaders = [NSArray arrayWithObjects:@"Entry Time", @"Exit Time", @"Signal", @"Entry Price", @"Exit Price", @"Signal Gain", nil];
+    int nColumns = 7;
+    NSArray *sigTableHeaders = [NSArray arrayWithObjects:@"Entry Time", @"Exit Time", @"Signal", @"Entry Price", @"Exit Price", @"Signal Gain", @"Nav Change", nil];
     
-    NSArray *sigTableIds = [NSArray arrayWithObjects:@"ENTRYTIME", @"EXITTIME",@"SIGNAL" , @"ENTRYPRICE", @"EXITPRICE",  @"SIGNALGAIN", nil];
+    NSArray *sigTableIds = [NSArray arrayWithObjects:@"ENTRYTIME", @"EXITTIME",@"SIGNAL" , @"ENTRYPRICE", @"EXITPRICE",  @"SIGNALGAIN", @"PNL", nil];
     
-    float columnWidths[6] = {150.0, 150.0, 75.0, 75.0, 75.0, 75.0, }; 
+    float columnWidths[7] = {150.0, 150.0, 75.0, 75.0, 75.0, 75.0, 75.0};
     
     for (int i = 0; i < nColumns; i++)
     {
@@ -352,6 +355,7 @@
     [removeSimulationButton setHidden:NO];
     [exportSimulationButton setHidden:NO];
     [registeredSimsScrollView1 setHidden:NO];
+    [[NSSound soundNamed:@"Purr"] play];
 }
 
 
@@ -454,14 +458,8 @@
     [newTableColumn setWidth:150];
     tableViewWidth = [newTableColumn width];
     [simulationNumbersTableView addTableColumn:newTableColumn];
-    //    newTableColumn = [[NSTableColumn alloc] initWithIdentifier:@"MID"];
-    //    NSCell *columnsCell = [newTableColumn dataCell];
-    //    [columnsCell setAlignment:NSRightTextAlignment];
-    //    [[newTableColumn headerCell] setStringValue:@"MID"];
-    //    [simAnalysisDataTable addTableColumn:newTableColumn];
     
     NSCell *columnsCell;
-    //NSArray *newColumnIdentifiers = [[analysisDataSeries yData] allKeys];
     for(int newColumnIndex = 0; newColumnIndex < [fieldNames count]; newColumnIndex++){
         newTableColumn = [[NSTableColumn alloc] initWithIdentifier:[fieldNames objectAtIndex:newColumnIndex]];
         [[newTableColumn headerCell] setStringValue:[fieldNames objectAtIndex:newColumnIndex]];
@@ -778,13 +776,25 @@
     long tradingDayStart = [[parameters objectForKey:@"TRADINGDAYSTART"] longValue];
     long tradingDayEnd = [[parameters objectForKey:@"TRADINGDAYEND"] longValue];
     BOOL weekendTrading =   [[parameters objectForKey:@"WEEKENDTRADING"] boolValue];
-    //BOOL userDataGiven =  [[parameters objectForKey:@"USERDATAGIVEN"] boolValue];
-    //NSArray *extraRequiredVariables;
+    
+    NSArray *simulationDescriptionComponents = [simDescription componentsSeparatedByString:@";"];
+    NSString *simType, *extraSeries;
+    if([simulationDescriptionComponents count] > 1){
+       simType = [simulationDescriptionComponents objectAtIndex:0];
+        extraSeries = [simDescription substringFromIndex:[simType length]+1];
+        
+        [setupExtraSeriesTextField setStringValue:extraSeries];
+    }else{
+        simType = simDescription;
+    }
+    
     
     NSString *tradingPair = [NSString stringWithFormat:@"%@%@",baseCode,quoteCode];
     
     [setupSimulationName setStringValue:simName];
     [setupTradingPairPopup selectItem:[setupTradingPairPopup itemWithTitle:tradingPair]];
+    double pipsize = [[self dataControllerForUI] getPipsizeForSeriesName:tradingPair] ;
+    [setupTradingPairPipSizeLabel setStringValue:[NSString stringWithFormat:@"%6.4f",pipsize]];
     [setupAccountCurrencyPopup removeAllItems];
     [setupAccountCurrencyPopup addItemWithTitle:baseCode];
     [setupAccountCurrencyPopup addItemWithTitle:quoteCode];
@@ -802,7 +812,7 @@
     [setupDataWarmUpTextField setStringValue:[NSString stringWithFormat:@"%ld",initialDataBeforeStart/DAY_SECONDS]];
     [setupSamplingMinutesTextField setStringValue:[NSString stringWithFormat:@"%d",timeStep/60]];
     [setupTradingLagTextField setStringValue:[NSString stringWithFormat:@"%d",tradingLag/60]];
-    [setupParameterTextField setStringValue:simDescription];
+    [setupParameterTextField setStringValue:simType];
     [setupPositioningTextField setStringValue:positioningString];
     [setupRulesTextField setStringValue:rulesString];
     
@@ -1133,6 +1143,7 @@
 }
 
 - (IBAction)simPlotFullScreen:(id)sender {
+    
     [self addPlotToFullScreenWindow:simulationResultGraphHostingView];
 }
 
@@ -1192,31 +1203,36 @@
 
 - (IBAction) removeWorkingSimulation:(id)sender {
     NSMutableArray *allSims = [self allSimulations];
-    if([allSims count] > 0)
-    {
-        [allSims removeObject:[self workingSimulation]]; 
-    }
     
-    if(([allSims count] > 0) && ([registeredSimsTableView selectedRow] > -1)){
-        [removeSimulationButton setEnabled:YES];
-        [exportSimulationButton setEnabled:YES];
+    if([allSims count] == 1){
+         NSRunAlertPanel(@"Action failed!", @"Can't remove last simulation", @"OK", nil, nil);
     }else{
-        [removeSimulationButton setEnabled:NO];
-        [exportSimulationButton setEnabled:NO];
-    }
-    if([allSims count] > 0){
-        [self setWorkingSimulation:[allSims objectAtIndex:0]];
-    }
+        if([allSims count] > 1)
+        {
+            [allSims removeObject:[self workingSimulation]];
+        }
     
-    if([self workingSimulation] != Nil)
-    {
-        [self displayWorkingSim];
+        if(([allSims count] > 0) && ([registeredSimsTableView selectedRow] > -1)){
+            [removeSimulationButton setEnabled:YES];
+            [exportSimulationButton setEnabled:YES];
+        }else{
+            [removeSimulationButton setEnabled:NO];
+            [exportSimulationButton setEnabled:NO];
+        }
+        if([allSims count] > 0){
+            [self setWorkingSimulation:[allSims objectAtIndex:0]];
+        }
+        
+        if([self workingSimulation] != Nil)
+        {
+            [self displayWorkingSim];
+        }
+        [registeredSimsTableView reloadData];
+        [registeredSimsTableView1 reloadData];
+        [registeredSimsTableView2 reloadData];
+        [registeredSimsTableView3 reloadData];
+        [registeredSimsTableView5 reloadData];
     }
-    [registeredSimsTableView reloadData];
-    [registeredSimsTableView1 reloadData];
-    [registeredSimsTableView2 reloadData];
-    [registeredSimsTableView3 reloadData];
-    [registeredSimsTableView5 reloadData];
 }
 
 - (IBAction) changeSelectedTradingPair:(id)sender {
@@ -1226,6 +1242,8 @@
     [setupAccountCurrencyPopup addItemWithTitle:[selectedPair substringToIndex:3]];
     [setupAccountCurrencyPopup selectItemAtIndex:0];
     [setupAccountCurrencyLabel setStringValue:[[setupAccountCurrencyPopup selectedItem] title]];
+    double pipsize = [[self dataControllerForUI] getPipsizeForSeriesName:selectedPair] ;
+    [setupTradingPairPipSizeLabel setStringValue:[NSString stringWithFormat:@"%6.4f",pipsize]];
 }
 
 - (IBAction)showSetupSheet:(id)sender
@@ -1328,7 +1346,8 @@
         }
     }
     
-    NSString *signalString = [[setupParameterTextField stringValue] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]]; 
+    NSString *simDescription = [[setupParameterTextField stringValue] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+    NSString *extraSeriesString = [[setupExtraSeriesTextField stringValue] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
     NSString *positioningString = [[setupPositioningTextField stringValue] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
     NSString *rulesString = [[setupRulesTextField stringValue] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
     
@@ -1337,10 +1356,15 @@
         basicCheckOk = NO;
         userMessage = @"Positioning not understood";
     }
-    if(![SimulationController signalingUnderstood:signalString])
+    if(![SimulationController simulationUnderstood:simDescription])
     {
         basicCheckOk = NO;
         userMessage = @"Signal not understood";
+    }
+    if(![SimulationController seriesUnderstood:extraSeriesString])
+    {
+        basicCheckOk = NO;
+        userMessage = @"Extra Series not understood";
     }
     if([rulesString length] > 0){
         if(![SimulationController rulesUnderstood:rulesString])
@@ -1349,6 +1373,7 @@
             userMessage = @"Rules not understood";
         }
     }
+    simDescription = [NSString stringWithFormat:@"%@;%@",simDescription,extraSeriesString];
     
     long tradingStartDateTime = [EpochTime epochTimeAtZeroHour:startDateTime] + tradingDayStartTime;
     long tradingEndDateTime = [EpochTime epochTimeAtZeroHour:endDateTime] + tradingDayEndTime;
@@ -1358,7 +1383,7 @@
     {
         [parameters setObject:[setupSimulationName stringValue] 
                        forKey:@"SIMNAME"];
-        [parameters setObject:signalString 
+        [parameters setObject:simDescription
                        forKey:@"SIMTYPE"];
         [parameters setObject:positioningString
                        forKey:@"POSTYPE"];
@@ -1682,6 +1707,11 @@
             return [NSNumber numberWithFloat:signalSide * priceChange];
         }
         
+        if([[tableColumn identifier] isEqualToString:@"PNL"]){
+             return [signalAnalysisDetails objectForKey:@"PNL"];
+        }
+        
+        
         if([[tableColumn identifier] isEqualToString:@"ENTRYTIME"] || [[tableColumn identifier] isEqualToString:@"EXITTIME"]){
             long dateTime = [[signalAnalysisDetails objectForKey:[tableColumn identifier]] longValue];
             return [EpochTime stringDateWithTime:dateTime];
@@ -1706,21 +1736,13 @@
         {
             returnValue = [[self workingSimulation] getReportDataFieldAtIndex:row];
         }
-        if([returnValue isKindOfClass:[NSString class]]){
-            if([returnValue length] > 25){
-                NSString *truncated =    [returnValue substringWithRange:NSMakeRange([returnValue length]-37, 37)];
-                returnValue = [NSString stringWithFormat:@"...%@",truncated];
-            }
-        }
-        return returnValue;
-//            id returnValue = [[simulationController workingSimulation] getReportDataFieldAtIndex:row];
-//            if([returnValue isKindOfClass:[NSString class]]){
-//                return returnValue;
-//            }else{
-//                return [NSString stringWithFormat:@"%5.2f",returnValue];
+//        if([returnValue isKindOfClass:[NSString class]]){
+//            if([returnValue length] > 25){
+//                NSString *truncated =    [returnValue substringWithRange:NSMakeRange([returnValue length]-37, 37)];
+//                returnValue = [NSString stringWithFormat:@"...%@",truncated];
 //            }
-//                 
 //        }
+        return returnValue;
     }
     if([[tableView identifier] isEqualToString:@"IMPORTDATATV"])
     {
@@ -1749,14 +1771,43 @@
     return nil;
 }
 
-- (void)tableView:(NSTableView *)tableView 
-   setObjectValue:(id) obj 
-   forTableColumn:(NSTableColumn *)tableColumn 
-              row:(NSInteger)row
+- (void)tableView: (NSTableView *)tableView
+   setObjectValue: (id) obj
+   forTableColumn: (NSTableColumn *)tableColumn
+              row: (NSInteger)row
 {
+    if([[tableView  identifier] length] >= 10){
+        if([[[tableView  identifier] substringToIndex:10] isEqualToString:@"SAVEDSIMTV"]){
+            
+            if(row > -1 && [obj isKindOfClass:[NSString class]]){
+                NSString *oldSimName, *newSimName;
+                
+                Simulation *selectedSim=[[self allSimulations] objectAtIndex:[registeredSimsTableView selectedRow]];
+                oldSimName = [selectedSim name];
+                newSimName = obj;
+                
+                if(![newSimName isEqualToString:oldSimName]){
+                    [selectedSim setSimName:newSimName];
+                    [self setWorkingSimulation:selectedSim];
+                    [self displayWorkingSim];
+                    NSMutableString *outputTextField = [[simulationMessagesTextView textStorage] mutableString];
+                    [outputTextField deleteCharactersInRange:NSMakeRange(0, [outputTextField length])];
+                    [outputTextField appendString:[[[selectedSim simulationRunOutput] string] mutableCopy]];
+                    [simulationTradesTableView reloadData];
+                    [simulationCashFlowsTableView reloadData];
+                    
+                }
+            }
+        }
+    }
+
+    
+    
     TimeSeriesLine *tsl;
     SeriesPlot *plot;
     //int layerIndex = 0;
+    
+    
     
     if([[tableView identifier] isEqualToString:@"SIMTSTV"]){
         tsl = [[self simulationTimeSeries] objectAtIndex:row];
@@ -1923,6 +1974,7 @@
     
     if([[tableView identifier] isEqualToString:@"SIGANALTV"])
     {
+  
         NSUInteger numberOfData = [[self workingSimulation] numberOfSignals];
         [[self signalTableViewOrdering] removeAllObjects];       
         NSDictionary *signalAnalysisDetails; 
@@ -2158,7 +2210,7 @@
 }
 #pragma mark -
 #pragma mark Properties
-
+ 
 @synthesize setupSheetShowButton;
 @synthesize setupSheetImportDataButton;
 @synthesize setupSheetImportDataTableView;
@@ -2179,7 +2231,6 @@
 @synthesize aboutTradingPairLabel;
 @synthesize aboutSimNameLabel;
 @synthesize performSimulationProgressBar;
-
 @synthesize setupTradingLagTextField;
 @synthesize endDateDoWLabel;
 @synthesize startDateDoWLabel;
@@ -2196,6 +2247,8 @@
 @synthesize setupAccountCurrencyPopup;
 @synthesize setupSimulationName;
 @synthesize setupTradingPairPopup;
+@synthesize setupTradingPairPipSizeLabel;
+@synthesize setupExtraSeriesTextField;
 @synthesize centreTabView;
 @synthesize rightSideTabView;
 @synthesize performSimulationStatusLabel;
@@ -2229,7 +2282,6 @@
 @synthesize removeSimulationButton;
 @synthesize registeredSimsScrollView1;
 @synthesize exportSimulationButton;
-
 @synthesize allSimulations = _allSimulations;
 @synthesize simulationTimeSeries = _simulationTimeSeries;
 @synthesize simulationSignalTimeSeries = _simulationSignalTimeSeries;
@@ -2241,15 +2293,12 @@
 @synthesize longShortIndicatorOn = _longShortIndicatorOn;
 @synthesize importDataFilename = _importDataFilename;
 @synthesize hideObjectsOnStartup = _hideObjectsOnStartup;
-
-
 @synthesize simulationController = _simulationController;
 @synthesize signalTableViewOrdering = _signalTableViewOrdering;
 @synthesize simulationResultsPlot = _simulationResultsPlot;
 @synthesize signalAnalysisPlot = _signalAnalysisPlot;
 @synthesize simulationDataSeries = _simulationDataSeries;
 @synthesize importDataArray = _importDataArray;
-
 @synthesize fxPairsAndDbIds = _fxPairsAndDbIds;
 @synthesize coloursForPlots = _coloursForPlots;
 @synthesize dataControllerForUI = _dataControllerForUI;

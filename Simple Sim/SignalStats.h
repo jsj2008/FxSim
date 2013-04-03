@@ -35,15 +35,15 @@
           AndMaxPrice: (double) sigMaxPrice
           AndMinPrice: (double) sigMinPrice;
 
-- (id) initWithSignal: (double) sigSignal
-         AndStartTime: (long)   sigStartTime
-        AndUpdateTime: (long)   lastUpdateTime
-        AndEntryPrice: (double) sigEntryPrice
-       AndLatestPrice: (double) sigLatestPrice
-   AndSamplesInProfit: (long)   sigSamplesInProfit
-      AndTotalSamples: (long)   sigTotalSamples
-          AndMaxPrice: (double) sigMaxPrice
-          AndMinPrice: (double) sigMinPrice;
+//- (id) initWithSignal: (double) sigSignal
+//         AndStartTime: (long)   sigStartTime
+//        AndUpdateTime: (long)   lastUpdateTime
+//        AndEntryPrice: (double) sigEntryPrice
+//       AndLatestPrice: (double) sigLatestPrice
+//   AndSamplesInProfit: (long)   sigSamplesInProfit
+//      AndTotalSamples: (long)   sigTotalSamples
+//          AndMaxPrice: (double) sigMaxPrice
+//          AndMinPrice: (double) sigMinPrice;
 
 - (NSString *)description;
 - (id) getStat:(NSString *)identifier;

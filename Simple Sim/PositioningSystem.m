@@ -22,6 +22,7 @@
     if ( (self = [super init]) ) {
         BOOL initStringUnderstood = NO;
         _positioningString = initString;
+        _stopEntryOnWeakening = NO;
         NSArray *positioningComponents = [initString componentsSeparatedByString:@"/"];
         
         // Simple Trinary Positioning
@@ -30,6 +31,16 @@
             // this converts signal into 1 of three possible 
             //            // with parameter for threshold of zero
             _signalThreshold = [[positioningComponents objectAtIndex:1] doubleValue];
+            initStringUnderstood = YES;
+        }
+        if([[positioningComponents objectAtIndex:0] isEqualToString:@"STP"]  && [positioningComponents count] == 3){
+            _type = @"STP";
+            // this converts signal into 1 of three possible
+            //            // with parameter for threshold of zero
+            _signalThreshold = [[positioningComponents objectAtIndex:1] doubleValue];
+            if([[positioningComponents objectAtIndex:2] isEqualToString:@"WSO"]){
+                _stopEntryOnWeakening = YES;
+            }
             initStringUnderstood = YES;
         }
         
@@ -50,6 +61,24 @@
         if([[positioningComponents objectAtIndex:0] isEqualToString:@"SSP"] && [positioningComponents count] == 4){
             _type = @"SSP";
         }
+        // Static Positioning
+        // If you 
+        if([[positioningComponents objectAtIndex:0] isEqualToString:@"STAT"] && [positioningComponents count] == 3){
+            _type = @"STAT";
+            _signalThreshold = [[positioningComponents objectAtIndex:1] doubleValue];
+            _maxPos = [[positioningComponents objectAtIndex:2] doubleValue];
+            initStringUnderstood = YES;
+        }
+      if([[positioningComponents objectAtIndex:0] isEqualToString:@"STAT"] && [positioningComponents count] == 4){
+            _type = @"STAT";
+            _signalThreshold = [[positioningComponents objectAtIndex:1] doubleValue];
+            _maxPos = [[positioningComponents objectAtIndex:2] doubleValue];
+            if([[positioningComponents objectAtIndex:3] isEqualToString:@"WSO"]){
+                _stopEntryOnWeakening = YES;
+            }
+            initStringUnderstood = YES;
+        }
+           
         if(!initStringUnderstood){
             [NSException raise:@"Don't understand positioning:" format:@"%@", initString];
         }
@@ -94,13 +123,20 @@
 {
     BOOL understood = NO;
     NSArray *positioningComponents = [positioningString componentsSeparatedByString:@"/"];
-    if([[positioningComponents objectAtIndex:0] isEqualToString:@"STP"]  && [positioningComponents count] == 2){
+    // Simple Trinary Positioning
+    if([[positioningComponents objectAtIndex:0] isEqualToString:@"STP"]){
         understood = YES;
     }
-    if([[positioningComponents objectAtIndex:0] isEqualToString:@"SFP"] && [positioningComponents count] == 6){
+    // Signal Feedback Proportional
+    if([[positioningComponents objectAtIndex:0] isEqualToString:@"SFP"]){
         understood = YES;
     }
-    if([[positioningComponents objectAtIndex:0] isEqualToString:@"SSP"] && [positioningComponents count] == 4){
+    // Signal Strength Positioning
+    if([[positioningComponents objectAtIndex:0] isEqualToString:@"SSP"]){
+        understood = YES;
+    }
+    // Static Positioning
+    if([[positioningComponents objectAtIndex:0] isEqualToString:@"STAT"]){
         understood = YES;
     }
     return understood;
@@ -129,4 +165,6 @@
 @synthesize stepLength = _stepLength;
 @synthesize stepUnit = _stepUnit;
 @synthesize perfSmoothParam = _perfSmoothParam;
+@synthesize maxPos = _maxPos;
+@synthesize stopEntryOnWeakening = _stopEntryOnWeakening;
 @end
