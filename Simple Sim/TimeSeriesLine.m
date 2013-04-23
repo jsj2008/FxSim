@@ -10,19 +10,6 @@
 #import <CorePlot/CorePlot.h> 
 
 @implementation TimeSeriesLine
-@synthesize name = _name;
-//@synthesize visible = _visible;
-@synthesize layerIndex = _layerIndex;
-//@synthesize overlay = _overlay;
-@synthesize colour = _colour;
-@synthesize cpColour = _cpColour;
-@synthesize nsColour = _nsColour;
-@synthesize allColourNames = _allColourNames;
-@synthesize allColourCPTypes = _allColourCPTypes;
-@synthesize allNSColourTypes = _allNSColourTypes;
-@synthesize colourId = _colourId;
-
-
 
 -(id)initWithLayerIndex: (int) layerIndex 
                 AndName: (NSString *) timeSeriesName 
@@ -110,6 +97,16 @@
 {
     return [NSString stringWithFormat:@"name:%@\nlayer:%d\ncolour:%@",[self name],[self layerIndex],[self colour]];
 }
-            
+
+@synthesize name = _name;
+@synthesize layerIndex = _layerIndex;
+@synthesize colour = _colour;
+@synthesize cpColour = _cpColour;
+@synthesize nsColour = _nsColour;
+@synthesize allColourNames = _allColourNames;
+@synthesize allColourCPTypes = _allColourCPTypes;
+@synthesize allNSColourTypes = _allNSColourTypes;
+@synthesize colourId = _colourId;
+
 
 @end

@@ -43,8 +43,19 @@
                         AndOldData: (NSDictionary *) oldDataDictionary
                         AndMidData: (NSData * ) midData;
 
++ (NSDictionary *) calcEmadForCode: (NSString *) macdCode
+                          WithData: (NSDictionary *) dataDictionary
+                        AndOldData: (NSDictionary *) oldDataDictionary;
+
 + (NSDictionary *) calcTicNumberWithData: (NSDictionary *) dataDictionary
                               AndOldData: (NSDictionary *) oldDataDictionary;
+
++ (NSDictionary *) calcGridStatsWithDerivedData: (NSDictionary *) dataDictionary
+                              AndOldDerivedData: (NSDictionary *) oldDataDictionary
+                                   AndPriceData: (NSDictionary *) priceDataDictionary
+                                        ForCode: (NSString *) gridStatsCode
+                                andSignalSystem: (SignalSystem *) signalSystem;
+
 
 //+ (NSDictionary *) calcFRAMAForCode: (NSString *) seriesCode
 //                           WithData: (NSDictionary *) dataDictionary
@@ -55,30 +66,11 @@
 
 @implementation DataProcessor
 
-//+(BOOL)strategyUnderstood:(NSString *) strategyString
-//{
-//    BOOL understood = NO;
-//    understood = [SignalSystem basicCheck:strategyString];
-//    return understood;
-//}
-
-+(long)leadTimeRequired:(NSString *) strategyString
-{
-    long leadTimeRequired = 0;
-    return leadTimeRequired;
-}
-
-
-+(long)leadTicsRequired:(NSString *) strategyString
-{
-    long leadTicsRequired = 0;
-    return leadTicsRequired;
-}
 
 +(NSDictionary *) addToDataSeries: (NSDictionary *) dataDictionary
                  DerivedVariables: (NSArray *) derivedVariables
                  WithTrailingData: (NSDictionary *)trailingData
-                  AndSignalSystem: (SignalSystem *) signalSystem 
+                  AndSignalSystem: (SignalSystem *) signalSystem
 {
     BOOL success = YES, useAllNewData;
     NSMutableDictionary *returnData = [[NSMutableDictionary alloc] init];
@@ -319,6 +311,25 @@
                     }
                 }
             }
+            // Variable: EMAD
+            if([currentSeriesType isEqualToString:@"EMAD"])
+            {
+                NSDictionary *emadDataSeries = [self calcEmadForCode:currentSeriesName
+                                                            WithData:returnData
+                                                          AndOldData:trailingData];
+                
+                success = [[emadDataSeries objectForKey:@"SUCCESS"] boolValue];
+                if(success){
+                    NSArray *dataKeys = [emadDataSeries allKeys];
+                    for( int i = 0; i < [dataKeys count]; i++){
+                        if([[dataKeys objectAtIndex:i] isNotEqualTo:@"SUCCESS"])
+                        {
+                            [returnData setObject:[emadDataSeries objectForKey:[dataKeys objectAtIndex:i]]
+                                           forKey:[dataKeys objectAtIndex:i]];
+                        }
+                    }
+                }
+            }
             
             //Variable: TICN
             if([currentSeriesType  isEqualToString:@"TICN"])
@@ -334,17 +345,43 @@
                 }
             }
 
+            //Variable: GRDPOS
+            if([currentSeriesType  isEqualToString:@"GRDPOS"])
+            {
+                NSDictionary *gridDataSeries = [self calcGridStatsWithDerivedData:returnData 
+                                                                AndOldDerivedData:trailingData
+                                                                 AndPriceData:dataDictionary
+                                                                  ForCode:currentSeriesName
+                                                           andSignalSystem:signalSystem];
+                
+                
+                
+                
+                success = [[gridDataSeries objectForKey:@"SUCCESS"] boolValue];
+                
+                if(success){
+                    NSArray *dataKeys = [gridDataSeries allKeys];
+                    for( int i = 0; i < [dataKeys count]; i++){
+                        if([[dataKeys objectAtIndex:i] isNotEqualTo:@"SUCCESS"])
+                        {
+                            [returnData setObject:[gridDataSeries objectForKey:[dataKeys objectAtIndex:i]]
+                                           forKey:[dataKeys objectAtIndex:i]];
+                        }
+                    }                }
+            }
             seriesIndex++;
         }
         
+        // SIGNALS
         //Here is where we do make the signals, prerequisite variables should be already created
         if(success && doSignal){
             NSMutableData *signalData, *oldSignalData;
             double *signalArray, *oldSignalArray;
-            signalData = [[NSMutableData alloc] initWithLength:dataLength * sizeof(double)];
-            signalArray = [signalData mutableBytes];
-            
+                        
             if([[signalSystem type] isEqualToString:@"SECO"]){
+                signalData = [[NSMutableData alloc] initWithLength:dataLength * sizeof(double)];
+                signalArray = [signalData mutableBytes];
+
                 double *fastArray, *slowArray;
                 NSData *variableData;
                 variableData =  [returnData objectForKey:[NSString stringWithFormat:@"EMA/%d",[signalSystem fastCode]]];
@@ -367,11 +404,37 @@
                     }
                 }
             }
+            
             if([[signalSystem type] isEqualToString:@"MACD"]){
                 NSString *macdSigString = [NSString stringWithFormat:@"S%@",[signalSystem signalString]];
                 macdSigString = [[macdSigString componentsSeparatedByString:@";"] objectAtIndex:0];
                 signalData = [returnData objectForKey:macdSigString];
-
+            }
+            
+            if([[signalSystem type] isEqualToString:@"EMAD"]){
+                NSString *emadSigString = [[[signalSystem signalString] componentsSeparatedByString:@";"] objectAtIndex:0];
+                signalData = [returnData objectForKey:emadSigString];
+            }
+            
+            if([[signalSystem type] isEqualToString:@"MCD2"]){
+                signalData = [[NSMutableData alloc] initWithLength:dataLength * sizeof(double)];
+                signalArray = [signalData mutableBytes];
+                NSString *macdSigString = [NSString stringWithFormat:@"SMACD/%@",[[signalSystem signalString] substringFromIndex:5]];
+                macdSigString = [[macdSigString componentsSeparatedByString:@";"] objectAtIndex:0];
+                
+                NSString *macdHistDeltaString = [NSString stringWithFormat:@"MACDHISTD%@",[macdSigString substringFromIndex:5]];
+                
+                NSData *macdSigData = [returnData objectForKey:macdSigString];
+                double *macdSigArray = (double *)[macdSigData bytes];
+                NSData *macdHistDeltaData = [returnData objectForKey:macdHistDeltaString];
+                double *macdHistDeltaArray = (double *)[macdHistDeltaData bytes];
+                for(int i = 0; i < dataLength; i++){
+                    if([UtilityFunctions signOfDouble:macdSigArray[i]] == [UtilityFunctions signOfDouble:macdHistDeltaArray[i]]){
+                        signalArray[i] = macdSigArray[i];
+                    }else{
+                        signalArray[i] = 0.0;
+                    }
+                }
             }
             [returnData setObject:signalData forKey:@"SIGNAL"];
         }
@@ -468,10 +531,9 @@
                         AndOldData: (NSDictionary *) oldDataDictionary
                         AndMidData: (NSData * ) midData
 {
-    double *fastArray, *slowArray, *midArray;
+    double *fastArray, *slowArray;
     int dataLength;
     
-    midArray = (double *)[midData bytes];
     NSMutableDictionary *returnData = [[NSMutableDictionary alloc] init];
     
     NSArray *macdComponents = [macdCode componentsSeparatedByString:@"/"];
@@ -479,10 +541,12 @@
     int slowCode = [[macdComponents objectAtIndex:2] intValue];
     int smoothCode = [[macdComponents objectAtIndex:3] intValue];
     
+    
     NSString *fastString = [NSString stringWithFormat:@"EMA/%d",fastCode];
     NSString *slowString = [NSString stringWithFormat:@"EMA/%d",slowCode];
     NSString *macdString = [NSString stringWithFormat:@"MACD/%d/%d",fastCode,slowCode];
     NSString *macdHistString = [NSString stringWithFormat:@"MACDHIST/%d/%d/%d",fastCode,slowCode,smoothCode];
+    NSString *macdHistDeltaString = [NSString stringWithFormat:@"MACDHISTD/%d/%d/%d",fastCode,slowCode,smoothCode];
     NSString *macdSigString = [NSString stringWithFormat:@"SMACD/%d/%d/%d",fastCode,slowCode,smoothCode];
     //NSString *macdAccString = [NSString stringWithFormat:@"ACCMACD/%d/%d/%d",fastCode,slowCode,smoothCode];
     NSData *fastData, *slowData;
@@ -515,13 +579,15 @@
         NSMutableData *macdHistData = [[NSMutableData alloc] initWithLength:dataLength * sizeof(double)];
         double *macdHistArray = (double *)[macdHistData mutableBytes];
         
+        NSMutableData *macdHistDeltaData = [[NSMutableData alloc] initWithLength:dataLength * sizeof(double)];
+        double *macdHistDeltaArray = (double *)[macdHistDeltaData mutableBytes];
+        
         NSMutableData *macdSigData = [[NSMutableData alloc] initWithLength:dataLength * sizeof(double)];
         double *macdSigArray = (double *)[macdSigData mutableBytes];
         
-//        NSMutableData *macdAccData = [[NSMutableData alloc] initWithLength:dataLength * sizeof(double)];
-//        double *macdAccArray = (double *)[macdAccData mutableBytes];
-        
         double parameter = 2.0/(1.0+[UtilityFunctions fib:smoothCode]);
+        
+        long lagLengthForHistDelta = [UtilityFunctions fib:(slowCode - fastCode)];
         
         if(includeOldData){
             int dataOverlapIndex;
@@ -537,9 +603,11 @@
             double *oldMacdSigArray = (double *)[oldMacdSigData bytes];
             NSData *oldMacdHistData = [trailingSeriesDictionary objectForKey:macdHistString];
             double *oldMacdHistArray = (double *)[oldMacdHistData bytes];
-//            NSData *oldMacdAccHistData = [trailingSeriesDictionary objectForKey:macdAccString];
-//            double *oldMacdAccHistArray = (double *)[oldMacdAccHistData bytes];
+            NSData *oldMacdHistDeltaData = [trailingSeriesDictionary objectForKey:macdHistDeltaString];
+            double *oldMacdHistDeltaArray = (double *)[oldMacdHistDeltaData bytes];
             
+            
+            long lagIndexForOldData = -1;
             
             oldDataLength = [oldMacdData length]/sizeof(long);
             
@@ -547,20 +615,24 @@
                 macdArray[i-dataOverlapIndex] = oldMacdArray[i];
                 macdSigArray[i-dataOverlapIndex] = oldMacdSigArray[i];
                 macdHistArray[i-dataOverlapIndex] = oldMacdHistArray[i];
-//                macdAccArray[i-dataOverlapIndex] = oldMacdAccHistArray[i];
+                macdHistDeltaArray[i-dataOverlapIndex] = oldMacdHistDeltaArray[i];
+                if(i - lagLengthForHistDelta > 0){
+                    lagIndexForOldData = i - lagLengthForHistDelta;
+                }
             }
             for(long i = oldDataLength - dataOverlapIndex; i < dataLength; i++){
                 macdArray[i] = fastArray[i] - slowArray[i];
                 macdSigArray[i] = (parameter*macdArray[i]) + ((1-parameter) * macdSigArray[i-1]);
                 macdHistArray[i] = macdArray[i] - macdSigArray[i];
-//                if(macdSigArray[i] >= 0 && i < dataLength-1){
-//                    macdAccArray[i] = macdAccArray[i-1] + (midArray[i+1] - midArray[i]);
-//                }else{
-//                    macdAccArray[i] = macdAccArray[i-1] + (midArray[i] - midArray[i+1]);
-//                }
-//                if(i == dataLength - 1){
-//                    macdAccArray[i] = macdAccArray[i-1];
-//                }
+                
+                if(i - lagLengthForHistDelta >= 0){
+                    macdHistDeltaArray[i] = macdHistArray[i] - macdHistArray[i- lagLengthForHistDelta];
+                }else{
+                    if(lagIndexForOldData > -1 && lagIndexForOldData < oldDataLength){
+                        macdHistDeltaArray[i] = macdHistArray[i] - oldMacdHistArray[lagIndexForOldData];
+                        lagIndexForOldData++;
+                    }
+                }
             }
         }else{
             for(int i = 0; i < dataLength; i++){
@@ -571,14 +643,9 @@
                     macdSigArray[i] = macdArray[i];
                 }
                 macdHistArray[i] = macdArray[i] - macdSigArray[i];
-//                if(macdSigArray[i] >= 0 && i < dataLength-1){
-//                    macdAccArray[i] = macdAccArray[i-1] + (midArray[i+1] - midArray[i]);
-//                }else{
-//                    macdAccArray[i] = macdAccArray[i-1] + (midArray[i] - midArray[i+1]);
-//                }
-//                if(i == dataLength - 1){
-//                    macdAccArray[i] = macdAccArray[i-1];
-//                }
+                if(i - lagLengthForHistDelta >= 0){
+                    macdHistDeltaArray[i] = macdHistArray[i] - macdHistArray[i- lagLengthForHistDelta];
+                }
             }
         }
         [returnData setObject:macdData
@@ -587,8 +654,8 @@
                        forKey:macdSigString];
         [returnData setObject:macdHistData
                        forKey:macdHistString];
-//        [returnData setObject:macdAccData
-//                       forKey:macdAccString];
+        [returnData setObject:macdHistDeltaData
+                       forKey:macdHistDeltaString];
         [returnData setObject:[NSNumber numberWithBool:YES]
                        forKey:@"SUCCESS"];
     }else{
@@ -598,6 +665,96 @@
     return returnData;
 }
 
++ (NSDictionary *) calcEmadForCode: (NSString *) macdCode
+                          WithData: (NSDictionary *) dataDictionary
+                        AndOldData: (NSDictionary *) oldDataDictionary
+                       
+{
+    NSData *emaData;
+    double *emaArray;
+    int dataLength;
+    
+    NSMutableDictionary *returnData = [[NSMutableDictionary alloc] init];
+    
+    NSArray *emadComponents = [macdCode componentsSeparatedByString:@"/"];
+    int emaCode = [[emadComponents objectAtIndex:1] intValue];
+    int smoothCode = [[emadComponents objectAtIndex:2] intValue];
+        
+    NSString *emaString = [NSString stringWithFormat:@"EMA/%d",emaCode];
+    NSString *emadString = [NSString stringWithFormat:@"EMAD/%d/%d",emaCode,smoothCode];
+    
+    NSArray *dataKeys = [dataDictionary allKeys];
+    
+    BOOL emaFound = NO;
+    for(int i = 0; i < [dataKeys count]; i++){
+        if([[dataKeys objectAtIndex:i] isEqualToString:emaString]){
+            emaFound = YES;
+            emaData = [dataDictionary objectForKey:emaString];
+            emaArray = (double *)[emaData bytes];
+            dataLength = [emaData length]/sizeof(double);
+        }
+    }
+    
+    if(emaFound){
+        BOOL includeOldData = NO;
+        includeOldData = ![[oldDataDictionary objectForKey:@"ALLNEWDATA"] boolValue];
+        
+        NSMutableData *emadData = [[NSMutableData alloc] initWithLength:dataLength * sizeof(double)];
+        double *emadArray = (double *)[emadData mutableBytes];
+        
+        long lagLengthForDelta = [UtilityFunctions fib:(smoothCode)];
+        
+        if(includeOldData){
+            int dataOverlapIndex;
+            NSDictionary *trailingSeriesDictionary;
+            long oldDataLength;
+            
+            trailingSeriesDictionary = [oldDataDictionary objectForKey:@"OLDDATA"];
+            dataOverlapIndex = [[oldDataDictionary objectForKey:@"OVERLAPINDEX"] intValue];
+            
+            NSData *oldEmaData = [trailingSeriesDictionary objectForKey:emaString];
+            double *oldEmaArray = (double *)[oldEmaData bytes];
+            NSData *oldEmadData = [trailingSeriesDictionary objectForKey:emadString];
+            double *oldEmadArray = (double *)[oldEmadData bytes];
+            
+            long lagIndexForOldData = -1;
+            
+            oldDataLength = [oldEmadData length]/sizeof(long);
+            
+            for(long i = dataOverlapIndex ; i < oldDataLength; i++){
+                emadArray[i-dataOverlapIndex] = oldEmadArray[i];
+                 if(i - lagLengthForDelta > 0){
+                    lagIndexForOldData = i - lagLengthForDelta;
+                }
+            }
+            for(long i = oldDataLength - dataOverlapIndex; i < dataLength; i++){
+                
+                if(i - lagLengthForDelta >= 0){
+                    emadArray[i] = emaArray[i] - emaArray[i- lagLengthForDelta];
+                }else{
+                    if(lagIndexForOldData > -1 && lagIndexForOldData < oldDataLength){
+                        emadArray[i] = emaArray[i] - oldEmaArray[lagIndexForOldData];
+                        lagIndexForOldData++;
+                    }
+                }
+            }
+        }else{
+            for(int i = 0; i < dataLength; i++){
+                if(i - lagLengthForDelta >= 0){
+                    emadArray[i] = emaArray[i] - emaArray[i- lagLengthForDelta];
+                }
+            }
+        }
+        [returnData setObject:emadData
+                       forKey:emadString];
+        [returnData setObject:[NSNumber numberWithBool:YES]
+                       forKey:@"SUCCESS"];
+    }else{
+        [returnData setObject:[NSNumber numberWithBool:NO]
+                       forKey:@"SUCCESS"];
+    }
+    return returnData;
+}
 
 
 
@@ -678,6 +835,269 @@
     return returnData;
 }
 
++ (NSDictionary *) calcGridStatsWithDerivedData: (NSDictionary *) dataDictionary
+                              AndOldDerivedData: (NSDictionary *) oldDataDictionary
+                                   AndPriceData: (NSDictionary *) priceDataDictionary
+                                        ForCode: (NSString *) gridStatsCode
+                                andSignalSystem: (SignalSystem *) signalSystem
+{
+    int dataLength;
+    NSString *seriesString;
+    
+    //GRDPOS/26/0.025/26/0.2
+    
+    NSArray *gridStatsCodeComponents = [gridStatsCode componentsSeparatedByString:@"/"];
+    int seriesCode = [[gridStatsCodeComponents objectAtIndex:1] intValue];
+    double gridStep = [[gridStatsCodeComponents objectAtIndex:2] doubleValue];
+    int smoothCode = [[gridStatsCodeComponents objectAtIndex:3] intValue];
+    double gridThreshold = [[gridStatsCodeComponents objectAtIndex:4] doubleValue];
+    
+    if(seriesCode == 0){
+        seriesString = @"MID";
+    }else{
+        seriesString = [NSString stringWithFormat:@"EMA/%d",seriesCode];
+    }
+    
+    NSString *gridWidthString = [NSString stringWithFormat:@"GRIDWIDTH/%d/%f/%d/%f",seriesCode,gridStep,smoothCode,gridThreshold];
+    NSString *gridQuantileString = [NSString stringWithFormat:@"GRIDQUANT/%d/%f/%d/%f",seriesCode,gridStep,smoothCode,gridThreshold];
+   
+    NSString *gridMinString = [NSString stringWithFormat:@"GRIDMIN/%d/%f/%d/%f",seriesCode,gridStep,smoothCode,gridThreshold];
+    NSString *gridMaxString = [NSString stringWithFormat:@"GRIDMAX/%d/%f/%d/%f",seriesCode,gridStep,smoothCode,gridThreshold];
+    NSString *gridSumString = [NSString stringWithFormat:@"GRIDSUM/%d/%f/%d/%f",seriesCode,gridStep,smoothCode,gridThreshold];
+
+    
+    NSMutableDictionary *returnData = [[NSMutableDictionary alloc] init];
+    NSData *seriesData;
+    double *seriesArray;
+    NSData *dateTimeData;
+    long *dateTimeArray;
+    NSArray *dataKeys = [dataDictionary allKeys];
+    
+    dateTimeData  = [priceDataDictionary objectForKey:@"DATETIME"];
+    dateTimeArray = (long *)[dateTimeData bytes];
+    BOOL success = YES;
+    
+    BOOL foundSeries = NO;
+    if(seriesCode == 0){
+        seriesData = [priceDataDictionary objectForKey:@"MID"];
+        foundSeries = YES;
+    }else
+    {
+        for(int i = 0; i < [dataKeys count]; i++){
+            if([[dataKeys objectAtIndex:i] isEqualToString:seriesString]){
+                foundSeries = YES;
+                seriesData = [dataDictionary objectForKey:seriesString];
+                seriesArray = (double *)[seriesData bytes];
+                dataLength = [seriesData length]/sizeof(double);
+                foundSeries = YES;
+                break;
+            }
+        }
+    }
+    long arrayStartIndex = 0;
+    
+    if(foundSeries){
+        BOOL includeOldData = NO;
+        includeOldData = ![[oldDataDictionary objectForKey:@"ALLNEWDATA"] boolValue];
+        
+        
+        NSMutableData *gridWidthData = [[NSMutableData alloc] initWithLength:dataLength * sizeof(double)];
+        double *gridWidthArray = (double *)[gridWidthData mutableBytes];
+        
+        NSMutableData *gridQuantileData = [[NSMutableData alloc] initWithLength:dataLength * sizeof(double)];
+        double *gridQuantileArray = (double *)[gridQuantileData mutableBytes];
+        
+        NSMutableData *gridMinData = [[NSMutableData alloc] initWithLength:dataLength * sizeof(double)];
+        double *gridMinArray = (double *)[gridMinData mutableBytes];
+        
+        NSMutableData *gridMaxData = [[NSMutableData alloc] initWithLength:dataLength * sizeof(double)];
+        double *gridMaxArray = (double *)[gridMaxData mutableBytes];
+        
+        NSMutableData *gridSumData = [[NSMutableData alloc] initWithLength:dataLength * sizeof(double)];
+        double *gridSumArray = (double *)[gridSumData mutableBytes];
+        
+        double alphaParameter = 2.0/(1.0+[UtilityFunctions fib:smoothCode]);
+        
+        double gridLowerBound, gridUpperBound;
+        
+        NSMutableData *gridLevelsData;
+        double *gridLevelsArray;
+        int gridLength;
+        
+        if(includeOldData){
+            NSDictionary *trailingSeriesDictionary = [oldDataDictionary objectForKey:@"OLDDATA"];
+            int dataOverlapIndex = [[oldDataDictionary objectForKey:@"OVERLAPINDEX"] intValue];
+            NSData *oldDateTimeData = [oldDataDictionary objectForKey:@"OLDDATETIME"];
+            long *oldDateTimeArray = (long *) [oldDateTimeData bytes];
+            long oldDataLength = [oldDateTimeData length]/sizeof(long);
+
+            
+            NSData *oldGridQuantileData = [trailingSeriesDictionary objectForKey:gridQuantileString];
+            double *oldGridQuantileArray = (double *)[oldGridQuantileData bytes];
+            NSData *oldGridWidthData = [trailingSeriesDictionary objectForKey:gridWidthString];
+            double *oldGridWidthArray = (double *)[oldGridWidthData bytes];
+            
+            NSData *oldGridMinData = [trailingSeriesDictionary objectForKey:gridMinString];
+            double *oldGridMinArray = (double *)[oldGridMinData bytes];
+            NSData *oldGridMaxData = [trailingSeriesDictionary objectForKey:gridMaxString];
+            double *oldGridMaxArray = (double *)[oldGridMaxData bytes];
+            NSData *oldGridSumData = [trailingSeriesDictionary objectForKey:gridSumString];
+            double *oldGridSumArray = (double *)[oldGridSumData bytes];
+            
+            gridLevelsData = [[signalSystem miscStoredInfoDictionary] objectForKey:@"GRIDLEVELS"];
+            gridLevelsArray = (double *)[gridLevelsData bytes];
+            
+            gridLowerBound = [[[signalSystem miscStoredInfoDictionary] objectForKey:@"GRIDLOWERBOUND"] doubleValue];
+            gridUpperBound = [[[signalSystem miscStoredInfoDictionary] objectForKey:@"GRIDUPPERBOUND"] doubleValue];
+            
+            for(long i = dataOverlapIndex ; i < oldDataLength; i++){
+                if(dateTimeArray[i-dataOverlapIndex] != oldDateTimeArray[i]){
+                    success = NO;
+                    NSLog(@"Problem with overlapping periods, times don't match");
+                }
+                gridQuantileArray[i-dataOverlapIndex] = oldGridQuantileArray[i];
+                gridWidthArray[i-dataOverlapIndex] = oldGridWidthArray[i];
+                gridMinArray[i-dataOverlapIndex] = oldGridMinArray[i];
+                gridMaxArray[i-dataOverlapIndex] = oldGridMaxArray[i];
+                gridSumArray[i-dataOverlapIndex] = oldGridSumArray[i];
+            }
+            arrayStartIndex = oldDataLength - dataOverlapIndex + 1;
+            
+        }else{
+            //For the first ever datapoint the grid array is set up and the grid with is set to 1 and and the data's quantile set to 0.5
+            
+            gridLowerBound = gridStep*floor(seriesArray[0]/gridStep);
+            gridUpperBound = gridLowerBound + gridStep;
+            
+            gridLevelsData = [NSMutableData dataWithLength:1];
+            gridLevelsArray = (double *)[gridLevelsData mutableBytes];
+            gridLevelsArray[0] = alphaParameter;
+            gridWidthArray[0] = 1;
+            gridQuantileArray[0] = (seriesArray[0]-gridLowerBound)/(gridUpperBound - gridLowerBound);
+            arrayStartIndex = 1;
+            gridMinArray[0] = gridLowerBound;
+            gridMaxArray[0] = gridUpperBound;
+            gridSumArray[0] = alphaParameter;
+        }
+        
+        
+        
+        for(long iData = arrayStartIndex; iData < dataLength; iData++){
+//
+            
+             //Check if the datapoint is below the lowerbound, if so increase the range of the grid
+            if(seriesArray[iData] < gridLowerBound){
+                double newLowerBound = gridStep*floor(seriesArray[iData]/gridStep);
+                int newNumberOfBins = round((gridUpperBound - newLowerBound)/gridStep);
+                int numberOfExtraBins = newNumberOfBins - round((gridUpperBound - gridLowerBound)/gridStep);
+                gridLowerBound = newLowerBound;
+                
+                NSMutableData *newGridLevelsData = [NSMutableData dataWithLength:sizeof(double)*newNumberOfBins];
+                double *newGridLevelsArray = (double *)[newGridLevelsData mutableBytes];
+                for(int iBin = 0; iBin < newNumberOfBins;iBin++){
+                    if(iBin < numberOfExtraBins){
+                        newGridLevelsArray[iBin] = 0.0;
+                    }else{
+                        newGridLevelsArray[iBin] = gridLevelsArray[iBin-numberOfExtraBins];
+                    }
+                }
+                gridLevelsData = newGridLevelsData;
+                gridLevelsArray = newGridLevelsArray;
+            }
+            //Check if the datapoint is above the upperbound, if so increase the range of the grid
+            if(seriesArray[iData] >= gridUpperBound){
+                double newUpperBound = gridStep*(floor(seriesArray[iData]/gridStep)+1);
+                int newNumberOfBins = round((newUpperBound - gridLowerBound)/gridStep);
+                int numberOfExtraBins = newNumberOfBins - round((gridUpperBound - gridLowerBound)/gridStep);
+                gridUpperBound = newUpperBound;
+                
+                NSMutableData *newGridLevelsData = [NSMutableData dataWithLength:sizeof(double)*newNumberOfBins];
+                double *newGridLevelsArray = (double *)[newGridLevelsData mutableBytes];
+                for(int iBin = 0; iBin < newNumberOfBins;iBin++){
+                    if(iBin < numberOfExtraBins){
+                        newGridLevelsArray[iBin] = 0.0;
+                    }else{
+                        newGridLevelsArray[iBin] = gridLevelsArray[iBin-numberOfExtraBins];
+                    }
+                }
+                gridLevelsData = newGridLevelsData;
+                gridLevelsArray = newGridLevelsArray;
+                
+            }
+            gridLength = round((gridUpperBound - gridLowerBound)/gridStep);
+            
+            //Gather the statistics
+            double levelsSumTotal = 0.0;
+            double levelsSumLessThan = 0.0;
+            
+            
+            for(int iBin = 0; iBin < gridLength; iBin++){
+                levelsSumTotal = levelsSumTotal + gridLevelsArray[iBin];
+                if(seriesArray[iData] > (gridLowerBound + iBin*gridStep)){
+                    if(seriesArray[iData] < (gridLowerBound + (iBin+1)*gridStep)){
+                        levelsSumLessThan = levelsSumLessThan + gridLevelsArray[iBin]*((seriesArray[iData]- (gridLowerBound + iBin*gridStep))/gridStep) ;
+                    }else{
+                        levelsSumLessThan = levelsSumLessThan + gridLevelsArray[iBin];
+                    }
+                }
+            }
+            
+            double levelsSumRunning = 0.0;
+            double lowerQuantile = gridThreshold*levelsSumTotal;
+            double upperQuantile = (1-gridThreshold)*levelsSumTotal;
+            for(int iBin = 0; iBin < gridLength; iBin++){
+            
+                if((levelsSumRunning < lowerQuantile) && (levelsSumRunning + gridLevelsArray[iBin]) > lowerQuantile){
+                    double overage = (lowerQuantile-levelsSumRunning)/gridLevelsArray[iBin];
+                    gridMinArray[iData] = (gridLowerBound + iBin*gridStep) + gridStep *overage;
+                }
+                if((levelsSumRunning < upperQuantile) && (levelsSumRunning + gridLevelsArray[iBin]) > upperQuantile){
+                    double overage = (upperQuantile-levelsSumRunning)/gridLevelsArray[iBin];
+                    gridMaxArray[iData] = (gridLowerBound + iBin*gridStep) + gridStep *overage;
+                }
+                levelsSumRunning = levelsSumRunning + gridLevelsArray[iBin];
+                
+                gridLevelsArray[iBin] = gridLevelsArray[iBin] * (1-alphaParameter);
+                if((seriesArray[iData] > (gridLowerBound + iBin*gridStep)) && (seriesArray[iData] <= (gridLowerBound + (iBin+1)*gridStep))){
+                    gridLevelsArray[iBin] = gridLevelsArray[iBin] + alphaParameter;
+                }
+            }
+     
+            if(levelsSumTotal > 0.0){
+                gridQuantileArray[iData] = levelsSumLessThan/levelsSumTotal;
+            }else{
+                gridQuantileArray[iData] = 0.5;
+            }
+            gridWidthArray[iData] = gridMaxArray[iData] - gridMinArray[iData];
+            gridSumArray[iData] = levelsSumTotal;
+        }
+        [[signalSystem miscStoredInfoDictionary] setObject:gridLevelsData forKey:@"GRIDLEVELS"];
+        [[signalSystem miscStoredInfoDictionary] setObject:[NSNumber numberWithDouble:gridLowerBound]  forKey:@"GRIDLOWERBOUND"];
+        [[signalSystem miscStoredInfoDictionary] setObject:[NSNumber numberWithDouble:gridUpperBound]  forKey:@"GRIDUPPERBOUND"];
+        
+   
+        [returnData setObject:gridWidthData
+                       forKey:gridWidthString];
+        [returnData setObject:gridQuantileData
+                       forKey:gridQuantileString];
+        [returnData setObject:gridMinData
+                       forKey:gridMinString];
+        [returnData setObject:gridMaxData
+                       forKey:gridMaxString];
+        [returnData setObject:gridSumData
+                       forKey:gridSumString];
+        
+               [returnData setObject:[NSNumber numberWithBool:YES]
+                       forKey:@"SUCCESS"];
+    }else{
+        [returnData setObject:[NSNumber numberWithBool:NO]
+                       forKey:@"SUCCESS"];
+    }
+    return returnData;
+}
+
+
+
 + (NSDictionary *) calcTicNumberWithData: (NSDictionary *) dataDictionary
                               AndOldData: (NSDictionary *) oldDataDictionary
 {
@@ -757,12 +1177,12 @@
                          AndOldData: (NSDictionary *) oldDataDictionary
 {
     
-    NSMutableData  *lastDateTimeForDayData, *closeForDayData, *highForDayData, *lowForDayData, *openForDayData, *lengthByTicForDayData, *lengthByTimeForDayData, *dataCountData, *dayNumberData;
+    NSMutableData  *lastDateTimeForDayData, *closeForDayData, *highForDayData, *lowForDayData, *openForDayData, *dataCountData, *dayNumberData;
        NSMutableDictionary *returnData = [[NSMutableDictionary alloc] init];
     
     long *lastDateTimeForDayArray, *dataCountArray, *dayNumberArray;
     
-    double  *closeForDayArray, *highForDayArray, *lowForDayArray, *openForDayArray, *lengthByTicForDayArray, *lengthByTimeForDayArray;
+    double  *closeForDayArray, *highForDayArray, *lowForDayArray, *openForDayArray;
     
     BOOL includeOldData = NO, success = YES;
     includeOldData = ![[oldDataDictionary objectForKey:@"ALLNEWDATA"] boolValue];
@@ -833,7 +1253,6 @@
                 highForDayData = [NSMutableData dataWithLength:sizeof(double) * maxNumberOfDays];
                 lowForDayData = [NSMutableData dataWithLength:sizeof(double) * maxNumberOfDays];
                 openForDayData = [NSMutableData dataWithLength:sizeof(double) * maxNumberOfDays];
-                lengthByTicForDayData = [NSMutableData dataWithLength:sizeof(double) * maxNumberOfDays];
                 dataCountData = [NSMutableData dataWithLength:sizeof(long) * maxNumberOfDays];
                 dayNumberData = [NSMutableData dataWithLength:sizeof(long) * maxNumberOfDays];
                 
@@ -842,8 +1261,6 @@
                 highForDayArray = (double *)[highForDayData mutableBytes];
                 lowForDayArray = (double *)[lowForDayData mutableBytes];
                 openForDayArray = (double *)[openForDayData mutableBytes];
-                lengthByTicForDayArray = (double *)[lengthByTicForDayData mutableBytes];
-                lengthByTimeForDayArray = (double *)[lengthByTimeForDayData mutableBytes];
                 dataCountArray = (long *)[dataCountData mutableBytes];
                 dayNumberArray = (long *)[dayNumberData mutableBytes];
                 
@@ -934,8 +1351,6 @@
             highForDayData = [NSMutableData dataWithLength:sizeof(double) * maxNumberOfDays];
             lowForDayData = [NSMutableData dataWithLength:sizeof(double) * maxNumberOfDays];
             openForDayData = [NSMutableData dataWithLength:sizeof(double) * maxNumberOfDays];
-            lengthByTicForDayData = [NSMutableData dataWithLength:sizeof(double) * maxNumberOfDays];
-            lengthByTimeForDayData = [NSMutableData dataWithLength:sizeof(double) * maxNumberOfDays];
             dataCountData = [NSMutableData dataWithLength:sizeof(long) * maxNumberOfDays];
             dayNumberData = [NSMutableData dataWithLength:sizeof(long) * maxNumberOfDays];
             
@@ -944,16 +1359,12 @@
             highForDayArray = (double *)[highForDayData mutableBytes];
             lowForDayArray = (double *)[lowForDayData mutableBytes];
             openForDayArray = (double *)[openForDayData mutableBytes];
-            lengthByTicForDayArray = (double *)[lengthByTicForDayData mutableBytes];
-            lengthByTimeForDayArray = (double *)[lengthByTimeForDayData mutableBytes];
             dataCountArray = (long *)[dataCountData mutableBytes];
             dayNumberArray = (long *)[dayNumberData mutableBytes];
             
             for(int i = 0; i < maxNumberOfDays; i++){
                 dataCountArray[i] = 0;
                 dayNumberArray[i] = [EpochTime daysSinceEpoch:dateTimeArray[0]] + i;
-                lengthByTicForDayArray[i] = 0;
-                lengthByTimeForDayArray[i] = 0;
             }
             
             long dataIndex = 0;
@@ -1132,13 +1543,7 @@
                 while([EpochTime daysSinceEpoch:oldDateTimeArray[dataOverlapIndex]] > dayNumberArray[0] && dataOverlapIndex > 0){
                         dataOverlapIndex--;
                 }
-                
-//                dataOverlapIndex = oldDataLength-1;
-//                while([EpochTime daysSinceEpoch:oldDateTimeArray[dataOverlapIndex]] >= dayNumberArray[1] && dataOverlapIndex > 0){
-//                    dataOverlapIndex--;
-//                }
-                
-                
+             
                 if((dataOverlapIndex == 0 && [EpochTime daysSinceEpoch:oldDateTimeArray[dataOverlapIndex]] >= dayNumberArray[0])){
                     includeOldData = NO;
                     NSLog(@"Don't seem to have overlapping for ATR calculation using previous data");
@@ -1170,7 +1575,6 @@
             atrData = [[NSMutableData alloc] initWithLength:(dataLength * sizeof(double))];
             atrArray = (double *)[atrData bytes];
             
-            //atrArray[0] = highArray[0]-lowArray[0];
             int nData;
             for(int i = 0; i < daysForAveraging && i < dataLength; i++){
                 trueRange = 0.0;
@@ -1337,9 +1741,6 @@
                     while(dataIndex < oldDataLength){
                         if([EpochTime daysSinceEpoch:oldDataTimeArray[dataIndex]] != dayNumber){
                             dayNumber =  [EpochTime daysSinceEpoch:oldDataTimeArray[dataIndex]];
-                            //                                    double trueRange  = MAX(highForDayArray[dayDataIndex]-lowForDayArray[dayDataIndex],MAX(highForDayArray[dayDataIndex]-closeForDayArray[dayDataIndex-1],closeForDayArray[dayDataIndex-1])-lowForDayArray[dayDataIndex]);
-                            //
-                            //                                    atrForDayArray[dayDataIndex] = ((daysForAveraging - 1) * atrForDayArray[dayDataIndex-1] + trueRange)/ daysForAveraging;
                             dayDataIndex++;
                             highForDayArray[dayDataIndex] = oldMidArray[dataIndex];
                             lowForDayArray[dayDataIndex] = oldMidArray[dataIndex];
@@ -1355,14 +1756,15 @@
                         
                     }
                 }
-                
+                double trueRange;
                 dataIndex = 0;
                 while(dataIndex < dataLength){
                     if([EpochTime daysSinceEpoch:dateTimeArray[dataIndex]] != dayNumber){
-                        double trueRange  = MAX(highForDayArray[dayDataIndex]-lowForDayArray[dayDataIndex],MAX(highForDayArray[dayDataIndex]-closeForDayArray[dayDataIndex-1],closeForDayArray[dayDataIndex-1])-lowForDayArray[dayDataIndex]);
+                        trueRange  = MAX(highForDayArray[dayDataIndex]-lowForDayArray[dayDataIndex],MAX(highForDayArray[dayDataIndex]-closeForDayArray[dayDataIndex-1],closeForDayArray[dayDataIndex-1])-lowForDayArray[dayDataIndex]);
                         
                         atrForDayArray[dayDataIndex] = ((daysForAveraging - 1) * atrForDayArray[dayDataIndex-1] + trueRange)/ daysForAveraging;
                         dayDataIndex++;
+                        
                         highForDayArray[dayDataIndex] = midArray[dataIndex];
                         lowForDayArray[dayDataIndex] = midArray[dataIndex];
                         dayNumber = [EpochTime daysSinceEpoch:dateTimeArray[dataIndex]];
@@ -1374,6 +1776,9 @@
                     lastDateTimeForDayArray[dayDataIndex] = dateTimeArray[dataIndex];
                     dataIndex++;
                 }
+                // Last days ATR
+                trueRange  = MAX(highForDayArray[dayDataIndex]-lowForDayArray[dayDataIndex],MAX(highForDayArray[dayDataIndex]-closeForDayArray[dayDataIndex],closeForDayArray[dayDataIndex]-lowForDayArray[dayDataIndex]));
+                atrForDayArray[dayDataIndex] = ((daysForAveraging - 1) * atrForDayArray[dayDataIndex-1] + trueRange)/ daysForAveraging;
             }else{
                 success = NO;
             }
@@ -1429,6 +1834,7 @@
                         atrForDayArray[dayDataIndex] = ((daysForAveraging - 1) * atrForDayArray[dayDataIndex-1] + trueRange)/ daysForAveraging;
                     }
                     dayDataIndex++;
+                    
                     highForDayArray[dayDataIndex] = midArray[dataIndex];
                     lowForDayArray[dayDataIndex] = midArray[dataIndex];
                     
@@ -1440,7 +1846,10 @@
                 lastDateTimeForDayArray[dayDataIndex] = dateTimeArray[dataIndex];
                 
                 dataIndex++;
+            
             }
+            
+                       
             // Last days ATR
             trueRange  = MAX(highForDayArray[dayDataIndex]-lowForDayArray[dayDataIndex],MAX(highForDayArray[dayDataIndex]-closeForDayArray[dayDataIndex],closeForDayArray[dayDataIndex]-lowForDayArray[dayDataIndex]));
             atrForDayArray[dayDataIndex] = ((daysForAveraging - 1) * atrForDayArray[dayDataIndex-1] + trueRange)/ daysForAveraging;
@@ -1466,6 +1875,10 @@
             }
             
             atrArray[i] = atrForDayArray[indexByDay];
+            if(atrArray[i]<= 0.002 && indexByDay > 18){
+                NSLog(@"CHECK");
+            }
+            
             highArray[i] = highForDayArray[indexByDay];
             lowArray[i] = lowForDayArray[indexByDay];
             closeArray[i] = closeForDayArray[indexByDay];

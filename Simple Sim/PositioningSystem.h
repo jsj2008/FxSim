@@ -16,8 +16,17 @@
     double _stepLength;
     int _perfSmoothParam;
     int _maxPos;
-    BOOL _stopEntryOnWeakening;
+    BOOL _stopEntryOnWeakeningSignal;
+    BOOL _stopEntryOnWeakeningPrice;
+    BOOL _exitOnWeakeningPrice;
+    double _stopEntryOnWeakeningPriceThreshold;
+    
+    long _stopEntryOnWeakeningPriceLagTime;
+    
+    double _exitOnWeakeningPriceThreshold;
     NSString *_stepUnit;
+//    long _laggedSignalInterval;
+//    long _laggedPriceInterval;
 }
 
 @property (retain, readonly) NSString *positioningString;
@@ -29,7 +38,13 @@
 @property (readonly) double positionCushion;
 @property (readonly) int perfSmoothParam;
 @property (readonly) int maxPos;
-@property (readonly) BOOL stopEntryOnWeakening;
+@property (readonly) BOOL stopEntryOnWeakeningSignal;
+@property (readonly) BOOL stopEntryOnWeakeningPrice;
+@property (readonly) BOOL exitOnWeakeningPrice;
+@property (readonly) double exitOnWeakeningPriceThreshold;
+@property (readonly) double stopEntryOnWeakeningPriceThreshold;
+@property (readonly) long stopEntryOnWeakeningPriceLagTime;
+@property (readonly) long stopEntryOnWeakeningSignalLagTime;
 
 - (id) init;
 - (id) initWithString: (NSString *) initString;

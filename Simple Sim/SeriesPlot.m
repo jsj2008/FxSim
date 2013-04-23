@@ -10,8 +10,7 @@
 #import "TimeSeriesLine.h"
 
 @interface SeriesPlot() 
-- (BOOL) fixUpXAxisLabelsForLayerIndex: (int) layerIndex
-                           AndDataView: (DataView *) currentDataView;
+- (BOOL) fixUpXAxisLabelsForDataView: (DataView *) currentDataView;
 - (void) fixUpYAxisForLayerIndex: (int) layerIndex;
 - (void) zoomInAndFitYAxis:(BOOL) fitYAxis;
 - (void) zoomOut;
@@ -283,8 +282,7 @@
     xAxis0 = [axisSet xAxis];
     yAxis0 = [axisSet yAxis];
     plotSpace0 = (CPTXYPlotSpace *)graph.defaultPlotSpace;
-    dateAnnotateRequired = [self fixUpXAxisLabelsForLayerIndex:0 
-                                      AndDataView:dataView];
+    dateAnnotateRequired = [self fixUpXAxisLabelsForDataView:dataView];
        
     [self fixUpYAxisForLayerIndex:0];
     
@@ -542,18 +540,9 @@
 }
 
 
-- (BOOL) fixUpXAxisLabelsForLayerIndex: (int) layerIndex
-              AndDataView: (DataView *) currentDataView;
+- (BOOL) fixUpXAxisLabelsForDataView: (DataView *) currentDataView;
 {
-    CPTXYPlotSpace *plotSpace;
-    if(layerIndex == 0){
-        plotSpace = plotSpace0;
-        
-    }
-    if(layerIndex == 1){
-        plotSpace = plotSpace1;
-    }
-    
+
     
     // Grid line styles
     CPTMutableLineStyle *majorGridLineStyle = [CPTMutableLineStyle lineStyle];
@@ -578,47 +567,54 @@
     minXrangeForPlot = [currentDataView minDateTime];
     maxXrangeForPlot = [currentDataView maxDateTime];
     //    
-    
     if(((float)(maxXrangeForPlot - minXrangeForPlot)/(4*30*60 * 60 * 24))>1){
-        majorIntervalForX = 14 * 24 * 60 * 60;
+        majorIntervalForX = 28 * 24 * 60 * 60;
         xAxis0.majorIntervalLength		  = CPTDecimalFromInt(majorIntervalForX); // 14 Day
         xAxis0.minorTicksPerInterval		  = 13;
         [dateFormatter setDateFormat:@"MM/dd"];
-        dateIsSpecifiedInAxis = TRUE; 
+        dateIsSpecifiedInAxis = TRUE;
     }else{
-        if(((float)(maxXrangeForPlot - minXrangeForPlot)/(21*60 * 60 * 24))>1){
-            majorIntervalForX = 7 * 24 * 60 * 60;
-            xAxis0.majorIntervalLength		  = CPTDecimalFromInt(majorIntervalForX); // 7 Day
-            xAxis0.minorTicksPerInterval		  = 6;
+        if(((float)(maxXrangeForPlot - minXrangeForPlot)/(4*30*60 * 60 * 24))>1){
+            majorIntervalForX = 14 * 24 * 60 * 60;
+            xAxis0.majorIntervalLength		  = CPTDecimalFromInt(majorIntervalForX); // 14 Day
+            xAxis0.minorTicksPerInterval		  = 13;
             [dateFormatter setDateFormat:@"MM/dd"];
             dateIsSpecifiedInAxis = TRUE;
         }else{
-            //If greater than 3 days
-            if(((float)(maxXrangeForPlot - minXrangeForPlot)/(3*60 * 60 * 24))>1){
-                majorIntervalForX = 24 * 60 * 60;
-                xAxis0.majorIntervalLength		  = CPTDecimalFromInt(majorIntervalForX); // 1 Day
-                xAxis0.minorTicksPerInterval		  = 5;
+            if(((float)(maxXrangeForPlot - minXrangeForPlot)/(21*60 * 60 * 24))>1){
+                majorIntervalForX = 7 * 24 * 60 * 60;
+                xAxis0.majorIntervalLength		  = CPTDecimalFromInt(majorIntervalForX); // 7 Day
+                xAxis0.minorTicksPerInterval		  = 6;
                 [dateFormatter setDateFormat:@"MM/dd"];
                 dateIsSpecifiedInAxis = TRUE;
             }else{
-                //If greater than 12 hours
-                if(((float)(maxXrangeForPlot - minXrangeForPlot)/(60 * 60 * 12))>1){
-                    majorIntervalForX = 4 * 60 * 60;
-                    xAxis0.majorIntervalLength		  = CPTDecimalFromInt(majorIntervalForX); // 4 hours
-                    xAxis0.minorTicksPerInterval		  = 3;
-                    dateFormatter.dateStyle = kCFDateFormatterNoStyle;
-                    dateFormatter.timeStyle = kCFDateFormatterShortStyle;
+                //If greater than 3 days
+                if(((float)(maxXrangeForPlot - minXrangeForPlot)/(3*60 * 60 * 24))>1){
+                    majorIntervalForX = 24 * 60 * 60;
+                    xAxis0.majorIntervalLength		  = CPTDecimalFromInt(majorIntervalForX); // 1 Day
+                    xAxis0.minorTicksPerInterval		  = 5;
+                    [dateFormatter setDateFormat:@"MM/dd"];
+                    dateIsSpecifiedInAxis = TRUE;
                 }else{
-                    //If less than 12 hours
-                    if(((float)(maxXrangeForPlot - minXrangeForPlot)/(60 * 60 * 12))<=1){
-                        majorIntervalForX = 60 * 60;
-                        xAxis0.majorIntervalLength = CPTDecimalFromInt(majorIntervalForX); // 1 hours
-                        xAxis0.minorTicksPerInterval = 5;
+                    //If greater than 12 hours
+                    if(((float)(maxXrangeForPlot - minXrangeForPlot)/(60 * 60 * 12))>1){
+                        majorIntervalForX = 4 * 60 * 60;
+                        xAxis0.majorIntervalLength		  = CPTDecimalFromInt(majorIntervalForX); // 4 hours
+                        xAxis0.minorTicksPerInterval		  = 3;
                         dateFormatter.dateStyle = kCFDateFormatterNoStyle;
                         dateFormatter.timeStyle = kCFDateFormatterShortStyle;
+                    }else{
+                        //If less than 12 hours
+                        if(((float)(maxXrangeForPlot - minXrangeForPlot)/(60 * 60 * 12))<=1){
+                            majorIntervalForX = 60 * 60;
+                            xAxis0.majorIntervalLength = CPTDecimalFromInt(majorIntervalForX); // 1 hours
+                            xAxis0.minorTicksPerInterval = 5;
+                            dateFormatter.dateStyle = kCFDateFormatterNoStyle;
+                            dateFormatter.timeStyle = kCFDateFormatterShortStyle;
+                        }
                     }
-                }
-            }   
+                }   
+            }
         }
     }
     
@@ -642,7 +638,7 @@
 - (void) fixUpYAxisForLayerIndex: (int) layerIndex;
 {
     double minYrangeForPlot, maxYrangeForPlot;
-    //double majorIntervalForY;
+    BOOL ok = YES;
     CPTXYPlotSpace *plotSpace;
     CPTXYAxis *yAxis;
     switch(layerIndex){
@@ -664,80 +660,81 @@
             plotSpace = plotSpace2;
             yAxis = yAxis2;
             break;
-    }
-    
-    int nTicks = 10;
-    double range = [self niceNumber:  maxYrangeForPlot-minYrangeForPlot
-                       withRounding:NO];
-    double d = [self niceNumber:range/(nTicks - 1) 
-                   withRounding:YES];
-    double axisMin = floor(minYrangeForPlot/d)*d;
-    double axisMax = ceil(maxYrangeForPlot/d)*d;
-    int nfrac = -floor(log10(d));
-    if(nfrac < 0){
-        nfrac = 0;
-    }
-    
-    
-    
-    
-    if(layerIndex==0){
-         // Grid line styles
-        CPTMutableLineStyle *majorGridLineStyle = [CPTMutableLineStyle lineStyle];
-        majorGridLineStyle.lineWidth = 0.75;
-        majorGridLineStyle.lineColor = [[CPTColor colorWithGenericGray:0.2] colorWithAlphaComponent:0.75];
-     
-        CPTMutableLineStyle *minorGridLineStyle = [CPTMutableLineStyle lineStyle];
-        minorGridLineStyle.lineWidth = 0.25;
-        minorGridLineStyle.lineColor = [[CPTColor whiteColor] colorWithAlphaComponent:0.1];
-    
-        yAxis.majorGridLineStyle		  = majorGridLineStyle;
-        yAxis.minorGridLineStyle		  = minorGridLineStyle;
-    }     
-    
-    CPTMutableLineStyle *axisLineStyle =  [CPTMutableLineStyle lineStyle];
-    axisLineStyle.lineWidth = 0.5;
-    axisLineStyle.lineColor = [[CPTColor whiteColor] colorWithAlphaComponent:0.5];
-    [yAxis setLabelOffset:5.0];
-    
-    [yAxis setMajorIntervalLength:CPTDecimalFromDouble(d)];
-    [yAxis setMinorTicksPerInterval:1];
-     
-    [yAxis setAxisLineStyle:axisLineStyle];
-    switch(layerIndex){
-        case 0:
-            [yAxis setTickDirection:CPTSignNegative]; 
-            [yAxis setAxisConstraints:[CPTConstraints constraintWithLowerOffset:0.0]];
-            break;
-        case 1:
-            [yAxis setTickDirection:CPTSignPositive]; 
-            [yAxis setAxisConstraints:[CPTConstraints constraintWithLowerOffset:0.0]];
-            break;
-        case 2:
-            [yAxis setTickDirection:CPTSignNegative]; 
-            [yAxis setAxisConstraints:[CPTConstraints constraintWithUpperOffset:0.0]];
+        default:
+            ok = NO;
             break;
     }
-     
-    NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];
-    [numberFormatter setNumberStyle:NSNumberFormatterDecimalStyle];
-    [numberFormatter setMinimumFractionDigits:nfrac];
-    yAxis.labelFormatter = numberFormatter;
-    CPTMutablePlotRange *yRange = [CPTMutablePlotRange plotRangeWithLocation:CPTDecimalFromDouble(axisMin)
-                                                                      length:CPTDecimalFromDouble((axisMax-axisMin)+(0.5*d))];
-    [yRange expandRangeByFactor:CPTDecimalFromDouble(1.2)];
-    
-    [plotSpace setYRange:yRange];
-    switch(layerIndex){
-        case 0:
-            yRange0ZoomOut = yRange;
-            break;
-        case 1:
-            yRange1ZoomOut = yRange;
-            break;
-        case 2:
-            yRange2ZoomOut = yRange;
-            break;
+    if(ok){
+        int nTicks = 10;
+        double range = [self niceNumber:  maxYrangeForPlot-minYrangeForPlot
+                           withRounding:NO];
+        double d = [self niceNumber:range/(nTicks - 1)
+                       withRounding:YES];
+        double axisMin = floor(minYrangeForPlot/d)*d;
+        double axisMax = ceil(maxYrangeForPlot/d)*d;
+        int nfrac = -floor(log10(d));
+        if(nfrac < 0){
+            nfrac = 0;
+        }
+          
+        if(layerIndex==0){
+            // Grid line styles
+            CPTMutableLineStyle *majorGridLineStyle = [CPTMutableLineStyle lineStyle];
+            majorGridLineStyle.lineWidth = 0.75;
+            majorGridLineStyle.lineColor = [[CPTColor colorWithGenericGray:0.2] colorWithAlphaComponent:0.75];
+            
+            CPTMutableLineStyle *minorGridLineStyle = [CPTMutableLineStyle lineStyle];
+            minorGridLineStyle.lineWidth = 0.25;
+            minorGridLineStyle.lineColor = [[CPTColor whiteColor] colorWithAlphaComponent:0.1];
+            
+            yAxis.majorGridLineStyle		  = majorGridLineStyle;
+            yAxis.minorGridLineStyle		  = minorGridLineStyle;
+        }
+        
+        CPTMutableLineStyle *axisLineStyle =  [CPTMutableLineStyle lineStyle];
+        axisLineStyle.lineWidth = 0.5;
+        axisLineStyle.lineColor = [[CPTColor whiteColor] colorWithAlphaComponent:0.5];
+        [yAxis setLabelOffset:5.0];
+        
+        [yAxis setMajorIntervalLength:CPTDecimalFromDouble(d)];
+        [yAxis setMinorTicksPerInterval:1];
+        
+        [yAxis setAxisLineStyle:axisLineStyle];
+        switch(layerIndex){
+            case 0:
+                [yAxis setTickDirection:CPTSignNegative];
+                [yAxis setAxisConstraints:[CPTConstraints constraintWithLowerOffset:0.0]];
+                break;
+            case 1:
+                [yAxis setTickDirection:CPTSignPositive];
+                [yAxis setAxisConstraints:[CPTConstraints constraintWithLowerOffset:0.0]];
+                break;
+            case 2:
+                [yAxis setTickDirection:CPTSignNegative];
+                [yAxis setAxisConstraints:[CPTConstraints constraintWithUpperOffset:0.0]];
+                break;
+        }
+        
+        NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];
+        [numberFormatter setNumberStyle:NSNumberFormatterDecimalStyle];
+        [numberFormatter setMinimumFractionDigits:nfrac];
+        yAxis.labelFormatter = numberFormatter;
+        CPTMutablePlotRange *yRange = [CPTMutablePlotRange plotRangeWithLocation:CPTDecimalFromDouble(axisMin)
+                                                                          length:CPTDecimalFromDouble((axisMax-axisMin)+(0.5*d))];
+        [yRange expandRangeByFactor:CPTDecimalFromDouble(1.2)];
+        
+        [plotSpace setYRange:yRange];
+        switch(layerIndex){
+            case 0:
+                yRange0ZoomOut = yRange;
+                break;
+            case 1:
+                yRange1ZoomOut = yRange;
+                break;
+            case 2:
+                yRange2ZoomOut = yRange;
+                break;
+        }
     }
 }
 
@@ -1173,81 +1170,76 @@
 
 -(void)setZoomDataViewFrom:(long)startDateTime To:(long) endDateTime
 {
-    //CPTXYPlotSpace *plotSpace = (CPTXYPlotSpace *)graph.defaultPlotSpace;
-    //TimeSeriesLine *tsLine = [timeSeriesLines objectAtIndex:0];
-    //CPTScatterPlot *plot = (CPTScatterPlot *)[graph plotWithIdentifier:[tsLine name]];
     
     double minXzoomForPlot;
 	double maxXzoomForPlot;
-	//double minYzoomForPlot;
-	//double maxYzoomForPlot;
     
-	// recalculate the min and max values
-	minXzoomForPlot = startDateTime;
-	maxXzoomForPlot = endDateTime;
-    
-    DataView *zoomView = [plotData setPlotViewWithName:@"ZOOM" 
-                                      AndStartDateTime:(long)minXzoomForPlot 
-                                        AndEndDateTime:(long)maxXzoomForPlot];
-    
-    plotSpace0.xRange = [CPTPlotRange plotRangeWithLocation:CPTDecimalFromDouble(minXzoomForPlot)
-													length:CPTDecimalFromDouble(maxXzoomForPlot - minXzoomForPlot)];
-    
-    [plotSpace1 setXRange:[[plotSpace0 xRange] copy]];
-    [plotSpace2 setXRange:[[plotSpace0 xRange] copy]];
-    zoomedOut = NO;
-    
-    overlayPlotSpace.xRange = [plotSpace0.xRange copy];
-    
-    BOOL dateAnnotateRequired = [self fixUpXAxisLabelsForLayerIndex:0  
-                                                        AndDataView:zoomView];
-    
-    while([dateAnnotationArray count] > 0){
-        [graph.plotAreaFrame.plotArea removeAnnotation:[dateAnnotationArray objectAtIndex:0]];
-        [dateAnnotationArray removeObjectAtIndex:0];
-    }
-    
-    if(dateAnnotateRequired){
-        long firstMidnight = [EpochTime epochTimeAtZeroHour:minXrangeForPlot];
-        long lastMidnight = [EpochTime epochTimeNextDayAtZeroHour:maxXrangeForPlot];
+    if (startDateTime < endDateTime){
+        // recalculate the min and max values
+        minXzoomForPlot = startDateTime;
+        maxXzoomForPlot = endDateTime;
         
-        CPTPlotRange *xRange  = plotSpace0.xRange;
-        CPTPlotRange *yRange = plotSpace0.yRange;
-        double minXrange = [[NSDecimalNumber decimalNumberWithDecimal:xRange.location] doubleValue];
-        double maxXrange = [[NSDecimalNumber decimalNumberWithDecimal:xRange.location] doubleValue] + [[NSDecimalNumber decimalNumberWithDecimal:xRange.length] doubleValue];
+        DataView *zoomView = [plotData setPlotViewWithName:@"ZOOM"
+                                          AndStartDateTime:(long)minXzoomForPlot
+                                            AndEndDateTime:(long)maxXzoomForPlot];
         
-        CGRect bounds = NSRectToCGRect(hostingView.bounds);
+        plotSpace0.xRange = [CPTPlotRange plotRangeWithLocation:CPTDecimalFromDouble(minXzoomForPlot)
+                                                         length:CPTDecimalFromDouble(maxXzoomForPlot - minXzoomForPlot)];
         
-        NSString *stringFromDate;
-        CPTMutableTextStyle *dateStringStyle;
-        NSArray *dateAnnotationPoint;
-        CPTTextLayer *textLayer;
-        NSDateFormatter *labelFormatter = [[NSDateFormatter alloc] init] ;
-        [labelFormatter setDateFormat:@"MM/dd"];
-        labelFormatter.timeZone = [NSTimeZone timeZoneWithName:@"GMT"];
-        CPTPlotSpaceAnnotation *dateAnnotation;
-        for(long labelDate = firstMidnight; labelDate <= lastMidnight; labelDate = labelDate + (60*60*24))
-        {
-            if((double)labelDate >= minXrange && labelDate <= (double)(maxXrange)){
-                stringFromDate = [labelFormatter stringFromDate:[NSDate dateWithTimeIntervalSince1970:labelDate]];
-                dateStringStyle = [CPTMutableTextStyle textStyle];
-                dateStringStyle.color	= [CPTColor redColor];
-                dateStringStyle.fontSize = round(bounds.size.height / (CGFloat)30.0);
-                dateStringStyle.fontName = @"Courier";
-                
-                // Determine point of symbol in plot coordinates
-                dateAnnotationPoint = [NSArray arrayWithObjects:[NSDecimalNumber numberWithLong:labelDate],[NSDecimalNumber decimalNumberWithDecimal: yRange.location], nil];
-                
-                textLayer = [[CPTTextLayer alloc] initWithText:stringFromDate style:dateStringStyle];
-                dateAnnotation = [[CPTPlotSpaceAnnotation alloc] initWithPlotSpace:graph.defaultPlotSpace   anchorPlotPoint:dateAnnotationPoint];
-                dateAnnotation.contentLayer = textLayer;
-                dateAnnotation.displacement =  CGPointMake( 0.0f,(CGFloat)10.0 );     
-                [graph.plotAreaFrame.plotArea addAnnotation:dateAnnotation];
-                [dateAnnotationArray addObject:dateAnnotation];
+        [plotSpace1 setXRange:[[plotSpace0 xRange] copy]];
+        [plotSpace2 setXRange:[[plotSpace0 xRange] copy]];
+        zoomedOut = NO;
+        
+        overlayPlotSpace.xRange = [plotSpace0.xRange copy];
+        
+        BOOL dateAnnotateRequired = [self fixUpXAxisLabelsForDataView:zoomView];
+        
+        while([dateAnnotationArray count] > 0){
+            [graph.plotAreaFrame.plotArea removeAnnotation:[dateAnnotationArray objectAtIndex:0]];
+            [dateAnnotationArray removeObjectAtIndex:0];
+        }
+        
+        if(dateAnnotateRequired){
+            long firstMidnight = [EpochTime epochTimeAtZeroHour:minXrangeForPlot];
+            long lastMidnight = [EpochTime epochTimeNextDayAtZeroHour:maxXrangeForPlot];
+            
+            CPTPlotRange *xRange  = plotSpace0.xRange;
+            CPTPlotRange *yRange = plotSpace0.yRange;
+            double minXrange = [[NSDecimalNumber decimalNumberWithDecimal:xRange.location] doubleValue];
+            double maxXrange = [[NSDecimalNumber decimalNumberWithDecimal:xRange.location] doubleValue] + [[NSDecimalNumber decimalNumberWithDecimal:xRange.length] doubleValue];
+            
+            CGRect bounds = NSRectToCGRect(hostingView.bounds);
+            
+            NSString *stringFromDate;
+            CPTMutableTextStyle *dateStringStyle;
+            NSArray *dateAnnotationPoint;
+            CPTTextLayer *textLayer;
+            NSDateFormatter *labelFormatter = [[NSDateFormatter alloc] init] ;
+            [labelFormatter setDateFormat:@"MM/dd"];
+            labelFormatter.timeZone = [NSTimeZone timeZoneWithName:@"GMT"];
+            CPTPlotSpaceAnnotation *dateAnnotation;
+            for(long labelDate = firstMidnight; labelDate <= lastMidnight; labelDate = labelDate + (60*60*24))
+            {
+                if((double)labelDate >= minXrange && labelDate <= (double)(maxXrange)){
+                    stringFromDate = [labelFormatter stringFromDate:[NSDate dateWithTimeIntervalSince1970:labelDate]];
+                    dateStringStyle = [CPTMutableTextStyle textStyle];
+                    dateStringStyle.color	= [CPTColor redColor];
+                    dateStringStyle.fontSize = round(bounds.size.height / (CGFloat)30.0);
+                    dateStringStyle.fontName = @"Courier";
+                    
+                    // Determine point of symbol in plot coordinates
+                    dateAnnotationPoint = [NSArray arrayWithObjects:[NSDecimalNumber numberWithLong:labelDate],[NSDecimalNumber decimalNumberWithDecimal: yRange.location], nil];
+                    
+                    textLayer = [[CPTTextLayer alloc] initWithText:stringFromDate style:dateStringStyle];
+                    dateAnnotation = [[CPTPlotSpaceAnnotation alloc] initWithPlotSpace:graph.defaultPlotSpace   anchorPlotPoint:dateAnnotationPoint];
+                    dateAnnotation.contentLayer = textLayer;
+                    dateAnnotation.displacement =  CGPointMake( 0.0f,(CGFloat)10.0 );     
+                    [graph.plotAreaFrame.plotArea addAnnotation:dateAnnotation];
+                    [dateAnnotationArray addObject:dateAnnotation];
+                }
             }
         }
     }
-    
 }
 
 
@@ -1331,8 +1323,7 @@
     }
     zoomedOut = NO;
 
-    BOOL dateAnnotateRequired = [self fixUpXAxisLabelsForLayerIndex:0 
-                                                        AndDataView:zoomView];
+    BOOL dateAnnotateRequired = [self fixUpXAxisLabelsForDataView:zoomView];
     
     while([dateAnnotationArray count] > 0){
         [graph.plotAreaFrame.plotArea removeAnnotation:[dateAnnotationArray objectAtIndex:0]];
@@ -1395,8 +1386,7 @@
     [plotSpace2 setXRange:xRangeZoomOut];
     [plotSpace2 setYRange:yRange2ZoomOut]; 
     
-    BOOL dateAnnotateRequired = [self fixUpXAxisLabelsForLayerIndex:0 
-                                           AndDataView:dataView];
+    BOOL dateAnnotateRequired = [self fixUpXAxisLabelsForDataView:dataView];
  
     while([dateAnnotationArray count] > 0){
         [graph.plotAreaFrame.plotArea removeAnnotation:[dateAnnotationArray objectAtIndex:0]];

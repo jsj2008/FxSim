@@ -18,12 +18,7 @@
 #import "SignalSystem.h"
 
 #define DATABASE_GRANULARITY_SECONDS 1
-//30*24*60*60
-//#define MAX_DATA_CHUNK  2592000
-//60*24*60*60 
 #define MAX_DATA_CHUNK (60*24*60*60)
-
-//24*60*60
 #define DAY_SECONDS 86400
 
 @interface DataController()
@@ -31,7 +26,6 @@
 - (void) setupListofDataFields;
 - (void) readingRecordSetProgress:(NSNumber *) progressFraction;
 - (void) readingRecordSetMessage:(NSString *) progressMessage;
-
 - (void) progressAsFraction:(NSNumber *) progressValue;
 @end
 
@@ -224,15 +218,15 @@ FMDatabase *db;
 //    return [DataProcessor strategyUnderstood:strategyString];
 //}
 
-- (long) leadTimeRequired:(NSString *) strategyString
-{
-    return [DataProcessor leadTimeRequired:strategyString];
-}
-
-- (long) leadTicsRequired:(NSString *) strategyString
-{
-    return [DataProcessor leadTicsRequired:strategyString];
-}
+//- (long) leadTimeRequired:(SignalSystem *) signalSystem
+//{
+//    return [signalSystem leadTimeRequired];
+//}
+//
+//- (long) leadTicsRequired:(SignalSystem *) signalSystem
+//{
+//    return [DataProcessor leadTicsRequired:strategyString];
+//}
 
 
 
@@ -455,7 +449,6 @@ FMDatabase *db;
     double **intermediateDataValuesPointerArray = NULL;
     
     NSNumber *progressAmount;
-    NSString *userMessage;
     DataSeries *newDataSeries;
     int requestTruncated = 0;
     
@@ -467,8 +460,7 @@ FMDatabase *db;
                               AndExtraVariables: extraVariables
                                 AndSignalSystem: signalSystem
                          AndReturningStatsArray: statsArray
-                          IncludePrecedingTicks: 0
-                       WithRequestTruncatedFlag: &requestTruncated]; 
+                       WithRequestTruncatedFlag: &requestTruncated];
     
     if(success && !cancelProcedure){
         if(doUpdateUI){
@@ -533,7 +525,6 @@ FMDatabase *db;
             oldDataIndex++;
         }
         if(oldDataIndex >= oldDataLength){
-            userMessage = @"Something wrong couldn't find >= startdate in the data";
             success = NO;
         }
     }
@@ -570,8 +561,7 @@ FMDatabase *db;
                                                   AndExtraVariables: extraVariables
                                                     AndSignalSystem: signalSystem
                                              AndReturningStatsArray: statsArray
-                                              IncludePrecedingTicks: 0
-                                           WithRequestTruncatedFlag: &requestTruncated]; 
+                                           WithRequestTruncatedFlag: &requestTruncated];
                         
                         if(!success || cancelProcedure){
                             keepGoing = NO;
@@ -693,7 +683,6 @@ FMDatabase *db;
                   AndExtraVariables: (NSArray *) extraVariables
                     AndSignalSystem: (SignalSystem *) signalSystem
              AndReturningStatsArray: (NSMutableArray *) statsArray
-              IncludePrecedingTicks: (long) numberOfPrecedingData
            WithRequestTruncatedFlag: (int *) requestTrucated
 {
     //We always get the BID and ASK and calculate a MID, other options added as per strategy requirements

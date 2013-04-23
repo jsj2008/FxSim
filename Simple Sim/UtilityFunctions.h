@@ -16,6 +16,8 @@
 
 +(int) signOfInt: (int) n;
 
++(int) signOfLong: (long) n;
+
 +(void) calcSortIndexForDoubleArray: (double *) arrayToSort
                      WithStartIndex: (long) startIndex
                         AndEndIndex: (long) endIndex

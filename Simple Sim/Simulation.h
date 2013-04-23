@@ -138,6 +138,8 @@ AndTradingTimeStart: (int) tradingTimeStart
 - (NSString *) getReasonForBalanceAdjustmentAtIndex:(NSUInteger) balAdjIndex;
 - (double) getResultingBalanceForBalanceAdjustmentAtIndex:(NSUInteger) balAdjIndex;
 - (BOOL) writeBalanceAdjustmentsToFile:(NSURL *) urlOfFile;
+- (double) getInterestCostsFrom: (long) startDateTime
+                             To:(long) endDateTime;
 
 - (NSUInteger) numberOfSignals;
 - (NSDictionary *) detailsOfSignalAtIndex:(NSUInteger)signalInfoIndex;

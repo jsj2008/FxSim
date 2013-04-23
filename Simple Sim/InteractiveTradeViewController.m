@@ -350,7 +350,7 @@
 
 - (IBAction)exportSampledDataPress:(id)sender {
     // Create a File Save Dialog class.
-    BOOL allOk;
+    BOOL allOk = YES;
     NSString *userMessage;
     
     NSString *suggestedFileName;
@@ -398,8 +398,7 @@
 
 - (IBAction)exportZoomResampledDataPress:(id)sender {
     // Create a File Save Dialog class.
-    BOOL allOk;
-    NSString *userMessage;
+    BOOL allOk = YES;
     
     NSString *suggestedFileName;
     NSSavePanel *saveDlg = [NSSavePanel savePanel];
@@ -423,16 +422,13 @@
                 NSURL *fileToSaveTo = [saveDlg URL];
                 allOk = [dataToExport writeDataSeriesToFile:fileToSaveTo];
                 if(!allOk){
-                    userMessage = @"Problem trying to write data to file";
                 }
             }
         }else {
             allOk = NO;
-            userMessage = @"Data source is of length 0, giving up";
         }
     }else{
         allOk = NO;
-        userMessage = @"Data source does not seem to be initialialised";
     }
     
     if(!allOk){
@@ -652,7 +648,7 @@
                 }
                 NSTableColumn *newTableColumn;
                 NSCell *newColumnCell;
-                int tableViewWidth;
+                int tableViewWidth = 0;
                 NSArray *dataRow = [importDataArray objectAtIndex:0];
                 for(int i = 0; i < [dataRow count]; i++){
                     newTableColumn = [[NSTableColumn alloc] initWithIdentifier:[NSString stringWithFormat:@"Col%d",i]];

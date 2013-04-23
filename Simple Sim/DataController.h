@@ -10,8 +10,6 @@
 @class DataSeries;
 @class DataSeriesValue;
 @class SignalSystem;
-//@class PositioningSystem;
-//@class RulesSystem;
 
 @interface DataController : NSObject{
     BOOL _connected;
@@ -44,9 +42,6 @@
 - (void) setDelegate:(id)del;
 - (BOOL) doThreads;
 - (void) setDoThreads:(BOOL)doThreadedProcedures;
-//- (BOOL) strategyUnderstood:(NSString *) strategyString;
-- (long) leadTimeRequired:(NSString *) strategyString;
-- (long) leadTicsRequired:(NSString *) strategyString;
 - (BOOL) setupDataSeriesForName: (NSString *) dataSeriesName; 
 - (long) getMinDateTimeForLoadedData;
 - (long) getMaxDateTimeForLoadedData;
@@ -69,7 +64,6 @@
                   AndExtraVariables: (NSArray *) extraVariables
                     AndSignalSystem: (SignalSystem *) signalSystem
              AndReturningStatsArray: (NSMutableArray *) statsArray
-              IncludePrecedingTicks: (long) numberOfPrecedingData
            WithRequestTruncatedFlag: (int *) requestTrucated;
 
 - (void) setDataForStartDateTime: (long) requestedStartDate 

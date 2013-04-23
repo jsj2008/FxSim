@@ -46,7 +46,7 @@
 - (void) clearUserInterfaceMessages;
 - (void) outputSimulationMessage:(NSString *) message;
 - (void) analyseSimulation: (Simulation *) simulation
-   AdditionalPreloadedData: (BOOL) preloadedData;
+   withOptionalPreloadedData: (BOOL) preloadedData;
 - (void) progressBarOn;
 - (void) progressBarOff;
 - (void) progressAsFraction:(NSNumber *) progressValue;
@@ -140,8 +140,8 @@
     int tradingDayStartMinute; 
     int tradingDayEndMinute; 
     NSString *userMessage;
-    int tradingDayStartSeconds;
-    int tradingDayEndSeconds;
+    int tradingDayStartSeconds = 0;
+    int tradingDayEndSeconds = 0;
     long dataRequestMinDateTime, dataRequestMaxDateTime;
     int dataRequestTruncatedFlag = 1;
     BOOL allOk = YES;
@@ -149,10 +149,7 @@
     
     long leadTimeRequiredForPositioning;
     long leadTimeRequiredForSignal;
-    long leadTicsRequiredForPositioning;
-    long leadTicsRequiredForSignal;
     long leadTimeRequired;
-    long leadTicsRequired;
     
     [self setCancelProcedure:NO];
     
@@ -203,8 +200,7 @@
             [self setLoadAllData:YES];
         }
         
-        
-        leadTimeRequiredForSignal = [[self dataController] leadTimeRequired:simDescription];
+        leadTimeRequiredForSignal = [newSigSystem leadTimeRequired];
         initialDataBeforeStart = MAX(initialDataBeforeStart,leadTimeRequiredForSignal);
         
         if(startDateTime < (minDateTime + initialDataBeforeStart))
@@ -281,12 +277,10 @@
         }
     }
     
-    leadTicsRequiredForSignal = [[self dataController] leadTimeRequired:simDescription];
-    leadTimeRequiredForPositioning = [[newSimulation positionSystem] leadTimeRequired];
-    leadTicsRequiredForPositioning = [[newSimulation positionSystem] leadTicsRequired];
+    leadTimeRequiredForSignal = [newSigSystem leadTimeRequired];
+    leadTimeRequiredForPositioning = [newPosSystem leadTimeRequired];
     
     leadTimeRequired = MAX(leadTimeRequiredForPositioning,leadTimeRequiredForSignal);
-    leadTicsRequired = MAX(leadTicsRequiredForPositioning,leadTicsRequiredForSignal);
         
     //Getting the initial data
     long simulationDateTime;
@@ -329,7 +323,6 @@
                                                  AndExtraVariables: extraRequiredVariables
                                                    AndSignalSystem: [newSimulation signalSystem]
                                             AndReturningStatsArray: nil
-                                             IncludePrecedingTicks: leadTicsRequired
                                           WithRequestTruncatedFlag: &dataRequestTruncatedFlag];
         userMessage = @"Data set up";
         if([self doThreads]){
@@ -356,7 +349,7 @@
         long numberOfSimulationSteps = (endDateTime-startDateTime)/timeStep;
   
         dateTimesData = [[NSMutableData alloc] initWithLength:numberOfSimulationSteps * sizeof(long)]; 
-        simDateTimes = [dateTimesData mutableBytes];
+        simDateTimes = (long *)[dateTimesData mutableBytes];
         
         simulationDataDictionary = [[NSMutableDictionary alloc] initWithCapacity:[fieldNames count]];
         simulationDataArrays = [[NSMutableData alloc] initWithLength:[fieldNames count] * sizeof(double*)];
@@ -382,7 +375,6 @@
     long timeOfDayInSeconds;
     NSDictionary *values;
 
-    simulationDateTime = startDateTime;
     [self setCashPosition:startingBalance];
     
     double fridayCutoff = [RulesSystem fridayRule:[newSimulation rulesSystem]];
@@ -436,7 +428,6 @@
                                                  AndExtraVariables: extraRequiredVariables
                                                    AndSignalSystem: [newSimulation signalSystem]
                                             AndReturningStatsArray: nil
-                                             IncludePrecedingTicks: leadTicsRequired
                                           WithRequestTruncatedFlag: &dataRequestTruncatedFlag];
                 
                 if(dataRequestTruncatedFlag == 0){
@@ -453,17 +444,12 @@
             if(simulationDateTime > [[self dataController] getMaxDateTimeForLoadedData]){
                 [NSException raise:@"DataSeries does not cover current date" format:@"Max: %ld current %ld",[[self dataController] getMaxDateTimeForLoadedData],simulationDateTime];
             }
-            
-//            if(simulationDateTime == 1077095400 - [newSimulation tradingLag])
-//            {
-//            //if([EpochTime daysSinceEpoch:1077062401] == [EpochTime daysSinceEpoch:simulationDateTime]){
-//                NSLog(@"check");
+
+//            if(simulationDateTime == 1092841200){
+//                [[[self dataController] dataSeries] writeDataSeriesToFile:[NSURL URLWithString:@"/Users/Martin/Desktop/test.csv"]
+//                 ForStartTime:[EpochTime epochTimeAtZeroHour:1092841200]
+//                                                               AndEndTime:[EpochTime epochTimeNextDayAtZeroHour:1092841200]];
 //            }
-            if(simulationDateTime == 1092841200){
-                [[[self dataController] dataSeries] writeDataSeriesToFile:[NSURL URLWithString:@"/Users/Martin/Desktop/test.csv"]
-                 ForStartTime:[EpochTime epochTimeAtZeroHour:1092841200]
-                                                               AndEndTime:[EpochTime epochTimeNextDayAtZeroHour:1092841200]];
-            }
                         values = [[self dataController] getValues: fieldNames
                                        AtDateTime:simulationDateTime ];
             
@@ -553,7 +539,7 @@
             [self performSelectorOnMainThread:@selector(updateStatus:) withObject:userMessage waitUntilDone:NO];
         }
         [self analyseSimulation:newSimulation
-        AdditionalPreloadedData:fullDataLoaded];
+      withOptionalPreloadedData:fullDataLoaded];
         
     }
 
@@ -572,7 +558,7 @@
 }
 
 -(void)analyseSimulation: (Simulation *) simulation
-       AdditionalPreloadedData: (BOOL) preloadedData;
+       withOptionalPreloadedData: (BOOL) preloadedData;
 {
     NSString *userMessage;
     DataSeries *positionDataSeries;
@@ -610,7 +596,7 @@
     NSMutableData *positionAvePriceData;
     double *positionAvePriceArray;
     
-    NSUInteger dateCount = 0, timeStep = 0, tradeIndex, cashMoveIndex;
+    NSUInteger timeStep = 0, tradeIndex, cashMoveIndex;
     double signal, currentSignal;
     long startDateTime, endDateTime, stepDateTime, nextTradeDateTime;
     BOOL allTradesFinished, allCashMovesFinished;
@@ -641,7 +627,6 @@
     NSUInteger arraySize;
     long dataRequestMinDateTime, dataRequestMaxDateTime;
     
-    
     userMessage = @"Performing Analysis of Simulation\n";
     [[[simulation simulationRunOutput] mutableString] appendString:userMessage];
     if([self doThreads]){
@@ -655,13 +640,129 @@
     endDateTime = [[simulation basicParameters] endDate];
     timeStep = [[simulation basicParameters] samplingRate];
     
-    cashMoveIndex = 0;
-    allCashMovesFinished = NO;
-    nextCashMoveDateTime = [simulation getDateTimeForBalanceAdjustmentAtIndex:cashMoveIndex];
-    
-    tradeIndex = 0;
-    allTradesFinished = NO;
     if([simulation numberOfTrades] >0){
+        
+        // First get some details about all the trades
+        long currentExposure = 0;
+        //double totalInterestCosts = 0.0;
+        long minExposureLength = 0, maxExposureLength = 0, medianExposureLength = 0, medianLoserExposureLength = 0, medianWinnerExposureLength = 0;
+        NSMutableArray *exposureLengths = [[NSMutableArray alloc] init];
+        NSMutableArray *winnerExposureLengths = [[NSMutableArray alloc] init];
+        NSMutableArray *loserExposureLengths = [[NSMutableArray alloc] init];
+        
+        long numberOfGrossWiningTrades = 0, numberOfGrossLosingTrades = 0,  tradeAmount = 0, tradeToCloseAmount = 0, tradeToOpenAmount = 0;
+        double tradeCashFlowOfExposure = 0.0, bestWinner = 0.0, biggestLoser = 0.0;
+        long exposureStartTime;
+        for(int iTrade = 0; iTrade < [simulation numberOfTrades]; iTrade++){
+            tradeDetails = [simulation detailsOfTradeAtIndex:iTrade];
+            tradeAmount = [[tradeDetails objectForKey:@"AMOUNT"] intValue];
+            if(currentExposure == 0){
+                exposureStartTime = [[tradeDetails objectForKey:@"DATETIME"] longValue];
+                tradeCashFlowOfExposure =  - [[tradeDetails objectForKey:@"AMOUNT"] intValue] * [[tradeDetails objectForKey:@"PRICE"] doubleValue];
+            }else{
+                if([UtilityFunctions signOfLong:currentExposure] != [UtilityFunctions signOfLong:tradeAmount]){
+                    tradeToOpenAmount = MAX(0,ABS(tradeAmount) - ABS(currentExposure))*[UtilityFunctions signOfLong:tradeAmount];
+                    tradeToCloseAmount = tradeAmount - tradeToOpenAmount;
+                }
+                if([UtilityFunctions signOfLong:currentExposure] == [UtilityFunctions signOfLong:tradeAmount]){
+                    tradeToOpenAmount = tradeAmount;
+                    tradeToCloseAmount = 0;
+                }
+            
+                if(currentExposure + tradeToCloseAmount == 0){//End of exposure
+                    long exposureLength = [[tradeDetails objectForKey:@"DATETIME"] longValue] - exposureStartTime;
+                    double interestCosts = [simulation getInterestCostsFrom:exposureStartTime
+                                                                          To:[[tradeDetails objectForKey:@"DATETIME"] longValue]];
+                    [exposureLengths addObject:[NSNumber numberWithLong:exposureLength]];
+                    tradeCashFlowOfExposure = tradeCashFlowOfExposure - tradeToCloseAmount * [[tradeDetails objectForKey:@"PRICE"] doubleValue];
+                    if([[simulation quoteCode] isNotEqualTo:[simulation accCode]]){
+                        tradeCashFlowOfExposure = tradeCashFlowOfExposure/[[tradeDetails objectForKey:@"PRICE"] doubleValue];
+                    }
+                    tradeCashFlowOfExposure = tradeCashFlowOfExposure + interestCosts;
+                    
+                    if(tradeCashFlowOfExposure > 0){
+                        numberOfGrossWiningTrades++;
+                        bestWinner = MAX(bestWinner, tradeCashFlowOfExposure);
+                        [winnerExposureLengths addObject:[NSNumber numberWithLong:exposureLength]];
+                    }
+                    if(tradeCashFlowOfExposure <= 0){
+                        numberOfGrossLosingTrades++;
+                        biggestLoser = MIN(biggestLoser, tradeCashFlowOfExposure);
+                        [loserExposureLengths addObject:[NSNumber numberWithLong:exposureLength]];
+                    }
+                    //totalInterestCosts = totalInterestCosts + interestCosts;
+                }else{
+                    if(tradeToCloseAmount != 0){
+                        tradeCashFlowOfExposure = tradeCashFlowOfExposure - tradeToCloseAmount * [[tradeDetails objectForKey:@"PRICE"] doubleValue];
+                        
+                    }
+                }
+            }
+            currentExposure = currentExposure + tradeAmount;
+        }
+        long numberOfExposures = [exposureLengths count];
+        NSSortDescriptor *lowestToHighest = [NSSortDescriptor sortDescriptorWithKey:@"self" ascending:YES];
+        [exposureLengths sortUsingDescriptors:[NSArray arrayWithObject:lowestToHighest]];
+        [loserExposureLengths sortUsingDescriptors:[NSArray arrayWithObject:lowestToHighest]];
+        [winnerExposureLengths sortUsingDescriptors:[NSArray arrayWithObject:lowestToHighest]];
+        
+        minExposureLength = [[exposureLengths objectAtIndex:0] longValue];
+        maxExposureLength = [[exposureLengths objectAtIndex:(numberOfExposures-1)] longValue];
+        
+        if(numberOfExposures % 2 ){
+            medianExposureLength = ([[exposureLengths objectAtIndex:floor((numberOfExposures)/2.0)-1] longValue] + [[exposureLengths objectAtIndex:ceil((numberOfExposures)/2.0)-1] longValue])/2;
+        }else{
+            medianExposureLength = [[exposureLengths objectAtIndex:numberOfExposures/2-1] longValue];
+        }
+        
+        if([loserExposureLengths count] > 0 && [loserExposureLengths count] % 2 ){
+            medianLoserExposureLength = ([[loserExposureLengths objectAtIndex:floor(([loserExposureLengths count])/2.0)-1] longValue] + [[loserExposureLengths objectAtIndex:ceil(([loserExposureLengths count])/2.0)-1] longValue])/2;
+        }else{
+            medianLoserExposureLength =  [[loserExposureLengths objectAtIndex:[loserExposureLengths count]/2-1] longValue];
+        }
+        
+        if([winnerExposureLengths count] > 0 && [winnerExposureLengths count] % 2){
+            medianWinnerExposureLength = ([[winnerExposureLengths objectAtIndex:floor(([winnerExposureLengths count])/2.0)-1] longValue] + [[winnerExposureLengths objectAtIndex:ceil(([winnerExposureLengths count])/2.0)-1] longValue])/2;
+        }else{
+            medianWinnerExposureLength = [[winnerExposureLengths objectAtIndex:[winnerExposureLengths count]/2-1] longValue];
+        }
+        
+        [simulation addObjectToSimulationResults:[NSNumber numberWithLong:numberOfExposures]
+                                          ForKey:@"EXP NUMBER"];
+        [simulation addObjectToSimulationResults:[NSNumber numberWithLong:numberOfGrossLosingTrades]
+                                          ForKey:@"EXP N LOSS"];
+        [simulation addObjectToSimulationResults:[NSNumber numberWithLong:numberOfGrossWiningTrades]
+                                          ForKey:@"EXP N WIN"];
+        [simulation addObjectToSimulationResults:[NSNumber numberWithLong:minExposureLength]
+                                          ForKey:@"EXP MIN LEN"];
+        [simulation addObjectToSimulationResults:[NSNumber numberWithLong:maxExposureLength]
+                                          ForKey:@"EXP MAX LEN"];
+        [simulation addObjectToSimulationResults:[NSNumber numberWithLong:medianExposureLength]
+                                          ForKey:@"EXP MED LEN"];
+        [simulation addObjectToSimulationResults:[NSNumber numberWithLong:medianLoserExposureLength]
+                                          ForKey:@"EXP LOSS MED LEN"];
+        [simulation addObjectToSimulationResults:[NSNumber numberWithLong:medianWinnerExposureLength]
+                                          ForKey:@"EXP WIN MED LEN"];
+        [simulation addObjectToSimulationResults:[NSNumber numberWithDouble:biggestLoser]
+                                          ForKey:@"EXP BIG LOSS"];
+        [simulation addObjectToSimulationResults:[NSNumber numberWithDouble:bestWinner]
+                                          ForKey:@"EXP BIG WIN"];
+        
+        //@"EXP NUMBER",@"EXP N LOSE",@"EXP N WIN",@"EXP MIN LEN",@"EXP MAX LEN",@"EXP MED LEN",@"EXP BIG LOSE",@"EXP BIG WIN"
+        
+//        [tradeDetails setObject:[NSNumber numberWithInt:[trade amount] ] forKey:@"AMOUNT"];
+//        [tradeDetails setObject:[NSNumber numberWithLong:[trade dateTime]] forKey:@"DATETIME"];
+//        [tradeDetails setObject:[NSNumber numberWithDouble:[trade price]] forKey:@"PRICE"];
+//        [tradeDetails setObject:[NSNumber numberWithInt:[trade resultingMarketExposure]] forKey:@"ENDEXP"];
+//        [tradeDetails setObject:[NSNumber numberWithDouble:[trade spread]] forKey:@"SPREAD"];
+//        [tradeDetails setObject:[NSNumber numberWithLong:[trade signalDateTime]] forKey:@"SIGDATETIME"];
+        
+        cashMoveIndex = 0;
+        allCashMovesFinished = NO;
+        nextCashMoveDateTime = [simulation getDateTimeForBalanceAdjustmentAtIndex:cashMoveIndex];
+        
+        tradeIndex = 0;
+        allTradesFinished = NO;
         nextTradeDateTime = [simulation getDateTimeForTradeAtIndex:tradeIndex];
         
         NSMutableArray *activityDates = [[NSMutableArray alloc] init];
@@ -763,43 +864,43 @@
         
         if(![self cancelProcedure]){
             dateTimesData = [[NSMutableData alloc] initWithLength:arraySize * sizeof(long)]; 
-            dateTimesArray = [dateTimesData mutableBytes];
+            dateTimesArray = (long *)[dateTimesData mutableBytes];
             
             signalData = [[NSMutableData alloc] initWithLength:arraySize * sizeof(double)];
-            signalArray = [signalData mutableBytes];
+            signalArray = (double *)[signalData mutableBytes];
             
             marketPositionData = [[NSMutableData alloc] initWithLength:arraySize * sizeof(double)]; 
-            marketPositionArray = [marketPositionData mutableBytes];
+            marketPositionArray = (double *)[marketPositionData mutableBytes];
             
             shortIndicatorData = [[NSMutableData alloc] initWithLength:arraySize * sizeof(double)]; 
-            shortIndicatorArray = [shortIndicatorData mutableBytes];
+            shortIndicatorArray = (double *)[shortIndicatorData mutableBytes];
             
             longIndicatorData = [[NSMutableData alloc] initWithLength:arraySize * sizeof(double)]; 
-            longIndicatorArray = [longIndicatorData mutableBytes];
+            longIndicatorArray = (double *)[longIndicatorData mutableBytes];
             
             marginUsedData = [[NSMutableData alloc] initWithLength:arraySize * sizeof(double)];
-            marginUsedArray = [marginUsedData mutableBytes];
+            marginUsedArray = (double *)[marginUsedData mutableBytes];
             
             marginAvailableData = [[NSMutableData alloc] initWithLength:arraySize * sizeof(double)];
-            marginAvailableArray = [marginAvailableData mutableBytes];
+            marginAvailableArray = (double *)[marginAvailableData mutableBytes];
             
             marginCloseOutData = [[NSMutableData alloc] initWithLength:arraySize * sizeof(double)];
-            marginCloseOutArray = [marginCloseOutData mutableBytes];
+            marginCloseOutArray = (double *)[marginCloseOutData mutableBytes];
             
             cashPositionData = [[NSMutableData alloc] initWithLength:arraySize * sizeof(double)]; 
-            cashPositionArray = [cashPositionData mutableBytes]; 
+            cashPositionArray = (double *)[cashPositionData mutableBytes];
             
             navData = [[NSMutableData alloc] initWithLength:arraySize * sizeof(double)];
-            navArray = [navData mutableBytes]; 
-           
+            navArray = (double *)[navData mutableBytes];
+            
             spreadCostData = [[NSMutableData alloc] initWithLength:arraySize * sizeof(double)];
-            spreadCostArray = [spreadCostData mutableBytes];
+            spreadCostArray = (double *)[spreadCostData mutableBytes];
             
             drawDownData = [[NSMutableData alloc] initWithLength:arraySize * sizeof(double)]; 
-            drawDownArray = [drawDownData mutableBytes]; 
+            drawDownArray = (double *)[drawDownData mutableBytes]; 
             
             positionAvePriceData = [[NSMutableData alloc] initWithLength:arraySize * sizeof(double)];
-            positionAvePriceArray = [positionAvePriceData mutableBytes]; 
+            positionAvePriceArray = (double *)[positionAvePriceData mutableBytes]; 
            
             
             //    
@@ -832,7 +933,6 @@
                                                      AndExtraVariables: extraRequiredVariables
                                                        AndSignalSystem: [simulation signalSystem]
                                                 AndReturningStatsArray: nil
-                                                 IncludePrecedingTicks: 0
                                               WithRequestTruncatedFlag: &dataRequestTruncated]){
                     [NSException raise:@"Database problem"
                                 format:nil];
@@ -844,7 +944,6 @@
             }
         }
         
-        dateCount = 0;
         currentPosition = 0;
         currentPositionSign = 0;
         currentCashBalance = 0.0;
@@ -896,12 +995,11 @@
                 dataRequestMinDateTime = [[self dataController] getMaxDateTimeForLoadedData];
                 dataRequestMaxDateTime = MAX(currentDateTime,endDateTime);
                 [[self dataController] getMoreDataForStartDateTime: dataRequestMinDateTime
-                                                AndEndDateTime: dataRequestMaxDateTime
-                                             AndExtraVariables: extraRequiredVariables
-                                               AndSignalSystem: [simulation signalSystem]
-                                        AndReturningStatsArray: nil
-                                         IncludePrecedingTicks: 0
-                                      WithRequestTruncatedFlag: &dataRequestTruncated];
+                                                    AndEndDateTime: dataRequestMaxDateTime
+                                                 AndExtraVariables: extraRequiredVariables
+                                                   AndSignalSystem: [simulation signalSystem]
+                                            AndReturningStatsArray: nil
+                                          WithRequestTruncatedFlag: &dataRequestTruncated];
                 if([self doThreads]){
                     [self performSelectorOnMainThread:@selector(readingDatabaseOff) 
                                            withObject:nil 
@@ -911,7 +1009,7 @@
             
             // Get the price data values for today
             currentDataValues = [[self dataController] getValues:simDataFieldNames 
-                                                  AtDateTime:currentDateTime];
+                                                      AtDateTime:currentDateTime];
             
             for(int fieldIndex = 0; fieldIndex < [simDataFieldNames count]; fieldIndex++){
                 simulationDataArray[fieldIndex][dateIndex] = [[currentDataValues objectForKey:[simDataFieldNames objectAtIndex:fieldIndex]] doubleValue];
@@ -1134,7 +1232,7 @@
                     }
                 }
             }
-            
+           
             marginAvailableArray[dateIndex] = navArray[dateIndex] - marginUsedArray[dateIndex];
             marginCloseOutArray[dateIndex] = navArray[dateIndex] - (marginUsedArray[dateIndex]/2);
             spreadCostArray[dateIndex] = spreadCost;
@@ -1266,8 +1364,7 @@
                       doNotIncreasePosition: (BOOL) doNotIncrease
                                  doCloseout: (BOOL) doCloseOut
 {
-    double dataSignal, bid, ask;
-    NSString *userMessage;
+    double  bid, ask;
     NSDictionary *values;
     double unrealisedPnl = 0.0;
     double marginUsed = 0.0;
@@ -1289,12 +1386,10 @@
             
     if(![[values objectForKey:@"SUCCESS"] boolValue])
     {
-        userMessage = @"Data Problem, Stopping....";
         [NSException raise: @"Data Problem in getValuesForFields" format:@"datetime %ld",simulationDateTime];
     }
     
     if(doCloseOut){
-        dataSignal = 0.0;
         debits = [self setExposureToUnits: 0
                                AtTimeDate: simulationDateTime + [simulation tradingLag]
                             ForSimulation: simulation
@@ -1307,7 +1402,6 @@
       
         // Check our margin available before we can trade
         unrealisedPnl = 0.0;
-        marginUsed = 0.0;
         
         if([simulation currentExposure] > 0)
         {
@@ -1379,9 +1473,7 @@
                               ForSignalAtTime: simulationDateTime];
             
             [self setCashPosition:[self cashPosition] + debits];
-            debits = 0.0;
             nav = [self cashPosition];
-            unrealisedPnl = 0.0;
             NSString *userMessage = [NSString stringWithFormat:@"%@ Trade from %d to %d %@ -- NAV: %5.2f %@ \n",[EpochTime stringDateWithTime:simulationDateTime + [simulation tradingLag]], keepCurrentExposure,requiredPositionSize, [simulation baseCode], nav,[simulation accCode]];
             [[[simulation simulationRunOutput] mutableString] appendString:userMessage];
             if([self doThreads]){
@@ -1429,58 +1521,131 @@
 }
       
 -(int)getRequiredExposureForSimulation: (Simulation *) simulation
-                                AtTime:(long) currentDateTime
-                               WithNav:(double) nav
+                                AtTime: (long) currentDateTime
+                               WithNav: (double) nav
 {
     int requiredExposure = 0;
     PositioningSystem *posSys = [simulation positionSystem];
     NSArray *fieldNames = [[self dataController] getFieldNames];
+    NSDictionary *values = [[self dataController] getValues: fieldNames
+                                                 AtDateTime:currentDateTime ];
     
+    double bid, ask, mid, dataSignal;
+    bid = [[values objectForKey:@"BID"] doubleValue];
+    ask =  [[values objectForKey:@"ASK"] doubleValue];
+    mid =  [[values objectForKey:@"MID"] doubleValue];
+    dataSignal = [[values objectForKey:@"SIGNAL"] doubleValue];
+    BOOL zeroPositionRequired = NO;
     
-    if([[posSys type] isEqualToString:@"STP"] || [[posSys type] isEqualToString:@"STAT"]){
-        NSDictionary *values = [[self dataController] getValues: fieldNames 
-                                                     AtDateTime:currentDateTime ];
-        double mid, bid, ask, dataSignal, adjustedThreshold;
-        int targetAbsolutePositionSize;
-        BOOL accountCurrencyIsQuoteCurrency, weakeningSignalOverride;
-       
-        weakeningSignalOverride = NO;
-        
-        mid = [[values objectForKey:@"MID"] doubleValue];
-        bid = [[values objectForKey:@"BID"] doubleValue];
-        ask =  [[values objectForKey:@"ASK"] doubleValue];
-        dataSignal = [[values objectForKey:@"SIGNAL"] doubleValue]; 
-        adjustedThreshold = [posSys signalThreshold] * [[[self dataController] dataSeries] pipSize];
-        
-        if([posSys stopEntryOnWeakening]){
-            NSDictionary *trailingValues = [[self dataController] getValues: fieldNames
-                                                         AtDateTime:currentDateTime - 30 * 60 ];
-            double trailingDataSignal = [[trailingValues objectForKey:@"SIGNAL"] doubleValue];
-//            if(fabs(dataSignal-trailingDataSignal)<adjustedThreshold){
-//                weakeningSignalOverride = YES;
-//                //NSLog(@"weakening Signal Override");
-//
-//            }
-            
-            if(dataSignal > 0){
-                if(dataSignal < (trailingDataSignal - adjustedThreshold)){
-                    weakeningSignalOverride = YES;
-                    NSLog(@"weakening Signal Override");
-                }
+    if([posSys exitOnWeakeningPrice]){
+        if([simulation currentExposure] != 0){
+            double entryPrice = [simulation wgtAverageCostOfPosition];
+            if([simulation currentExposure] > 0 && bid - entryPrice < -[posSys exitOnWeakeningPriceThreshold]){
+                requiredExposure = 0;
+                zeroPositionRequired = YES;
+                NSLog(@"Closing losing position");
             }
-            if(dataSignal < 0){
-                if(dataSignal > (trailingDataSignal + adjustedThreshold)){
-                    weakeningSignalOverride = YES;
-                    NSLog(@"weakening Signal Override");
-                }
+            if([simulation currentExposure] < 0 && ask - entryPrice >  [posSys exitOnWeakeningPriceThreshold]){
+                requiredExposure = 0;
+                zeroPositionRequired = YES;
+                NSLog(@"Closing losing position");
+            }
+        }
+    }
+    
+    if((!zeroPositionRequired) &&  [posSys stopEntryOnWeakeningPrice]){
+        BOOL weakeningPriceOverride = NO;
+        long lagTime = [posSys stopEntryOnWeakeningPriceLagTime];
+        double threshold = [posSys stopEntryOnWeakeningPriceThreshold];
+        
+        NSDictionary *trailingValues = [[self dataController] getValues: fieldNames
+                                                             AtDateTime: currentDateTime - lagTime ];
+        double trailingPrice = [[trailingValues objectForKey:@"MID"] doubleValue];
+        
+        threshold = [posSys stopEntryOnWeakeningPriceThreshold] * [[[self dataController] dataSeries] pipSize];
+        if(dataSignal > 0){
+            if(mid < (trailingPrice - threshold)){
+                weakeningPriceOverride = YES;
+                NSLog(@"Weakening Price Override");
+            }
+        }
+        if(dataSignal < 0){
+            if(mid > (trailingPrice + threshold)){
+                weakeningPriceOverride = YES;
+                NSLog(@"Weakening Price Override");
+            }
+        }
+     }
+    
+    
+    if((!zeroPositionRequired) &&  [posSys stopEntryOnWeakeningSignal]){
+        BOOL weakeningSignalOverride = NO;
+        long lagTime = [posSys stopEntryOnWeakeningSignalLagTime];
+        double adjustedThreshold;
+        
+        NSDictionary *trailingValues = [[self dataController] getValues: fieldNames
+                                                             AtDateTime:currentDateTime - lagTime ];
+        double trailingDataSignal = [[trailingValues objectForKey:@"SIGNAL"] doubleValue];
+        
+        adjustedThreshold = [posSys signalThreshold] * [[[self dataController] dataSeries] pipSize];
+        if(dataSignal > 0){
+            if(dataSignal < (trailingDataSignal - adjustedThreshold)){
+                weakeningSignalOverride = YES;
+                NSLog(@"weakening Signal Override");
+            }
+        }
+        if(dataSignal < 0){
+            if(dataSignal > (trailingDataSignal + adjustedThreshold)){
+                weakeningSignalOverride = YES;
+                NSLog(@"weakening Signal Override");
             }
         }
         if(weakeningSignalOverride && [simulation currentExposure]==0){
-            //NSLog(@"Signal weakening so no position entered");
             requiredExposure = 0;
-        }else{
-         
-            //Get a handle on an target position size
+            zeroPositionRequired = YES;
+        }
+    }
+    
+    
+    
+    if(!zeroPositionRequired){
+        if([[posSys type] isEqualToString:@"STP"] || [[posSys type] isEqualToString:@"STAT"]){
+            double adjustedThreshold;
+            int targetAbsolutePositionSize = 0;
+            BOOL accountCurrencyIsQuoteCurrency;
+            adjustedThreshold = [posSys signalThreshold] * [[[self dataController] dataSeries] pipSize];
+//            weakeningSignalOverride = NO;
+//            
+//            mid = [[values objectForKey:@"MID"] doubleValue];
+//            bid = [[values objectForKey:@"BID"] doubleValue];
+//            ask =  [[values objectForKey:@"ASK"] doubleValue];
+//            dataSignal = [[values objectForKey:@"SIGNAL"] doubleValue];
+//            adjustedThreshold = [posSys signalThreshold] * [[[self dataController] dataSeries] pipSize];
+//            
+//            if([posSys stopEntryOnWeakening]){
+//                long lagTime = [posSys leadTimeRequired];
+//                
+//                NSDictionary *trailingValues = [[self dataController] getValues: fieldNames
+//                                                                     AtDateTime:currentDateTime - lagTime ];
+//                double trailingDataSignal = [[trailingValues objectForKey:@"SIGNAL"] doubleValue];
+//                
+//                if(dataSignal > 0){
+//                    if(dataSignal < (trailingDataSignal - adjustedThreshold)){
+//                        weakeningSignalOverride = YES;
+//                        NSLog(@"weakening Signal Override");
+//                    }
+//                }
+//                if(dataSignal < 0){
+//                    if(dataSignal > (trailingDataSignal + adjustedThreshold)){
+//                        weakeningSignalOverride = YES;
+//                        NSLog(@"weakening Signal Override");
+//                    }
+//                }
+//            }
+//            if(weakeningSignalOverride && [simulation currentExposure]==0){
+//                requiredExposure = 0;
+//            }else{
+                //Get a handle on an target position size
             if([[[simulation basicParameters] accCode] isEqualToString:[[simulation basicParameters] quoteCode]]){
                 accountCurrencyIsQuoteCurrency = YES;
             }else{
@@ -1519,85 +1684,79 @@
                     requiredExposure = [simulation currentExposure];
                     
                 }
-            }   
+            }
             
             if(fabs(dataSignal) <= adjustedThreshold){
                 requiredExposure = 0;
             }
-        }
-    }
-    
-    if([[posSys type] isEqualToString:@"SFP"]){
-        double adjustedThreshold = [posSys signalThreshold] * [[[self dataController] dataSeries] pipSize];;
-        double stepProportion = [posSys stepProportion];
-        NSString *stepUnit =   [posSys stepUnit];
-        int perfSmoothParam = [posSys perfSmoothParam];
-        long smoothLength = 0, dateOffset = 0;
-        
-        if([stepUnit isEqualToString:@"P"]){
-            smoothLength = (long)[UtilityFunctions fib:perfSmoothParam]/[posSys stepLength];
-        }
-        if([stepUnit isEqualToString:@"S"] || [stepUnit isEqualToString:@"M"] || [stepUnit isEqualToString:@"H"] || [stepUnit isEqualToString:@"D"]){
-            dateOffset = [posSys leadTimeRequired];
-        } 
-        
-        
-        NSString *signalPerfField = [NSString stringWithFormat:@"EMA/%d",perfSmoothParam];
-        
-        
-        NSDictionary *values = [[self dataController] getValues: fieldNames
-                                                 AtDateTime:currentDateTime];
-        double mid, bid, ask, dataSignal;
-        int targetAbsolutePositionSize;
-        BOOL accountCurrencyIsQuoteCurrency;
-        mid = [[values objectForKey:@"MID"] doubleValue];
-        bid = [[values objectForKey:@"BID"] doubleValue];
-        ask =  [[values objectForKey:@"ASK"] doubleValue];
-        dataSignal = [[values objectForKey:@"SIGNAL"] doubleValue]; 
-        //adjustedThreshold = [posSys signalThreshold] * [[simDataController dataSeries] pipSize];
-        
-        
-        fieldNames = [NSArray arrayWithObjects:signalPerfField, nil];
-        NSDictionary *trailingValues = [[self dataController] getValues: fieldNames
-                                                             AtDateTime: currentDateTime - dateOffset
-                                                          WithTicOffset: smoothLength];
-        if(smoothLength != [[trailingValues objectForKey:@"TICOFFSET"] longValue]){
-            NSLog(@"Check: Tic offset %ld and %ld",smoothLength,[[trailingValues objectForKey:@"TICOFFSET"] longValue]);  
+            //         }
         }
         
-        double smoothedPerf = [[values objectForKey:signalPerfField] doubleValue] - [[trailingValues objectForKey:signalPerfField] doubleValue];
-        
-        if(fabs(dataSignal) >= adjustedThreshold && [UtilityFunctions signOfDouble:smoothedPerf] == [UtilityFunctions signOfDouble:dataSignal]){
+        if([[posSys type] isEqualToString:@"SFP"]){
+            double adjustedThreshold = [posSys signalThreshold] * [[[self dataController] dataSeries] pipSize];;
+            double stepProportion = [posSys stepProportion];
+            NSString *stepUnit =   [posSys stepUnit];
+            int perfSmoothParam = [posSys perfSmoothParam];
+            long smoothLength = 0, dateOffset = 0;
             
-            
-            //Get a handle on an target position size 
-            if([[[simulation basicParameters] accCode] isEqualToString:[[simulation basicParameters] quoteCode]]){
-                accountCurrencyIsQuoteCurrency = YES;
-            }else{
-                accountCurrencyIsQuoteCurrency = NO;
+            if([stepUnit isEqualToString:@"P"]){
+                smoothLength = (long)[UtilityFunctions fib:perfSmoothParam]/[posSys stepLength];
+            }
+            if([stepUnit isEqualToString:@"S"] || [stepUnit isEqualToString:@"M"] || [stepUnit isEqualToString:@"H"] || [stepUnit isEqualToString:@"D"]){
+                dateOffset = [posSys leadTimeRequired];
             }
             
-            if(accountCurrencyIsQuoteCurrency){ 
-                targetAbsolutePositionSize =  (int)floor((1-[posSys positionCushion]) * nav/ask * [[simulation basicParameters] maxLeverage]);
-            }else{
-                targetAbsolutePositionSize =  (int)floor((1-[posSys positionCushion]) * nav * [[simulation basicParameters] maxLeverage]);
+            NSString *signalPerfField = [NSString stringWithFormat:@"EMA/%d",perfSmoothParam];
+            
+            
+            int targetAbsolutePositionSize;
+            BOOL accountCurrencyIsQuoteCurrency;
+//            bid = [[values objectForKey:@"BID"] doubleValue];
+//            ask =  [[values objectForKey:@"ASK"] doubleValue];
+//            dataSignal = [[values objectForKey:@"SIGNAL"] doubleValue];
+//            
+            fieldNames = [NSArray arrayWithObjects:signalPerfField, nil];
+            NSDictionary *trailingValues = [[self dataController] getValues: fieldNames
+                                                                 AtDateTime: currentDateTime - dateOffset
+                                                              WithTicOffset: smoothLength];
+            if(smoothLength != [[trailingValues objectForKey:@"TICOFFSET"] longValue]){
+                NSLog(@"Check: Tic offset %ld and %ld",smoothLength,[[trailingValues objectForKey:@"TICOFFSET"] longValue]);
             }
-
-            if(ABS([simulation currentExposure])+(targetAbsolutePositionSize*stepProportion) <= targetAbsolutePositionSize){
-                targetAbsolutePositionSize = ABS([simulation currentExposure])+(targetAbsolutePositionSize*stepProportion);
-            }else{
-                targetAbsolutePositionSize = targetAbsolutePositionSize;
-            }
+            
+            double smoothedPerf = [[values objectForKey:signalPerfField] doubleValue] - [[trailingValues objectForKey:signalPerfField] doubleValue];
+            
+            if(fabs(dataSignal) >= adjustedThreshold && [UtilityFunctions signOfDouble:smoothedPerf] == [UtilityFunctions signOfDouble:dataSignal]){
                 
-            if( dataSignal > adjustedThreshold){
-                requiredExposure = targetAbsolutePositionSize;
+                
+                //Get a handle on an target position size
+                if([[[simulation basicParameters] accCode] isEqualToString:[[simulation basicParameters] quoteCode]]){
+                    accountCurrencyIsQuoteCurrency = YES;
+                }else{
+                    accountCurrencyIsQuoteCurrency = NO;
+                }
+                
+                if(accountCurrencyIsQuoteCurrency){
+                    targetAbsolutePositionSize =  (int)floor((1-[posSys positionCushion]) * nav/ask * [[simulation basicParameters] maxLeverage]);
+                }else{
+                    targetAbsolutePositionSize =  (int)floor((1-[posSys positionCushion]) * nav * [[simulation basicParameters] maxLeverage]);
+                }
+                
+                if(ABS([simulation currentExposure])+(targetAbsolutePositionSize*stepProportion) <= targetAbsolutePositionSize){
+                    targetAbsolutePositionSize = ABS([simulation currentExposure])+(targetAbsolutePositionSize*stepProportion);
+                }else{
+                    targetAbsolutePositionSize = targetAbsolutePositionSize;
+                }
+                
+                if( dataSignal > adjustedThreshold){
+                    requiredExposure = targetAbsolutePositionSize;
+                }
+                
+                if(dataSignal < -adjustedThreshold){  
+                    requiredExposure = -targetAbsolutePositionSize;
+                }   
+            }else{
+                requiredExposure = 0;
             }
-            
-            if(dataSignal < -adjustedThreshold){  
-                requiredExposure = -targetAbsolutePositionSize;
-            }   
-        }else{
-            requiredExposure = 0;
         }
     }
     
@@ -1691,9 +1850,6 @@
 - (double) calculateInterestForSimulation: (Simulation *) simulation 
                                ToDateTime: (long) endDateTime
 {
-    long earliestPositionDateTime;
-    earliestPositionDateTime = [simulation timeDateOfEarliestPosition];
-    
     NSArray *borrowingInterestRates;
     NSArray *lendingInterestRates;
     
@@ -1701,12 +1857,7 @@
     NSString *lendingCode; 
     NSString *accBaseCode, *accQuoteCode;
     double accBaseAskPrice,accQuoteAskPrice;
-    
-    //DataSeriesValue *accBaseAskPrice;
-    //DataSeriesValue *accQuoteAskPrice;
     double interestAccrued = 0.0;
-    
-    
     
     if([simulation currentExposure] !=0)
     {
@@ -1743,8 +1894,8 @@
         long positionInterestDateTime;
         double positionEntryPrice;
         int positionSize;
-        double interestRate;
-        long interestRateStart, interestRateEnd;
+        double interestRate = 0.0;
+        long interestRateStart  = 0.0, interestRateEnd  = 0.0;
     
     
         for(int iPos = 0; iPos < [simulation numberOfPositions]; iPos++)
@@ -1850,7 +2001,6 @@
 {
     int currentExposure = [simulation currentExposure];
     int exposureAdjustment = exposureAmount-currentExposure;
-    NSUInteger tradeIndex;
     double tradePrice;
     double interestAccrued = 0.0;
     double realisedPnl = 0.0;
@@ -1888,7 +2038,6 @@
             tradePrice = baseQuoteBidPrice;
         }
         
-        tradeIndex = [simulation numberOfTrades];
         realisedPnl = [simulation addTradeWithAmount:exposureAdjustment 
                                               AtTime:currentDateTime 
                                            WithPrice:tradePrice

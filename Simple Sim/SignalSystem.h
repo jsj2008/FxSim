@@ -16,6 +16,7 @@
     int _slowCode;
     int _signalSmooth;
     NSArray *_extras;
+    NSMutableDictionary *_miscStoredInfoDictionary;
 }
 
 
@@ -24,6 +25,8 @@
 + (BOOL) basicSignalCheck: (NSString *) signalString;
 + (BOOL) basicSeriesCheck: (NSString *) signalString;
 - (NSArray *) variablesNeeded;
+- (long) leadTimeRequired;
+- (long) leadTicsRequired;
 
 @property (readonly) NSString *signalString;
 @property (readonly) NSString *type;
@@ -31,4 +34,5 @@
 @property (readonly) int slowCode;
 @property (readonly) int signalSmooth;
 @property (readonly) NSArray *extras;
+@property (readonly) NSMutableDictionary *miscStoredInfoDictionary;
 @end

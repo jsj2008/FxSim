@@ -142,7 +142,10 @@ AndTradingTimeStart: (int) tradingTimeStart
 
 +(NSArray *)getReportFields
 {
-    NSArray *reportFields = [NSArray arrayWithObjects:@"NAME", @"TRADINGPAIR",@"ACCOUNTCURRENCY",@"BLANK",@"--RESULTS--", @"CASHTRANSFERS", @"FINALNAV", @"TRADE PNL", @"INTEREST",  @"BIGGESTDRAWDOWN", @"DRAWDOWNTIME", @"NUMBEROFTRADES", @"SPREADCOST", @"BLANK", @"--PARAMETERS--",@"STARTTIME", @"ENDTIME", @"STRATEGY",@"EXTRASERIES",@"POSITIONING", @"RULES", @"MAXLEVERAGE", @"TIMESTEP", @"TRADINGLAG", @"TRADINGDAYSTART",@"TRADINGDAYEND", @"USERADDEDDATA", nil];
+    NSArray *reportFields = [NSArray arrayWithObjects:@"NAME", @"TRADINGPAIR",@"ACCOUNTCURRENCY",@"BLANK",@"--RESULTS--", @"CASHTRANSFERS", @"FINALNAV", @"TRADE PNL", @"INTEREST",  @"BIGGESTDRAWDOWN", @"DRAWDOWNTIME", @"NUMBEROFTRADES", @"SPREADCOST", @"BLANK",@"EXP NUMBER", @"EXP N LOSS", @"EXP N WIN", @"EXP MIN LEN", @"EXP MAX LEN", @"EXP MED LEN", @"EXP LOSS MED LEN", @"EXP WIN MED LEN", @"EXP BIG LOSS", @"EXP BIG WIN", @"BLANK", @"--PARAMETERS--",@"STARTTIME", @"ENDTIME", @"STRATEGY",@"EXTRASERIES",@"POSITIONING", @"RULES", @"MAXLEVERAGE", @"TIMESTEP", @"TRADINGLAG", @"TRADINGDAYSTART", @"TRADINGDAYEND", @"USERADDEDDATA", nil];
+    
+    
+    
     return reportFields;
 }
 
@@ -424,7 +427,7 @@ AndTradingTimeStart: (int) tradingTimeStart
 
 - (NSString *) getBalanceDetailToPrint:(int) balAdjIndex;
 {
-    CashFlowRecord *newBalAdj; 
+    CashFlowRecord *newBalAdj;
     NSString *reason;
     NSString *dateTimeString;
     
@@ -461,6 +464,23 @@ AndTradingTimeStart: (int) tradingTimeStart
     [self addBalanceAdjustmentWithAmount:interestAmount 
                              AndDateTime:interestDateTime 
                                AndReason:INTEREST];
+}
+
+- (double) getInterestCostsFrom: (long) startDateTime
+                            To:(long) endDateTime
+{
+    CashFlowRecord *cfr;
+    double interestCosts = 0.0;
+    for(int i = 0; i < [[self accBalanceArray] count]; i++){
+        cfr = [[self accBalanceArray] objectAtIndex:i];
+        
+        if([cfr reason] == INTEREST){
+            if([cfr dateTime] > startDateTime && [cfr dateTime] <= endDateTime){
+                interestCosts = interestCosts + [cfr amount];
+            }
+        }
+    }
+    return interestCosts;
 }
 
 
@@ -722,7 +742,29 @@ AndTradingTimeStart: (int) tradingTimeStart
         
         if([dataFieldIdentifier isEqualToString:@"PNLUPTIME"] || [dataFieldIdentifier isEqualToString:@"PNLDOWNTIME"]){
             returnData = [NSString stringWithFormat:@"%ld hours",[returnData longValue]/(60*60)];
+            return returnData;
         }
+        
+        if([dataFieldIdentifier isEqualToString:@"EXP NUMBER"] ||
+           [dataFieldIdentifier isEqualToString:@"EXP N LOSS"] ||
+           [dataFieldIdentifier isEqualToString:@"EXP N WIN"]){
+            returnData = [NSString stringWithFormat:@"%ld",[returnData longValue]];
+            return returnData;
+        }
+        if([dataFieldIdentifier isEqualToString:@"EXP MIN LEN"] ||
+           [dataFieldIdentifier isEqualToString:@"EXP MAX LEN"] ||
+           [dataFieldIdentifier isEqualToString:@"EXP MED LEN"] ||
+           [dataFieldIdentifier isEqualToString:@"EXP LOSS MED LEN"] ||
+           [dataFieldIdentifier isEqualToString:@"EXP WIN MED LEN"]){
+            returnData = [NSString stringWithFormat:@"%5.2f hours",[returnData longValue]/(60.0*60)];
+            return returnData;
+        }
+        if([dataFieldIdentifier isEqualToString:@"EXP BIG LOSS"] ||
+           [dataFieldIdentifier isEqualToString:@"EXP BIG WIN"]){
+            returnData = [NSString stringWithFormat:@"%5.2f",[returnData doubleValue]];
+            return returnData;
+        }
+        
         returnData = [NSString stringWithFormat:@"%5.2f",[returnData floatValue]];
         
         return returnData;

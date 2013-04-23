@@ -44,6 +44,7 @@
 
 +(int) signOfInt: (int) n { return (n < 0) ? -1 : (n > 0) ? +1 : 0; };
 
++(int) signOfLong: (long) n { return (n < 0) ? -1 : (n > 0) ? +1 : 0; };
 
 +(void) swapDoublesA: (double *) a 
                 AndB: (double *) b

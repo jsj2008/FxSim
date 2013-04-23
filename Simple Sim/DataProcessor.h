@@ -18,6 +18,6 @@
                   WithTrailingData: (NSDictionary *) previousDataDetails
                    AndSignalSystem: (SignalSystem *) signalSystem;
 //+ (BOOL)strategyUnderstood:(NSString *) strategyString;
-+ (long)leadTimeRequired:(NSString *) strategyString;
-+ (long)leadTicsRequired:(NSString *) strategyString;
+//+ (long)leadTimeRequired:(NSString *) strategyString;
+//+ (long)leadTicsRequired:(NSString *) strategyString;
 @end

@@ -15,6 +15,7 @@
     double _entryPrice;
     double _exitPrice;
     double _pnl;
+    
 }
 
 - (id) initWithSignal:(double) signal

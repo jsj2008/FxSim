@@ -212,7 +212,7 @@
     reportTab = [centreTabView tabViewItemAtIndex:tabIndex];
     tabIndex = [centreTabView indexOfTabViewItemWithIdentifier:@"SIGNAL"];
     signalsTab = [centreTabView tabViewItemAtIndex:tabIndex];
-    tabIndex = [centreTabView indexOfTabViewItemWithIdentifier:@"ZOOM"];
+    //tabIndex = [centreTabView indexOfTabViewItemWithIdentifier:@"ZOOM"];
     
     [centreTabView removeTabViewItem:plotTab];
     [centreTabView removeTabViewItem:dataTab];
@@ -646,7 +646,7 @@
         if([simulationSignalTableView numberOfSelectedRows] > 1){
             NSIndexSet *selectedIndexes = [simulationSignalTableView selectedRowIndexes];
             NSUInteger minSelected, maxSelected;
-            if([selectedIndexes firstIndex] <= [selectedIndexes lastIndex])
+            if([selectedIndexes firstIndex] < [selectedIndexes lastIndex])
             {
                 minSelected = [selectedIndexes firstIndex];
                 maxSelected = [selectedIndexes lastIndex];
@@ -654,20 +654,35 @@
                 minSelected = [selectedIndexes lastIndex];
                 maxSelected = [selectedIndexes firstIndex]; 
             }
+            
             selectedRow = [[[self signalTableViewOrdering] objectAtIndex:minSelected] intValue];
             signalInfo = [[self workingSimulation] detailsOfSignalAtIndex:selectedRow];
             startDateTime = [[signalInfo objectForKey:@"ENTRYTIME"] longValue];
-            startDateTime = startDateTime - ([signalAnalysisPlotLeadHours intValue] * 60*60);
+            endDateTime = [[signalInfo objectForKey:@"EXITTIME"] longValue];
             
-            selectedRow = [[[self signalTableViewOrdering] objectAtIndex:maxSelected] intValue];
-            signalInfo = [[self workingSimulation] detailsOfSignalAtIndex:selectedRow];
-            endDateTime = [[signalInfo objectForKey:@"EXITTIME"] longValue] + 2*tradingLag;
+            for(NSUInteger iRow = minSelected + 1; iRow <= maxSelected; iRow++){
+                selectedRow = [[[self signalTableViewOrdering] objectAtIndex:iRow] intValue];
+                signalInfo = [[self workingSimulation] detailsOfSignalAtIndex:selectedRow];
+                startDateTime = MIN(startDateTime,[[signalInfo objectForKey:@"ENTRYTIME"] longValue]);
+                
+                endDateTime = MAX(endDateTime,[[signalInfo objectForKey:@"EXITTIME"] longValue]);
+                
+                //            selectedRow = [[[self signalTableViewOrdering] objectAtIndex:maxSelected] intValue];
+                //            signalInfo = [[self workingSimulation] detailsOfSignalAtIndex:selectedRow];
+                //            endDateTime = [[signalInfo objectForKey:@"EXITTIME"] longValue] + 2*tradingLag;
+                
+            }
+            startDateTime = startDateTime - ([signalAnalysisPlotLeadHours intValue] * 60*60);
+            endDateTime = endDateTime + 2*tradingLag;
         }else{
             selectedRow = [[[self signalTableViewOrdering] objectAtIndex:selectedRow] intValue];
             signalInfo = [[self workingSimulation] detailsOfSignalAtIndex:selectedRow];
             startDateTime = [[signalInfo objectForKey:@"ENTRYTIME"] longValue];
             startDateTime = startDateTime - ([signalAnalysisPlotLeadHours intValue] * 60*60);
             endDateTime = [[signalInfo objectForKey:@"EXITTIME"] longValue] + 2*tradingLag;
+        }
+        if(startDateTime >= endDateTime){
+            NSLog(@"Check this");
         }
         [self plotSignalDataFrom:startDateTime To:endDateTime];
     }
@@ -1153,28 +1168,21 @@
     NSSavePanel *saveDlg = [NSSavePanel savePanel];
     suggestedFileName = [NSString stringWithFormat:@"%@report",[[self workingSimulation] name]];
     [saveDlg setNameFieldStringValue:suggestedFileName]; 
-    
-        
-
-    
     // Set array of file types
     NSArray *fileTypesArray;
     fileTypesArray = [NSArray arrayWithObjects:@"sss", nil];
     
     // Enable options in the dialog.
-    //[saveDlg setCanChooseFiles:YES];
     [saveDlg setAllowedFileTypes:fileTypesArray];
-    //[saveDlg setAllowsMultipleSelection:NO];
     
     // Display the dialog box.  If the OK pressed,
     // process the files.
-    
     if ( [saveDlg runModal] == NSOKButton ) {
         NSData *encodedObject = [NSKeyedArchiver archivedDataWithRootObject:[self workingSimulation]];
         //simulation = [NSKeyedUnarchiver unarchiveObjectWithData:encodedObject];
         
         NSURL *fileToSaveTo = [saveDlg URL];
-        [encodedObject writeToURL:fileToSaveTo atomically:YES];
+        allOk = [encodedObject writeToURL:fileToSaveTo atomically:YES];
        
         if(!allOk){
             [self updateStatus:@"Problem trying to write data to file"];
@@ -1373,7 +1381,9 @@
             userMessage = @"Rules not understood";
         }
     }
-    simDescription = [NSString stringWithFormat:@"%@;%@",simDescription,extraSeriesString];
+    if([extraSeriesString length] > 0){
+        simDescription = [NSString stringWithFormat:@"%@;%@",simDescription,extraSeriesString];
+    }
     
     long tradingStartDateTime = [EpochTime epochTimeAtZeroHour:startDateTime] + tradingDayStartTime;
     long tradingEndDateTime = [EpochTime epochTimeAtZeroHour:endDateTime] + tradingDayEndTime;
