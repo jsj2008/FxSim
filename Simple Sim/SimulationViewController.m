@@ -202,7 +202,7 @@
     [setupSheetImportDataTableView setDataSource:self];
     
     NSUInteger tabIndex;
-    tabIndex = [centreTabView indexOfTabViewItemWithIdentifier:@"SETUP"];
+    tabIndex = [centreTabView indexOfTabViewItemWithIdentifier:@"SIM RUN"];
     setupTab = [centreTabView tabViewItemAtIndex:tabIndex];
     tabIndex = [centreTabView indexOfTabViewItemWithIdentifier:@"PLOT"];
     plotTab = [centreTabView tabViewItemAtIndex:tabIndex];
@@ -2163,7 +2163,11 @@
 
 -(BOOL) tabView:(NSTabView *) tabView shouldSelectTabViewItem:(NSTabViewItem *)tabViewItem
 {
-    return YES;
+    if([[self simulationController] simulationRunning]){
+        return NO;
+    }else{
+        return YES;
+    }
 }
 
 -(void)putFieldNamesInCorrectOrdering:(NSMutableArray *) fieldNamesFromData

@@ -502,7 +502,7 @@
         [returnValues setObject:[NSNumber numberWithBool:YES] forKey:@"SUCCESS"];
     }else{
         [returnValues setObject:[NSNumber numberWithBool:NO] forKey:@"SUCCESS"];
-        NSLog(@"datetime %lu is not between %lu and %lu",dateTime,[self minDateTime],[self maxDateTime]);
+        NSLog(@"Problem: datetime requested that is outside loaded data range! \n datetime %lu is not between %lu and %lu",dateTime,[self minDateTime],[self maxDateTime]);
 //        [NSException raise:@"Returning no data from dataseries" format:@"datetime %l is not between %l and %l",dateTime,[self minDateTime],[self maxDateTime]];
     }
     return returnValues;    
@@ -541,8 +541,7 @@
         [returnValues setObject:[NSNumber numberWithBool:YES] forKey:@"SUCCESS"];
     }else{
         [returnValues setObject:[NSNumber numberWithBool:NO] forKey:@"SUCCESS"];
-        NSLog(@"datetime %lu is not between %lu and %lu",dateTime,[self minDateTime],[self maxDateTime]);
-        //        [NSException raise:@"Returning no data from dataseries" format:@"datetime %l is not between %l and %l",dateTime,[self minDateTime],[self maxDateTime]];
+        NSLog(@"Problem: datetime requested that is outside loaded data range! \n datetime %lu is not between %lu and %lu",dateTime,[self minDateTime],[self maxDateTime]);
     }
     return returnValues; 
     

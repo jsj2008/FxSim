@@ -20,6 +20,7 @@
     BOOL _stopEntryOnWeakeningPrice;
     BOOL _exitOnWeakeningPrice;
     double _stopEntryOnWeakeningPriceThreshold;
+    long _stopEntryOnWeakeningSignalThreshold;
     
     long _stopEntryOnWeakeningPriceLagTime;
     
@@ -43,6 +44,7 @@
 @property (readonly) BOOL exitOnWeakeningPrice;
 @property (readonly) double exitOnWeakeningPriceThreshold;
 @property (readonly) double stopEntryOnWeakeningPriceThreshold;
+@property (readonly) long stopEntryOnWeakeningSignalThreshold;
 @property (readonly) long stopEntryOnWeakeningPriceLagTime;
 @property (readonly) long stopEntryOnWeakeningSignalLagTime;
 

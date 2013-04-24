@@ -32,6 +32,7 @@
         _exitOnWeakeningPrice = NO;
         _exitOnWeakeningPriceThreshold = 0.0;
         _stopEntryOnWeakeningPriceThreshold = 0.0;
+        _stopEntryOnWeakeningSignalThreshold = 0;
       
         
         NSArray *positioningInstructions = [initString componentsSeparatedByString:@";"];
@@ -92,10 +93,12 @@
             if([[instructionDetails objectAtIndex:0] isEqualToString:@"WSO"]){
                 _stopEntryOnWeakeningSignal = YES;
                 //Backward compatibility 
-                if([instructionDetails count] ==1){
+                if([instructionDetails count] ==2){
                     _stopEntryOnWeakeningSignalLagTime = SIGNAL_LAG_INTERVAL;
+                    _stopEntryOnWeakeningSignalThreshold = 10;
                 }else{
                     _stopEntryOnWeakeningSignalLagTime = 60*[[instructionDetails objectAtIndex:1] intValue];
+                    _stopEntryOnWeakeningSignalThreshold = [[instructionDetails objectAtIndex:2] intValue];
                 }
                 //_laggedSignalInterval = SIGNAL_LAG_INTERVAL;
             }
@@ -216,5 +219,5 @@
 @synthesize stopEntryOnWeakeningPriceThreshold = _stopEntryOnWeakeningPriceThreshold;
 @synthesize stopEntryOnWeakeningPriceLagTime = _stopEntryOnWeakeningPriceLagTime;
 @synthesize stopEntryOnWeakeningSignalLagTime = _stopEntryOnWeakeningSignalLagTime;
-
+@synthesize stopEntryOnWeakeningSignalThreshold = _stopEntryOnWeakeningSignalThreshold;
 @end

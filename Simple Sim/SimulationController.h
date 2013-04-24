@@ -28,6 +28,7 @@ typedef enum {
     BOOL _cancelProcedure;
     BOOL _loadAllData;
     double _cashPosition;
+    BOOL _simulationRunning;
 
     //Simulation *_workingSimulation;
     id _delegate;
@@ -35,11 +36,11 @@ typedef enum {
 
 @property double cashPosition;
 @property BOOL cancelProcedure;
-//@property (retain) Simulation* workingSimulation;
 @property BOOL doThreads;
 @property BOOL loadAllData;
 @property (retain) DataController *dataController;
 @property (retain) NSMutableDictionary *interestRates;
+@property BOOL simulationRunning;
 
 + (BOOL) positioningUnderstood:(NSString *) positioningString;
 + (BOOL) simulationUnderstood: (NSString *) signalString;
@@ -57,7 +58,7 @@ typedef enum {
 
 - (void) askSimulationToCancel;
 
-- (BOOL)exportWorkingSimulation: (Simulation *) sim
+- (BOOL) exportWorkingSimulation: (Simulation *) sim
                      DataToFile: (NSURL *) urlOfFile;
 - (BOOL) exportWorkingSimulationTrades:(Simulation *) sim
                                 ToFile: (NSURL *) urlOfFile;

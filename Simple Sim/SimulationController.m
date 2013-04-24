@@ -70,6 +70,7 @@
         _interestRates = [[NSMutableDictionary alloc] init];
         _doThreads = NO;
         _loadAllData = YES;
+        _simulationRunning = NO;
         return self;
     }
     return nil;
@@ -152,6 +153,8 @@
     long leadTimeRequired;
     
     [self setCancelProcedure:NO];
+    
+    [self setSimulationRunning:YES];
     
     NSString *simName = [parameters objectForKey:@"SIMNAME"];
     NSString *baseCode = [parameters objectForKey:@"BASECODE"];
@@ -554,6 +557,7 @@
             [self outputSimulationMessage:userMessage];
         }
     }
+    [self setSimulationRunning:NO];
     [self simulationEnded];
 }
 
@@ -1020,9 +1024,9 @@
             
             //Add in the trades and any cash moves 
             if(currentDateTime == nextTradeDateTime){
-                if([UtilityFunctions signOfInt:currentPosition] != [UtilityFunctions signOfInt:currentPosition + nextTradeAmount]){
-                    NSLog(@"Trading from %d to %d",currentPosition, currentPosition + nextTradeAmount);
-                }
+//                if([UtilityFunctions signOfInt:currentPosition] != [UtilityFunctions signOfInt:currentPosition + nextTradeAmount]){
+//                    NSLog(@"Trading from %d to %d",currentPosition, currentPosition + nextTradeAmount);
+//                }
                 
                 if(currentPosition > 0){
                     currentPositionSign = 1;
@@ -1374,12 +1378,16 @@
     int requiredPositionSize = 0;
     BOOL marginCloseOut = NO;
     
+    
+//    if(simulationDateTime == 1076050800 || simulationDateTime == 1076058000){
+//        NSLog(@"Check");
+//    }
+    
     if([[[simulation basicParameters] accCode] isEqualToString:[[simulation basicParameters] quoteCode]]){
         accountCurrencyIsQuoteCurrency = YES;
     }else{
         accountCurrencyIsQuoteCurrency = NO;
     }
-    
     
     values = [[self dataController] getValues: [NSArray arrayWithObjects:@"BID", @"ASK", nil]
                                AtDateTime: simulationDateTime ];
@@ -1525,6 +1533,12 @@
                                WithNav: (double) nav
 {
     int requiredExposure = 0;
+    NSString *userMessage;
+    //userMessage = @"----Details---- \n";
+//    [[[simulation simulationRunOutput] mutableString] appendString:userMessage];
+//    if([self doThreads]){
+//        [self performSelectorOnMainThread:@selector(outputSimulationMessage:) withObject:userMessage waitUntilDone:NO];
+//    }
     PositioningSystem *posSys = [simulation positionSystem];
     NSArray *fieldNames = [[self dataController] getFieldNames];
     NSDictionary *values = [[self dataController] getValues: fieldNames
@@ -1543,12 +1557,21 @@
             if([simulation currentExposure] > 0 && bid - entryPrice < -[posSys exitOnWeakeningPriceThreshold]){
                 requiredExposure = 0;
                 zeroPositionRequired = YES;
-                NSLog(@"Closing losing position");
+                userMessage = [NSString stringWithFormat:@"%@ Closing position; Price weakening \n",[EpochTime stringDateWithTime:currentDateTime]];
+                [[[simulation simulationRunOutput] mutableString] appendString:userMessage];
+                if([self doThreads]){
+                    [self performSelectorOnMainThread:@selector(outputSimulationMessage:) withObject:userMessage waitUntilDone:NO];
+                }
             }
             if([simulation currentExposure] < 0 && ask - entryPrice >  [posSys exitOnWeakeningPriceThreshold]){
                 requiredExposure = 0;
                 zeroPositionRequired = YES;
-                NSLog(@"Closing losing position");
+                userMessage = [NSString stringWithFormat:@"%@ Closing position; Price weakening \n",[EpochTime stringDateWithTime:currentDateTime]];
+                [[[simulation simulationRunOutput] mutableString] appendString:userMessage];
+                if([self doThreads]){
+                    [self performSelectorOnMainThread:@selector(outputSimulationMessage:) withObject:userMessage waitUntilDone:NO];
+                }
+
             }
         }
     }
@@ -1566,13 +1589,22 @@
         if(dataSignal > 0){
             if(mid < (trailingPrice - threshold)){
                 weakeningPriceOverride = YES;
-                NSLog(@"Weakening Price Override");
+                //NSLog(@"Weakening Price Override");
             }
         }
         if(dataSignal < 0){
             if(mid > (trailingPrice + threshold)){
                 weakeningPriceOverride = YES;
-                NSLog(@"Weakening Price Override");
+                //NSLog(@"Weakening Price Override");
+            }
+        }
+        if(weakeningPriceOverride && [simulation currentExposure]==0){
+            requiredExposure = 0;
+            zeroPositionRequired = YES;
+            userMessage = [NSString stringWithFormat:@"%@ Preventing position opening; Price weakening \n",[EpochTime stringDateWithTime:currentDateTime]];
+            [[[simulation simulationRunOutput] mutableString] appendString:userMessage];
+            if([self doThreads]){
+                [self performSelectorOnMainThread:@selector(outputSimulationMessage:) withObject:userMessage waitUntilDone:NO];
             }
         }
      }
@@ -1587,22 +1619,27 @@
                                                              AtDateTime:currentDateTime - lagTime ];
         double trailingDataSignal = [[trailingValues objectForKey:@"SIGNAL"] doubleValue];
         
-        adjustedThreshold = [posSys signalThreshold] * [[[self dataController] dataSeries] pipSize];
+        adjustedThreshold = [posSys stopEntryOnWeakeningSignalThreshold] * [[[self dataController] dataSeries] pipSize];
         if(dataSignal > 0){
             if(dataSignal < (trailingDataSignal - adjustedThreshold)){
                 weakeningSignalOverride = YES;
-                NSLog(@"weakening Signal Override");
+                //NSLog(@"weakening Signal Override");
             }
         }
         if(dataSignal < 0){
             if(dataSignal > (trailingDataSignal + adjustedThreshold)){
                 weakeningSignalOverride = YES;
-                NSLog(@"weakening Signal Override");
+                //NSLog(@"weakening Signal Override");
             }
         }
         if(weakeningSignalOverride && [simulation currentExposure]==0){
             requiredExposure = 0;
             zeroPositionRequired = YES;
+            userMessage = [NSString stringWithFormat:@"%@ Preventing position opening; Signal weakening \n",[EpochTime stringDateWithTime:currentDateTime]];
+            [[[simulation simulationRunOutput] mutableString] appendString:userMessage];
+            if([self doThreads]){
+                [self performSelectorOnMainThread:@selector(outputSimulationMessage:) withObject:userMessage waitUntilDone:NO];
+            }
         }
     }
     
@@ -2349,4 +2386,5 @@
 @synthesize cashPosition = _cashPosition;
 @synthesize interestRates = _interestRates;
 @synthesize loadAllData = _loadAllData;
+@synthesize simulationRunning = _simulationRunning;
 @end
