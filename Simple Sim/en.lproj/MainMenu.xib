@@ -1430,7 +1430,7 @@
 												<int key="NSCellFlags">604110336</int>
 												<int key="NSCellFlags2">134217728</int>
 												<string key="NSContents">Real time data</string>
-												<object class="NSFont" key="NSSupport">
+												<object class="NSFont" key="NSSupport" id="503999863">
 													<string key="NSName">LucidaGrande</string>
 													<double key="NSSize">13</double>
 													<int key="NSfFlags">16</int>
@@ -1463,17 +1463,14 @@
 											<string key="NSFrame">{{20, 411}, {188, 42}}</string>
 											<reference key="NSSuperview" ref="807633877"/>
 											<reference key="NSWindow"/>
+											<reference key="NSNextKeyView" ref="823663738"/>
 											<string key="NSReuseIdentifierKey">_NS:1535</string>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="699198759">
 												<int key="NSCellFlags">67108864</int>
 												<int key="NSCellFlags2">138412032</int>
 												<string key="NSContents"/>
-												<object class="NSFont" key="NSSupport">
-													<string key="NSName">Courier</string>
-													<double key="NSSize">14</double>
-													<int key="NSfFlags">16</int>
-												</object>
+												<reference key="NSSupport" ref="503999863"/>
 												<string key="NSCellIdentifier">_NS:1535</string>
 												<reference key="NSControlView" ref="448599033"/>
 												<bool key="NSDrawsBackground">YES</bool>
@@ -1485,7 +1482,7 @@
 									<string key="NSFrame">{{1, 1}, {228, 500}}</string>
 									<reference key="NSSuperview" ref="573060832"/>
 									<reference key="NSWindow"/>
-									<reference key="NSNextKeyView" ref="823663738"/>
+									<reference key="NSNextKeyView" ref="448599033"/>
 									<string key="NSReuseIdentifierKey">_NS:11</string>
 								</object>
 							</array>

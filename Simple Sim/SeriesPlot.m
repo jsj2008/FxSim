@@ -711,6 +711,7 @@
     CPTLineStyle *ls;
     CPTMutableLineStyle *lineStyle;
     [self setDataSource:dataSource];
+    [self setInteractionLayer:nil];
     
     NSDictionary *xyRanges = [dataSource xyRanges];
     
