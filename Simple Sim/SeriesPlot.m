@@ -48,6 +48,7 @@
 @property (retain) NSMutableArray *dateAnnotationArray;
 @property CGPoint dragStart;
 @property CGPoint dragEnd;
+
 @end
 
 @implementation SeriesPlot
@@ -64,7 +65,7 @@
         _dateAnnotationArray = [[NSMutableArray alloc] init];
         _lineAnnotationArray = [[NSMutableArray alloc] init];
         _lineAnnotationLevelArray = [[NSMutableArray alloc] init];
-	}
+ 	}
  	return self;
 }
 
@@ -806,7 +807,7 @@
                 [lineStyle setLineWidth:1.0];
                 [lineStyle setLineColor:[tsl cpColour]];
                 
-                if([tsl simId]==1){
+                if([tsl simId]==1 && [[self dataSource] doDotsForSecondPlot]){
                     [lineStyle setDashPattern:[NSArray arrayWithObjects:[NSDecimalNumber numberWithInt:2],[NSDecimalNumber numberWithInt:2],nil]];
                 }
                 

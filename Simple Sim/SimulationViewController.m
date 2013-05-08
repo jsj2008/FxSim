@@ -1524,6 +1524,15 @@
     [[self simulationCompareTimeSeriesTableView] reloadData];
 }
 
+- (IBAction)simulationCompareToggleDashed:(id)sender {
+    BOOL doDots = ([[self comparePlotDotsCheck] state] == NSOnState);
+    if([self simulationComparePlot])
+    {
+        [[self comparePlotInfo] setDoDotsForSecondPlot:doDots];
+        [[self simulationComparePlot] updateLines:[self comparePlotInfo]];
+    }
+}
+
 - (IBAction) changeSelectedTradingPair:(id)sender {
     NSString *selectedPair = [[setupTradingPairPopup selectedItem] title];
     [setupAccountCurrencyPopup removeAllItems];
@@ -2407,11 +2416,13 @@
             [[self simulationCompareToDatePicker] setDateValue:[NSDate dateWithTimeIntervalSince1970:minDataTime + (30*24*60*60)]];
         }
         [[self simulationCompareTimeSeriesTableView] reloadData];
+        BOOL doDots = ([[self comparePlotDotsCheck] state] == NSOnState);
         SeriesPlotDataWrapper *plotDataSource = [[SeriesPlotDataWrapper alloc] initWithTargetPlotName:@"COM"
                                                                                        AndSimulationA: [self workingSimulation]
                                                                                        AndSimulationB: [self compareSimulation]
                                                                                       AndTSDictionary: [self simulationCompareSelectedTimeSeries]
-                                                                              AndDoShortLongIndicator:NO];
+                                                                              AndDoShortLongIndicator:NO
+                                                 AndDoDots:doDots];
         [self setComparePlotInfo:plotDataSource];
         
         long minDataTime = [[[self simulationCompareFromDatePicker] dateValue] timeIntervalSince1970];

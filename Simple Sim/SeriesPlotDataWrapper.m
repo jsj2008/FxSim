@@ -22,6 +22,7 @@
              AndSimulationB: (Simulation *) simB
             AndTSDictionary: (NSDictionary *) timeSeriesDictionary
     AndDoShortLongIndicator: (BOOL) doShortLong
+                  AndDoDots: (BOOL) doDots
 {
     self = [super init];
     if(self){
@@ -31,6 +32,7 @@
         _timeSeriesLinesDictionary = timeSeriesDictionary;
         _isZoomed = NO;
         _shortLongIndicator = doShortLong;
+        _doDotsForSecondPlot = doDots;
         return self;
     }
     return nil;
@@ -45,7 +47,8 @@
                          AndSimulationA: simA
                          AndSimulationB: Nil
                         AndTSDictionary: timeSeriesDictionary
-                AndDoShortLongIndicator:doShortLong];
+                AndDoShortLongIndicator:doShortLong
+                              AndDoDots:NO];
 }
 
 - (NSDictionary *) setDataViewWithStartDateTime: (long) startDateTime

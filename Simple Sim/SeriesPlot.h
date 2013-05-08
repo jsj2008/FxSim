@@ -88,7 +88,6 @@
 @property long minXrangeForPlot;
 @property long maxXrangeForPlot;
 
-
 @end
 
 

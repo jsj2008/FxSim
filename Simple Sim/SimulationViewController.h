@@ -126,6 +126,7 @@
     __weak NSDatePicker *_simulationCompareToDatePicker;
     __weak NSButton *_simulationComparePlotRangeButton;
     __weak NSMatrix *_simulationCompareSimRadio;
+    __weak NSButton *_comparePlotDotsCheck;
     
 
 }
@@ -219,6 +220,8 @@
 
 //- (IBAction)simulationCompareMakePlot:(id)sender;
 - (IBAction)simulationCompareChooseSimTimeSeries:(id)sender;
+- (IBAction)simulationCompareToggleDashed:(id)sender;
+
 
 
 @property (weak) IBOutlet NSProgressIndicator *performSimulationProgressBar;
@@ -272,4 +275,5 @@
 @property (weak) IBOutlet NSTableView *simulationCompareSelectedTSTableView;
 @property (weak) IBOutlet NSMatrix *simulationCompareSimRadio;
 
+@property (weak) IBOutlet NSButton *comparePlotDotsCheck;
 @end

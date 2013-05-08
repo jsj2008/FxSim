@@ -18,7 +18,8 @@
              AndSimulationA: (Simulation *) simA
              AndSimulationB: (Simulation *) simB
             AndTSDictionary: (NSDictionary *) timeSeriesDictionary
-    AndDoShortLongIndicator: (BOOL) doShortLong;
+    AndDoShortLongIndicator: (BOOL) doShortLong
+                  AndDoDots: (BOOL) doDots;
 
 - (id) initWithTargetPlotName: (NSString *) plotName
                 AndSimulation: (Simulation *) simA
@@ -41,4 +42,5 @@
 @property long maxEndDateTime;
 @property long isZoomed;
 @property BOOL shortLongIndicator;
+@property BOOL doDotsForSecondPlot;
 @end
