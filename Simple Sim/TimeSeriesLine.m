@@ -14,6 +14,7 @@
 -(id)initWithLayerIndex: (int) layerIndex 
                 AndName: (NSString *) timeSeriesName 
               AndColour: (NSString *) timeSeriesColour
+               AndSimId: (long) simulationId
 {
     _allColourNames = [NSArray arrayWithObjects:
                       //@"Clear",
@@ -76,8 +77,18 @@
         _colourId = [_allColourNames indexOfObject:timeSeriesColour];
         _cpColour = [_allColourCPTypes objectAtIndex:_colourId];
         _nsColour = [_allNSColourTypes objectAtIndex:_colourId];
+        _simId = simulationId;
     }
     return self;
+}
+
+- (id)initWithLayerIndex: (int)        layerIndex
+                 AndName: (NSString *)  name
+               AndColour: (NSString *)  colour{
+    return [self initWithLayerIndex:layerIndex
+                     AndName:name
+                   AndColour:colour
+                    AndSimId:0];
 }
 
 -(void)setColourId:(NSUInteger) newColourId
@@ -95,7 +106,7 @@
 
 - (NSString *)description
 {
-    return [NSString stringWithFormat:@"name:%@\nlayer:%d\ncolour:%@",[self name],[self layerIndex],[self colour]];
+    return [NSString stringWithFormat:@"name:%@\nlayer:%d\ncolour:%@\nSimId:%ld",[self name],[self layerIndex],[self colour],[self simId]];
 }
 
 @synthesize name = _name;
@@ -107,6 +118,7 @@
 @synthesize allColourCPTypes = _allColourCPTypes;
 @synthesize allNSColourTypes = _allNSColourTypes;
 @synthesize colourId = _colourId;
+@synthesize simId = _simId;
 
 
 @end

@@ -64,6 +64,7 @@
                              @"POS_PNL",
                              @"CASHTRANSFER",
                              @"SIGNAL",
+                             @"THRESSIG",
                              @"POSITION",
                              @"SHORT",@"LONG",
                              @"POSAVEPRICE",

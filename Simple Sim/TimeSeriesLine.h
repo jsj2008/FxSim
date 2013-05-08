@@ -30,10 +30,15 @@
 @property (retain) NSArray *allColourNames;
 @property (retain) NSArray *allColourCPTypes;
 @property (retain) NSArray *allNSColourTypes;
+@property NSUInteger simId;
 
 - (id)initWithLayerIndex: (int)        layerIndex 
                  AndName: (NSString *)  name 
                AndColour: (NSString *)  colour;
+- (id)initWithLayerIndex: (int) layerIndex
+                 AndName: (NSString *) timeSeriesName
+               AndColour: (NSString *) timeSeriesColour
+                AndSimId: (long) simulationId;
 - (NSString *)description;
 - (void)setColourId:(NSUInteger) newColourId;
 - (NSUInteger)colourId;

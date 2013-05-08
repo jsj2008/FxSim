@@ -377,7 +377,7 @@
         if(success && doSignal){
             NSMutableData *signalData, *oldSignalData;
             double *signalArray, *oldSignalArray;
-                        
+            
             if([[signalSystem type] isEqualToString:@"SECO"]){
                 signalData = [[NSMutableData alloc] initWithLength:dataLength * sizeof(double)];
                 signalArray = [signalData mutableBytes];
@@ -436,6 +436,20 @@
                     }
                 }
             }
+            
+            NSMutableData *thresholdedSignalData = [[NSMutableData alloc] initWithLength:dataLength * sizeof(double)];
+            double *thresholdedSignalArray = (double *)[thresholdedSignalData mutableBytes];
+            signalArray = (double *)[signalData mutableBytes];
+            for(int i = 0; i < dataLength; i++){
+                thresholdedSignalArray[i] = 0.0;
+                if(signalArray[i] > [signalSystem threshold]){
+                    thresholdedSignalArray[i] = signalArray[i];
+                }
+                if(signalArray[i] < -[signalSystem threshold]){
+                    thresholdedSignalArray[i] = signalArray[i];
+                }
+            }
+            [returnData setObject:thresholdedSignalData forKey:@"THRESSIG"];
             [returnData setObject:signalData forKey:@"SIGNAL"];
         }
     }

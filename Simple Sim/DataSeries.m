@@ -101,14 +101,6 @@
     return 0;
 }
 
-//-(void)setDataSeriesWithFieldName:(NSString*)fieldName AndDates:(CPTNumericData *)epochdates AndData: (CPTNumericData *)dataSeries 
-//{
-//    [self setXData:epochdates];
-//    [self setYData:[[NSMutableDictionary alloc] init]];
-//    [[self yData] setObject:dataSeries forKey:fieldName] ;
-//    [self setSampleRate:1];
-//}
-
 
 -(DataSeries *) getCopyOfStaticData
 {
@@ -346,7 +338,9 @@
                                     forKey:[fieldnames objectAtIndex:fieldIndex]];
         }
         [[returnData dataViews] removeAllObjects];
-        [returnData setPlotViewWithName:@"ALL" AndStartDateTime:sampledDateTimes[0] AndEndDateTime:sampledDateTimes[sampleCount-1]];
+        [returnData setDataViewWithName:@"ALL"
+                       AndStartDateTime:sampledDateTimes[0]
+                         AndEndDateTime:sampledDateTimes[sampleCount-1]];
         
         [returnData setSampleRate:numberOfSeconds];
     }
@@ -503,7 +497,6 @@
     }else{
         [returnValues setObject:[NSNumber numberWithBool:NO] forKey:@"SUCCESS"];
         NSLog(@"Problem: datetime requested that is outside loaded data range! \n datetime %lu is not between %lu and %lu",dateTime,[self minDateTime],[self maxDateTime]);
-//        [NSException raise:@"Returning no data from dataseries" format:@"datetime %l is not between %l and %l",dateTime,[self minDateTime],[self maxDateTime]];
     }
     return returnValues;    
 }
@@ -637,9 +630,9 @@
     return uBound;
 }
 
--(DataView *)setPlotViewWithName: (NSString *) plotViewName 
-                AndStartDateTime: (long) startDateTime 
-                  AndEndDateTime: (long) endDateTime
+-(NSDictionary *)setDataViewWithName: (NSString *) plotViewName
+                    AndStartDateTime: (long) startDateTime
+                      AndEndDateTime: (long) endDateTime
 {
     long startIndex, endIndex;
     double minY, maxY;
@@ -675,14 +668,19 @@
         [mins setValue:[NSNumber numberWithDouble:minY] forKey:fieldname];
         [maxs setValue:[NSNumber numberWithDouble:maxY] forKey:fieldname];
     }
-    dataView = [[DataView alloc] initWithDataSeries:self 
-                                            AndName:plotViewName
+    dataView = [[DataView alloc] initWithDataSeries: self 
+                                            AndName: plotViewName
                                       AndStartIndex: startIndex 
                                         AndEndIndex: endIndex 
                                             AndMins: mins 
                                             AndMaxs: maxs];
-    [[self dataViews] setObject:dataView forKey: plotViewName];
-    return dataView;
+    [[self dataViews] setObject: dataView
+                         forKey: plotViewName];
+    
+    NSDictionary *minMaxArray = [[NSDictionary alloc] initWithObjects:[[NSArray alloc] initWithObjects:[NSNumber numberWithLong:[dataView minDateTime]],[NSNumber numberWithLong:[dataView maxDateTime]], nil] forKeys:[[NSArray alloc] initWithObjects:@"MIN",@"MAX", nil]];
+    
+    
+    return minMaxArray;
 }
 
 -(NSArray *)getFieldNames
@@ -707,6 +705,16 @@
         return [data sampleValue:dataIndex];
     }
     return nil;
+}
+
+-(DataView *) getDataViewForKey: (NSString *) viewName
+{
+    return [[self dataViews] objectForKey:viewName];
+}
+
+- (NSArray *) timeSeriesLines
+{
+    return Nil;
 }
 
 #pragma mark - 

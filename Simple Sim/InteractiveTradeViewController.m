@@ -8,6 +8,8 @@
 
 #import "InteractiveTradeViewController.h"
 #import "SeriesPlot.h"
+//#import "SeriesPlotData.h"
+#import "DataSeries.h"
 #import "EpochTime.h"
 #import "DataSeries.h"
 #import "DataView.h"
@@ -16,6 +18,7 @@
 #import "UtilityFunctions.h"
 #import "SimulationController.h"
 #import "SignalSystem.h"
+
 
 
 #define START_TIME_FOR_ID_PLOT 2
@@ -310,7 +313,7 @@
     zoomStartDateTime = [[panel1ZoomBoxFromDatePicker dateValue] timeIntervalSince1970];
     zoomEndDateTime = [[panel1ZoomBoxToDatePicker dateValue] timeIntervalSince1970];
     
-    [panel1Plot setZoomDataViewFrom:zoomStartDateTime To:zoomEndDateTime];
+    //[panel1Plot setZoomDataViewFrom:zoomStartDateTime To:zoomEndDateTime];
     
 }
 
@@ -446,68 +449,68 @@
 
 - (IBAction)sendSignalRangeToZoom:(id)sender {
     
-    NSInteger selectedRow = [signalAnalysisTableView selectedRow];
-    if(selectedRow > -1){
-        selectedRow = [[signalTableViewOrdering objectAtIndex:selectedRow] intValue];
-        SignalStats *signalStats;
-        signalStats = [[panel1DataController signalStats] objectAtIndex:selectedRow];
-        
-        long startDateTime = [signalStats getStartDateTime];
-        startDateTime = startDateTime - ([panel3SignalPlotLeadTimeTextField intValue] * 60 * 60);
-        long endDateTime = [signalStats getEndDateTime];
-        [panel1Plot setZoomDataViewFrom:startDateTime To:endDateTime];
-    }
+//    NSInteger selectedRow = [signalAnalysisTableView selectedRow];
+//    if(selectedRow > -1){
+//        selectedRow = [[signalTableViewOrdering objectAtIndex:selectedRow] intValue];
+//        SignalStats *signalStats;
+//        signalStats = [[panel1DataController signalStats] objectAtIndex:selectedRow];
+//        
+//        long startDateTime = [signalStats getStartDateTime];
+//        startDateTime = startDateTime - ([panel3SignalPlotLeadTimeTextField intValue] * 60 * 60);
+//        long endDateTime = [signalStats getEndDateTime];
+//        //[panel1Plot setZoomDataViewFrom:startDateTime To:endDateTime];
+//    }
 }
 
 - (IBAction)panel2DataMovePress:(id)sender {
     
     [panel2DataMoveButton setEnabled:NO];
-    DataSeries *plotCurrentData = [panel2Plot plotData];
-    DataView *plotCurrentDataView = [panel2Plot dataView]; 
-    long startDateTime, endDateTime;
-    startDateTime = [plotCurrentDataView minDateTime];
-    endDateTime = [plotCurrentDataView maxDateTime];
-    
-    int dataMoveAmount = [panel2DataMoveAmount intValue];
-    if([panel2DataMoveUnits selectedColumn] == 0){
-        dataMoveAmount = dataMoveAmount*60*60*24;
-    }
-    if([panel2DataMoveUnits selectedColumn] == 1){
-        dataMoveAmount = dataMoveAmount*60*60;
-    }
-    if([panel2DataMoveUnits selectedColumn] == 2){
-        dataMoveAmount = dataMoveAmount*60;
-    } 
-    if([panel2DataMoveType selectedColumn] == 0){
-        startDateTime = startDateTime + dataMoveAmount;
-        endDateTime = endDateTime + dataMoveAmount;
-    }
-    if([panel2DataMoveType selectedColumn] == 1){
-        endDateTime = endDateTime + dataMoveAmount;
-    }
-  
-    if(plotCurrentData == [panel1DataController dataSeries]){
-                [panel2Plot setZoomDataViewFrom:startDateTime To:endDateTime];
-        [self updateZoom];
-    }
-    
-    if(plotCurrentData == [panel2DataController dataSeries]){
-        long samplingRate = [[panel2DataController dataSeries] sampleRate];
-        if([plotCurrentData minDateTime] > startDateTime || [plotCurrentData maxDateTime] < endDateTime){
-            NSMutableDictionary *parameters = [[NSMutableDictionary alloc] init];
-            [parameters setObject:[NSNumber numberWithLong:startDateTime] forKey:START_TIME];
-            [parameters setObject:[NSNumber numberWithLong:endDateTime] forKey:END_TIME];
-            [parameters setObject:[NSNumber numberWithLong:samplingRate] forKey:SAMPLE_SECS];
-            
-            if(doThreads){
-                [parameters setObject:[NSNumber numberWithBool:YES ] forKey:UPDATE_UI];
-                [self performSelectorInBackground:@selector(resampleDataForZoomPlot:) withObject:parameters];
-            }else{
-                [parameters setObject:[NSNumber numberWithBool:NO ] forKey:UPDATE_UI];
-                [self resampleDataForZoomPlot:parameters];
-            }
-        }
-    }
+//    DataSeries *plotCurrentData = (DataSeries *)[panel2Plot plotData];
+//    DataView *plotCurrentDataView = [panel2Plot dataView]; 
+//    long startDateTime, endDateTime;
+//    startDateTime = [plotCurrentDataView minDateTime];
+//    endDateTime = [plotCurrentDataView maxDateTime];
+//    
+//    int dataMoveAmount = [panel2DataMoveAmount intValue];
+//    if([panel2DataMoveUnits selectedColumn] == 0){
+//        dataMoveAmount = dataMoveAmount*60*60*24;
+//    }
+//    if([panel2DataMoveUnits selectedColumn] == 1){
+//        dataMoveAmount = dataMoveAmount*60*60;
+//    }
+//    if([panel2DataMoveUnits selectedColumn] == 2){
+//        dataMoveAmount = dataMoveAmount*60;
+//    } 
+//    if([panel2DataMoveType selectedColumn] == 0){
+//        startDateTime = startDateTime + dataMoveAmount;
+//        endDateTime = endDateTime + dataMoveAmount;
+//    }
+//    if([panel2DataMoveType selectedColumn] == 1){
+//        endDateTime = endDateTime + dataMoveAmount;
+//    }
+//  
+//    if(plotCurrentData == [panel1DataController dataSeries]){
+//                [panel2Plot setZoomDataViewFrom:startDateTime To:endDateTime];
+//        //[self updateZoom];
+//    }
+//    
+//    if(plotCurrentData == [panel2DataController dataSeries]){
+//        long samplingRate = [[panel2DataController dataSeries] sampleRate];
+//        if([plotCurrentData minDateTime] > startDateTime || [plotCurrentData maxDateTime] < endDateTime){
+//            NSMutableDictionary *parameters = [[NSMutableDictionary alloc] init];
+//            [parameters setObject:[NSNumber numberWithLong:startDateTime] forKey:START_TIME];
+//            [parameters setObject:[NSNumber numberWithLong:endDateTime] forKey:END_TIME];
+//            [parameters setObject:[NSNumber numberWithLong:samplingRate] forKey:SAMPLE_SECS];
+//            
+//            if(doThreads){
+//                [parameters setObject:[NSNumber numberWithBool:YES ] forKey:UPDATE_UI];
+//                [self performSelectorInBackground:@selector(resampleDataForZoomPlot:) withObject:parameters];
+//            }else{
+//                [parameters setObject:[NSNumber numberWithBool:NO ] forKey:UPDATE_UI];
+//                [self resampleDataForZoomPlot:parameters];
+//            }
+//        }
+//    }
     
 }
 
@@ -518,10 +521,10 @@
         SignalStats *signalStats;
         signalStats = [[panel1DataController signalStats] objectAtIndex:selectedRow];
         
-        long startDateTime = [signalStats getStartDateTime];
-        startDateTime = startDateTime - ([panel3SignalPlotLeadTimeTextField intValue] * 60 * 60);
-        long endDateTime = [signalStats getEndDateTime];
-        [self plotSignalDataFrom:startDateTime To:endDateTime];
+//        long startDateTime = [signalStats getStartDateTime];
+//        startDateTime = startDateTime - ([panel3SignalPlotLeadTimeTextField intValue] * 60 * 60);
+//        long endDateTime = [signalStats getEndDateTime];
+//        //[self plotSignalDataFrom:startDateTime To:endDateTime];
     }
 }
 
@@ -800,97 +803,163 @@
 }
 
 -(void)updateZoom{
-    BOOL zoomDataViewFound = NO;
-    BOOL needToUpdate = YES;
-    DataSeries *panel1PlotData = [panel1Plot plotData];
-    DataSeries *panel2PlotData = [panel2Plot plotData];
-    DataView *panel1ZoomView;
-    DataView *panel2AllView;
-    long minZoomDateTime, maxZoomDateTime;
-    
-    panel2AllView = [[panel2PlotData dataViews] objectForKey:@"ALL"];
-    
-    zoomDataViewFound = [[panel1PlotData dataViews] objectForKey:@"ZOOM"]!=nil;
-    if(zoomDataViewFound){
-        panel1ZoomView = [[panel1PlotData dataViews] objectForKey:@"ZOOM"];
-        minZoomDateTime = [panel1ZoomView minDateTime];
-        maxZoomDateTime = [panel1ZoomView maxDateTime];
-        
-        if((minZoomDateTime == [panel2AllView minDateTime]) && (maxZoomDateTime == [panel2AllView maxDateTime])){
-            needToUpdate = NO;
-        }
-        if(needToUpdate){
-            [self clearTSTableView:panel2TimeSeriesTableView];
-            
-            TimeSeriesLine *panel1Tsl, *panel2Tsl;
-            for(int i = 0; i < [panel1TimeSeries count]; i++){
-                panel1Tsl = [panel1TimeSeries objectAtIndex:i];
-                panel2Tsl =  [[TimeSeriesLine alloc] initWithLayerIndex:[panel1Tsl layerIndex] 
-                                                                AndName:[panel1Tsl name] 
-                                                              AndColour:[panel1Tsl colour]];
-                [self addToTableView:panel2TimeSeriesTableView   TimeSeriesLine:panel2Tsl];
-            }
-            
-            [panel2Plot setData:panel1PlotData WithViewName:@"ZOOM"];
-            [panel2Plot renderPlotWithFields:panel2TimeSeries] ;
-        }
-    }
+//    BOOL zoomDataViewFound = NO;
+//    BOOL needToUpdate = YES;
+//    SimDataCombi *panel1PlotData = [panel1Plot plotData];
+//    SimDataCombi *panel2PlotData = [panel2Plot plotData];
+//    DataView *panel1ZoomView;
+//    DataView *panel2AllView;
+//    long minZoomDateTime, maxZoomDateTime;
+//    
+//    panel2AllView = [panel2PlotData  getDataViewForKey:@"ALL"];
+//    
+//    zoomDataViewFound = [panel1PlotData getDataViewForKey:@"ZOOM"]!=nil;
+//    if(zoomDataViewFound){
+//        panel1ZoomView = [panel1PlotData getDataViewForKey:@"ZOOM"];
+//        minZoomDateTime = [panel1ZoomView minDateTime];
+//        maxZoomDateTime = [panel1ZoomView maxDateTime];
+//        
+//        if((minZoomDateTime == [panel2AllView minDateTime]) && (maxZoomDateTime == [panel2AllView maxDateTime])){
+//            needToUpdate = NO;
+//        }
+//        if(needToUpdate){
+//            [self clearTSTableView:panel2TimeSeriesTableView];
+//            
+//            TimeSeriesLine *panel1Tsl, *panel2Tsl;
+//            for(int i = 0; i < [panel1TimeSeries count]; i++){
+//                panel1Tsl = [panel1TimeSeries objectAtIndex:i];
+//                panel2Tsl =  [[TimeSeriesLine alloc] initWithLayerIndex:[panel1Tsl layerIndex] 
+//                                                                AndName:[panel1Tsl name] 
+//                                                              AndColour:[panel1Tsl colour]];
+//                [self addToTableView:panel2TimeSeriesTableView   TimeSeriesLine:panel2Tsl];
+//            }
+//            
+//            //[panel2Plot setData:panel1PlotData WithViewName:@"ZOOM"];
+//            //[panel2Plot renderPlotWithFields:panel2TimeSeries] ;
+//        }
+//    }
 }
 
 -(void)switchSignalToZoom
 {
    
-    DataSeries *dataForPanel1Plot = [panel1DataController dataSeries];
-    DataView *signalDataView;
-    long minDateTime, maxDateTime;
-    
-    if([[dataForPanel1Plot dataViews] objectForKey:@"SIGNAL"] != 0){
-        signalDataView =  [[dataForPanel1Plot dataViews] objectForKey:@"SIGNAL"];   
-        minDateTime = [signalDataView minDateTime];
-        maxDateTime = [signalDataView maxDateTime];
-        
-        [self clearTSTableView:panel2TimeSeriesTableView];
-            
-        TimeSeriesLine *panel2Tsl, *panel3Tsl;
-        for(int i = 0; i < [panel1TimeSeries count]; i++){
-            panel3Tsl = [panel3TimeSeries objectAtIndex:i];
-            panel2Tsl =  [[TimeSeriesLine alloc] initWithLayerIndex:[panel3Tsl layerIndex] 
-                                                            AndName:[panel3Tsl name] 
-                                                          AndColour:[panel3Tsl colour]];
-            [self addToTableView:panel2TimeSeriesTableView   TimeSeriesLine:panel2Tsl];
-        }
-        
-        [dataForPanel1Plot setPlotViewWithName:@"ZOOM" 
-                     AndStartDateTime:(long)minDateTime 
-                       AndEndDateTime:(long)maxDateTime];
-        
-        [panel2Plot setData:dataForPanel1Plot WithViewName:@"ZOOM"];
-        [panel2Plot renderPlotWithFields:panel2TimeSeries] ;
-    }
+//    DataSeries *dataForPanel1Plot = [panel1DataController dataSeries];
+//    DataView *signalDataView;
+//    long minDateTime, maxDateTime;
+//    
+//    if([[dataForPanel1Plot dataViews] objectForKey:@"SIGNAL"] != 0){
+//        signalDataView =  [[dataForPanel1Plot dataViews] objectForKey:@"SIGNAL"];   
+//        minDateTime = [signalDataView minDateTime];
+//        maxDateTime = [signalDataView maxDateTime];
+//        
+//        [self clearTSTableView:panel2TimeSeriesTableView];
+//            
+//        TimeSeriesLine *panel2Tsl, *panel3Tsl;
+//        for(int i = 0; i < [panel1TimeSeries count]; i++){
+//            panel3Tsl = [panel3TimeSeries objectAtIndex:i];
+//            panel2Tsl =  [[TimeSeriesLine alloc] initWithLayerIndex:[panel3Tsl layerIndex] 
+//                                                            AndName:[panel3Tsl name] 
+//                                                          AndColour:[panel3Tsl colour]];
+//            [self addToTableView:panel2TimeSeriesTableView   TimeSeriesLine:panel2Tsl];
+//        }
+//        
+//        [dataForPanel1Plot setDataViewWithName:@"ZOOM"
+//                              AndStartDateTime:(long)minDateTime 
+//                                AndEndDateTime:(long)maxDateTime];
+//        
+//        [panel2Plot setData:dataForPanel1Plot WithViewName:@"ZOOM"];
+//        //[panel2Plot renderPlotWithFields:panel2TimeSeries] ;
+//}
 }
 
 
 -(void)setupDataAndPlotsAccordingToParameters:(NSDictionary *)userInput
 {
-    BOOL success = YES;
-    NSString *selectedPair = [userInput objectForKey:FX_PAIR];
-    long startDateTime = [[userInput objectForKey:START_TIME] longValue];
-    long endDateTime = [[userInput objectForKey:END_TIME] longValue];
-    long samplingRate = [[userInput objectForKey:SAMPLE_SECS] longValue];
-    NSString *strategyFields = [userInput objectForKey:STRATEGY_FIELDS];
-    BOOL userDataGiven = [[userInput objectForKey:@"USERDATAGIVEN"] boolValue];
-    NSArray *userData = [userInput objectForKey:@"USERDATA"];
-    NSString *userDataFilename = [userInput objectForKey:@"USERDATAFILE"];
-    SignalSystem *newSigSystem;
-    NSArray *extraRequiredVariables; 
-    //DataSeries *dataForPanel1Plot;
-    
-    if(![strategyFields isEqualToString:@""]){
-//        success = [panel1DataController strategyUnderstood:strategyFields];
+//    BOOL success = YES;
+//    NSString *selectedPair = [userInput objectForKey:FX_PAIR];
+//    long startDateTime = [[userInput objectForKey:START_TIME] longValue];
+//    long endDateTime = [[userInput objectForKey:END_TIME] longValue];
+//    long samplingRate = [[userInput objectForKey:SAMPLE_SECS] longValue];
+//    NSString *strategyFields = [userInput objectForKey:STRATEGY_FIELDS];
+//    BOOL userDataGiven = [[userInput objectForKey:@"USERDATAGIVEN"] boolValue];
+//    NSArray *userData = [userInput objectForKey:@"USERDATA"];
+//    NSString *userDataFilename = [userInput objectForKey:@"USERDATAFILE"];
+//    SignalSystem *newSigSystem;
+//    NSArray *extraRequiredVariables; 
+//    //DataSeries *dataForPanel1Plot;
+//    
+//    if(![strategyFields isEqualToString:@""]){
+////        success = [panel1DataController strategyUnderstood:strategyFields];
+////        if(!success){
+////            NSMutableDictionary *alertInfo = [[NSMutableDictionary alloc] init];
+////            [alertInfo setValue: @"Problem setting up the data" forKey:@"TITLE"];
+////            [alertInfo setValue: @"Extra fields not understood" forKey:@"MSGFORMAT"];
+////            [alertInfo setValue: @"OK" forKey:@"DEFAULTBUTTON"];
+////            if(doThreads){
+////                [self performSelectorOnMainThread:@selector(showAlertPanelWithInfo:) withObject:alertInfo waitUntilDone:YES];
+////            }else{
+////                [self showAlertPanelWithInfo:alertInfo];
+////            }
+////        }else{
+//            newSigSystem = [[SignalSystem alloc] initWithString:strategyFields];
+//            extraRequiredVariables = [SimulationController getNamesOfRequiredVariablesForSignal: newSigSystem 
+//                                                                                 AndPositioning: Nil 
+//                                                                                       AndRules: Nil];
+//            [self setSignalSystem:newSigSystem];
+////        }
+//    }else{
+//        extraRequiredVariables = [[NSArray alloc] init];
+//    }
+//    
+//    if(success){
+//        if(doThreads){
+//            [self performSelectorOnMainThread:@selector(gettingDataIndicatorSwitchOn) withObject:nil waitUntilDone:NO];
+//            currentProgressIndicator = panel1ProgressBar;
+//            [self performSelectorOnMainThread:@selector(progressBarOn) withObject:nil waitUntilDone:YES];
+//        }
+//        success = [panel1DataController setupDataSeriesForName:selectedPair];
+//        
+//        extraRequiredVariables = [SimulationController getNamesOfRequiredVariablesForSignal: newSigSystem 
+//                                                                             AndPositioning: Nil 
+//                                                                                   AndRules: Nil];
+//    }
+//    
+//    if(success){
+//        [panel1DataController setSignalStats:nil];
+//        signalStatsAvailable = NO;
+//
+//        if(userDataGiven){
+//            [panel1DataController setData:userData 
+//                                 FromFile:userDataFilename];
+//        }
+//        
+//        int successAsInt = 1;
+//        if(doThreads){
+//            [panel1DataController setDataForStartDateTime: startDateTime 
+//                                           AndEndDateTime: endDateTime 
+//                                        AndExtraVariables: extraRequiredVariables
+//                                          AndSignalSystem: Nil
+//                                          AndSamplingRate: samplingRate
+//                                              WithSuccess:&successAsInt
+//                                               AndUpdateUI:YES];
+//        }else{
+//            [panel1DataController setDataForStartDateTime: startDateTime 
+//                                           AndEndDateTime: endDateTime 
+//                                        AndExtraVariables: extraRequiredVariables
+//                                          AndSignalSystem: Nil
+//                                          AndSamplingRate: samplingRate
+//                                              WithSuccess:&successAsInt
+//                                               AndUpdateUI:NO];
+//        }
+//        
+//        if(successAsInt == 0){
+//            success = NO;
+//        }
+//        
 //        if(!success){
 //            NSMutableDictionary *alertInfo = [[NSMutableDictionary alloc] init];
 //            [alertInfo setValue: @"Problem setting up the data" forKey:@"TITLE"];
-//            [alertInfo setValue: @"Extra fields not understood" forKey:@"MSGFORMAT"];
+//            [alertInfo setValue: @"Check your parameters!" forKey:@"MSGFORMAT"];
 //            [alertInfo setValue: @"OK" forKey:@"DEFAULTBUTTON"];
 //            if(doThreads){
 //                [self performSelectorOnMainThread:@selector(showAlertPanelWithInfo:) withObject:alertInfo waitUntilDone:YES];
@@ -898,165 +967,99 @@
 //                [self showAlertPanelWithInfo:alertInfo];
 //            }
 //        }else{
-            newSigSystem = [[SignalSystem alloc] initWithString:strategyFields];
-            extraRequiredVariables = [SimulationController getNamesOfRequiredVariablesForSignal: newSigSystem 
-                                                                                 AndPositioning: Nil 
-                                                                                       AndRules: Nil];
-            [self setSignalSystem:newSigSystem];
+//            
 //        }
-    }else{
-        extraRequiredVariables = [[NSArray alloc] init];
-    }
-    
-    if(success){
-        if(doThreads){
-            [self performSelectorOnMainThread:@selector(gettingDataIndicatorSwitchOn) withObject:nil waitUntilDone:NO];
-            currentProgressIndicator = panel1ProgressBar;
-            [self performSelectorOnMainThread:@selector(progressBarOn) withObject:nil waitUntilDone:YES];
-        }
-        success = [panel1DataController setupDataSeriesForName:selectedPair];
-        
-        extraRequiredVariables = [SimulationController getNamesOfRequiredVariablesForSignal: newSigSystem 
-                                                                             AndPositioning: Nil 
-                                                                                   AndRules: Nil];
-    }
-    
-    if(success){
-        [panel1DataController setSignalStats:nil];
-        signalStatsAvailable = NO;
-
-        if(userDataGiven){
-            [panel1DataController setData:userData 
-                                 FromFile:userDataFilename];
-        }
-        
-        int successAsInt = 1;
-        if(doThreads){
-            [panel1DataController setDataForStartDateTime: startDateTime 
-                                           AndEndDateTime: endDateTime 
-                                        AndExtraVariables: extraRequiredVariables
-                                          AndSignalSystem: Nil
-                                          AndSamplingRate: samplingRate
-                                              WithSuccess:&successAsInt
-                                               AndUpdateUI:YES];
-        }else{
-            [panel1DataController setDataForStartDateTime: startDateTime 
-                                           AndEndDateTime: endDateTime 
-                                        AndExtraVariables: extraRequiredVariables
-                                          AndSignalSystem: Nil
-                                          AndSamplingRate: samplingRate
-                                              WithSuccess:&successAsInt
-                                               AndUpdateUI:NO];
-        }
-        
-        if(successAsInt == 0){
-            success = NO;
-        }
-        
-        if(!success){
-            NSMutableDictionary *alertInfo = [[NSMutableDictionary alloc] init];
-            [alertInfo setValue: @"Problem setting up the data" forKey:@"TITLE"];
-            [alertInfo setValue: @"Check your parameters!" forKey:@"MSGFORMAT"];
-            [alertInfo setValue: @"OK" forKey:@"DEFAULTBUTTON"];
-            if(doThreads){
-                [self performSelectorOnMainThread:@selector(showAlertPanelWithInfo:) withObject:alertInfo waitUntilDone:YES];
-            }else{
-                [self showAlertPanelWithInfo:alertInfo];
-            }
-        }else{
-            
-        }
-    }
-    
-    if(doThreads){
-        [self performSelectorOnMainThread:@selector(gettingDataIndicatorSwitchOff) withObject:nil waitUntilDone:NO];
-        [self performSelectorOnMainThread:@selector(progressBarOff) withObject:nil waitUntilDone:NO];
-    }
-    
-    if(success){
-        TimeSeriesLine *tsl;
-        NSMutableArray *fieldNames = [[[[panel1DataController dataSeries] yData] allKeys] mutableCopy];
-        NSString *lineColour;
-        int plotLayerIndex = -1;
-        
-        [self putFieldNamesInCorrectOrdering:fieldNames];
-     
-        //Panel 1
-        
-        [self clearTSTableView:panel1TimeSeriesTableView];
-        for(int i = 0; i < [fieldNames count];i++){
-            plotLayerIndex = (i==0) ? 0 : -1;
-            lineColour = [coloursForPlots objectAtIndex:i%[coloursForPlots count]];
-            tsl = [[TimeSeriesLine alloc] initWithLayerIndex:plotLayerIndex 
-                                                     AndName:[fieldNames objectAtIndex:i] 
-                                                   AndColour:lineColour];
-            [self addToTableView:panel1TimeSeriesTableView   TimeSeriesLine:tsl];
-        }
-        [panel1Plot setData:[panel1DataController dataSeries] WithViewName:@"ALL"];
-        [panel1Plot renderPlotWithFields:panel1TimeSeries] ;
-        
-        //Panel 2
-        [self clearTSTableView:panel2TimeSeriesTableView];
-        plotLayerIndex = -1;
-        for(int i = 0; i < [fieldNames count];i++){
-            plotLayerIndex = (i==0) ? 0 : -1;
-            lineColour = [coloursForPlots objectAtIndex:i%[coloursForPlots count]];
-            tsl = [[TimeSeriesLine alloc] initWithLayerIndex:plotLayerIndex
-                                                     AndName:[fieldNames objectAtIndex:i] 
-                                                   AndColour:lineColour];
-            [self addToTableView:panel2TimeSeriesTableView   TimeSeriesLine:tsl];
-        }
-        [panel2Plot setData:[panel1DataController dataSeries] WithViewName:@"ALL"];
-        [panel2Plot renderPlotWithFields:panel2TimeSeries];
-        
-        
-        //Panel 3
-        [self clearTSTableView:panel3TimeSeriesTableView];
-        plotLayerIndex = -1;
-        for(int i = 0; i < [fieldNames count];i++){
-            plotLayerIndex = (i==0) ? 0 : -1;
-            lineColour = [coloursForPlots objectAtIndex:i%[coloursForPlots count]];
-            tsl = [[TimeSeriesLine alloc] initWithLayerIndex:plotLayerIndex 
-                                                     AndName:[fieldNames objectAtIndex:i] 
-                                                   AndColour:lineColour];
-            [self addToTableView:panel3TimeSeriesTableView   TimeSeriesLine:tsl];
-        }
-
-        [panel3Plot setData:[panel1DataController dataSeries] WithViewName:@"ALL"];
-        [panel3Plot renderPlotWithFields:panel3TimeSeries] ; 
-        
-        if([panel1DataController signalStats] != nil){
-            signalStatsAvailable = YES;
-            [self initialiseSignalTableView];
-            
-        }
-        
-        [mainTab setLabel:@"Main Plot"];
-        
-        if([centreTabs numberOfTabViewItems] == 1){
-            [centreTabs addTabViewItem:zoomTab];
-            [centreTabs addTabViewItem:dataTab];
-        }
-        
-        if([panel1DataController signalStats] == nil){
-            if([centreTabs numberOfTabViewItems] == 4)
-            {
-                [centreTabs removeTabViewItem:signalsTab];
-            }
-        }else{
-            if([centreTabs numberOfTabViewItems] == 3)
-            {
-                [centreTabs addTabViewItem:signalsTab];
-            }
-        }
-        
-        if(doThreads){
-            [self performSelectorOnMainThread:@selector(updatePlotDescription:) withObject:userInput waitUntilDone:NO];
-        }
-        
-        initialSetupComplete = YES;
-    }
-    [self endSetupSheet];
+//    }
+//    
+//    if(doThreads){
+//        [self performSelectorOnMainThread:@selector(gettingDataIndicatorSwitchOff) withObject:nil waitUntilDone:NO];
+//        [self performSelectorOnMainThread:@selector(progressBarOff) withObject:nil waitUntilDone:NO];
+//    }
+//    
+//    if(success){
+//        TimeSeriesLine *tsl;
+//        NSMutableArray *fieldNames = [[[[panel1DataController dataSeries] yData] allKeys] mutableCopy];
+//        NSString *lineColour;
+//        int plotLayerIndex = -1;
+//        
+//        [self putFieldNamesInCorrectOrdering:fieldNames];
+//     
+//        //Panel 1
+//        
+//        [self clearTSTableView:panel1TimeSeriesTableView];
+//        for(int i = 0; i < [fieldNames count];i++){
+//            plotLayerIndex = (i==0) ? 0 : -1;
+//            lineColour = [coloursForPlots objectAtIndex:i%[coloursForPlots count]];
+//            tsl = [[TimeSeriesLine alloc] initWithLayerIndex:plotLayerIndex 
+//                                                     AndName:[fieldNames objectAtIndex:i] 
+//                                                   AndColour:lineColour];
+//            [self addToTableView:panel1TimeSeriesTableView   TimeSeriesLine:tsl];
+//        }
+//        [panel1Plot setData:[panel1DataController dataSeries] WithViewName:@"ALL"];
+//        //[panel1Plot renderPlotWithFields:panel1TimeSeries] ;
+//        
+//        //Panel 2
+//        [self clearTSTableView:panel2TimeSeriesTableView];
+//        plotLayerIndex = -1;
+//        for(int i = 0; i < [fieldNames count];i++){
+//            plotLayerIndex = (i==0) ? 0 : -1;
+//            lineColour = [coloursForPlots objectAtIndex:i%[coloursForPlots count]];
+//            tsl = [[TimeSeriesLine alloc] initWithLayerIndex:plotLayerIndex
+//                                                     AndName:[fieldNames objectAtIndex:i] 
+//                                                   AndColour:lineColour];
+//            [self addToTableView:panel2TimeSeriesTableView   TimeSeriesLine:tsl];
+//        }
+//        [panel2Plot setData:[panel1DataController dataSeries] WithViewName:@"ALL"];
+//        //[panel2Plot renderPlotWithFields:panel2TimeSeries];
+//        
+//        
+//        //Panel 3
+//        [self clearTSTableView:panel3TimeSeriesTableView];
+//        plotLayerIndex = -1;
+//        for(int i = 0; i < [fieldNames count];i++){
+//            plotLayerIndex = (i==0) ? 0 : -1;
+//            lineColour = [coloursForPlots objectAtIndex:i%[coloursForPlots count]];
+//            tsl = [[TimeSeriesLine alloc] initWithLayerIndex:plotLayerIndex 
+//                                                     AndName:[fieldNames objectAtIndex:i] 
+//                                                   AndColour:lineColour];
+//            [self addToTableView:panel3TimeSeriesTableView   TimeSeriesLine:tsl];
+//        }
+//
+//        [panel3Plot setData:[panel1DataController dataSeries] WithViewName:@"ALL"];
+//        //[panel3Plot renderPlotWithFields:panel3TimeSeries] ;
+//        
+//        if([panel1DataController signalStats] != nil){
+//            signalStatsAvailable = YES;
+//            [self initialiseSignalTableView];
+//            
+//        }
+//        
+//        [mainTab setLabel:@"Main Plot"];
+//        
+//        if([centreTabs numberOfTabViewItems] == 1){
+//            [centreTabs addTabViewItem:zoomTab];
+//            [centreTabs addTabViewItem:dataTab];
+//        }
+//        
+//        if([panel1DataController signalStats] == nil){
+//            if([centreTabs numberOfTabViewItems] == 4)
+//            {
+//                [centreTabs removeTabViewItem:signalsTab];
+//            }
+//        }else{
+//            if([centreTabs numberOfTabViewItems] == 3)
+//            {
+//                [centreTabs addTabViewItem:signalsTab];
+//            }
+//        }
+//        
+//        if(doThreads){
+//            [self performSelectorOnMainThread:@selector(updatePlotDescription:) withObject:userInput waitUntilDone:NO];
+//        }
+//        
+//        initialSetupComplete = YES;
+//    }
+//    [self endSetupSheet];
     
 }
 
@@ -1085,95 +1088,95 @@
 
 -(void)resamplePanel2Plot
 {
-    BOOL success = YES; 
-    DataSeries *plot1Data, *plot2Data;
-    DataView *plot1ZoomView;
-    NSArray *extraVariables;
-    
-    long minDateTime, maxDateTime;
-    long samplingRate;
-    
-    samplingRate = (long)[panel2SamplingRateField intValue];
-    if([panel2SamplingUnitRadio selectedColumn] == 0){
-        samplingRate = samplingRate * 60 * 60;
-    }
-    if([panel2SamplingUnitRadio selectedColumn] == 1){
-        samplingRate = samplingRate * 60;
-    }
-    
-    plot1Data = [panel1Plot plotData];
-    
-    if([[plot1Data dataViews] objectForKey:@"ZOOM"] != 0){
-        plot1ZoomView =  [[plot1Data dataViews] objectForKey:@"ZOOM"];   
-        minDateTime = [plot1ZoomView minDateTime];
-        maxDateTime = [plot1ZoomView maxDateTime];
-        
-        int dataBaseSuccess;
-        
-        if(doThreads){
-            [self performSelectorOnMainThread:@selector(gettingDataIndicatorSwitchOn) withObject:nil waitUntilDone:YES];
-            currentProgressIndicator = panel2ProgressBar;
-            [self performSelectorOnMainThread:@selector(progressBarOn) withObject:nil waitUntilDone:YES];
-        }
-        
-        success = [panel2DataController setupDataSeriesForName: [plot1Data name]];
-        
-        if([panel1DataController fileDataAdded])
-        {
-            [panel2DataController setData:[panel1DataController fileData] 
-                                 FromFile:[panel1DataController fileDataFileName]];
-        }
-        
-        if(success){
-            if(doThreads){
-                extraVariables = [SimulationController getNamesOfRequiredVariablesForSignal: [self signalSystem] 
-                                                                             AndPositioning: Nil 
-                                                                                   AndRules: Nil];
-                [panel2DataController setDataForStartDateTime: minDateTime 
-                                               AndEndDateTime: maxDateTime 
-                                            AndExtraVariables: extraVariables
-                                              AndSignalSystem: [self signalSystem]
-                                              AndSamplingRate: samplingRate
-                                                  WithSuccess: &dataBaseSuccess
-                                                  AndUpdateUI: YES];
-            }else{
-                [panel2DataController setDataForStartDateTime: minDateTime 
-                                               AndEndDateTime: maxDateTime 
-                                            AndExtraVariables: extraVariables
-                                              AndSignalSystem: [self signalSystem]
-                                              AndSamplingRate: samplingRate
-                                                  WithSuccess: &dataBaseSuccess
-                                                  AndUpdateUI: NO];
-            }
-            if(dataBaseSuccess == 0){
-                success = NO;
-            }else{
-                plot2Data = [panel2DataController dataSeries];
-                
-            }
-        }
-        
-        if(doThreads){
-            [self performSelectorOnMainThread:@selector(gettingDataIndicatorSwitchOff) withObject:nil waitUntilDone:NO];
-            [self performSelectorOnMainThread:@selector(progressBarOff) withObject:nil waitUntilDone:NO];
-        }
-        
-        if(success){
-            [panel2Plot setData:plot2Data WithViewName:@"ALL"];
-            [panel2Plot renderPlotWithFields:panel2TimeSeries] ;
-        }else{
-            NSMutableDictionary *alertInfo = [[NSMutableDictionary alloc] init];
-            [alertInfo setValue: @"Problem setting up the data" forKey:@"TITLE"];
-            [alertInfo setValue: @"Check your parameters!" forKey:@"MSGFORMAT"];
-            [alertInfo setValue: @"OK" forKey:@"DEFAULTBUTTON"];
-            
-            if(doThreads){
-                [self performSelectorOnMainThread:@selector(showAlertPanelWithInfo:) withObject:alertInfo waitUntilDone:YES];
-            }else{
-                [self showAlertPanelWithInfo:alertInfo];
-            }
-        }
-    }
+//    BOOL success = YES; 
+//    DataSeries *plot1Data, *plot2Data;
+//    DataView *plot1ZoomView;
+//    NSArray *extraVariables;
+//    
+//    long minDateTime, maxDateTime;
+//    long samplingRate;
+//    
+//    samplingRate = (long)[panel2SamplingRateField intValue];
+//    if([panel2SamplingUnitRadio selectedColumn] == 0){
+//        samplingRate = samplingRate * 60 * 60;
+//    }
+//    if([panel2SamplingUnitRadio selectedColumn] == 1){
+//        samplingRate = samplingRate * 60;
+//    }
+//    
+//    plot1Data = (DataSeries *)[panel1Plot plotData];
+//    
+//    if([plot1Data getDataViewForKey:@"ZOOM"] != 0){
+//        plot1ZoomView =  [plot1Data getDataViewForKey:@"ZOOM"];
+//        minDateTime = [plot1ZoomView minDateTime];
+//        maxDateTime = [plot1ZoomView maxDateTime];
+//        
+//        int dataBaseSuccess;
+//        
+//        if(doThreads){
+//            [self performSelectorOnMainThread:@selector(gettingDataIndicatorSwitchOn) withObject:nil waitUntilDone:YES];
+//            currentProgressIndicator = panel2ProgressBar;
+//            [self performSelectorOnMainThread:@selector(progressBarOn) withObject:nil waitUntilDone:YES];
+//        }
+//        
+//        success = [panel2DataController setupDataSeriesForName: [plot1Data name]];
+//        
+//        if([panel1DataController fileDataAdded])
+//        {
+//            [panel2DataController setData:[panel1DataController fileData] 
+//                                 FromFile:[panel1DataController fileDataFileName]];
+//        }
+//        
+//        if(success){
+//            if(doThreads){
+//                extraVariables = [SimulationController getNamesOfRequiredVariablesForSignal: [self signalSystem] 
+//                                                                             AndPositioning: Nil 
+//                                                                                   AndRules: Nil];
+//                [panel2DataController setDataForStartDateTime: minDateTime 
+//                                               AndEndDateTime: maxDateTime 
+//                                            AndExtraVariables: extraVariables
+//                                              AndSignalSystem: [self signalSystem]
+//                                              AndSamplingRate: samplingRate
+//                                                  WithSuccess: &dataBaseSuccess
+//                                                  AndUpdateUI: YES];
+//            }else{
+//                [panel2DataController setDataForStartDateTime: minDateTime 
+//                                               AndEndDateTime: maxDateTime 
+//                                            AndExtraVariables: extraVariables
+//                                              AndSignalSystem: [self signalSystem]
+//                                              AndSamplingRate: samplingRate
+//                                                  WithSuccess: &dataBaseSuccess
+//                                                  AndUpdateUI: NO];
+//            }
+//            if(dataBaseSuccess == 0){
+//                success = NO;
+//            }else{
+//                plot2Data = [panel2DataController dataSeries];
+//                
+//            }
+//        }
+//        
+//        if(doThreads){
+//            [self performSelectorOnMainThread:@selector(gettingDataIndicatorSwitchOff) withObject:nil waitUntilDone:NO];
+//            [self performSelectorOnMainThread:@selector(progressBarOff) withObject:nil waitUntilDone:NO];
+//        }
+//        
+//        if(success){
+//            [panel2Plot setData:plot2Data WithViewName:@"ALL"];
+//            //[panel2Plot renderPlotWithFields:panel2TimeSeries] ;
+//        }else{
+//            NSMutableDictionary *alertInfo = [[NSMutableDictionary alloc] init];
+//            [alertInfo setValue: @"Problem setting up the data" forKey:@"TITLE"];
+//            [alertInfo setValue: @"Check your parameters!" forKey:@"MSGFORMAT"];
+//            [alertInfo setValue: @"OK" forKey:@"DEFAULTBUTTON"];
+//            
+//            if(doThreads){
+//                [self performSelectorOnMainThread:@selector(showAlertPanelWithInfo:) withObject:alertInfo waitUntilDone:YES];
+//            }else{
+//                [self showAlertPanelWithInfo:alertInfo];
+//            }
+//        }
+//    }
 }
 
 -(void)initialiseSignalTableView{
@@ -1191,11 +1194,11 @@
         SignalStats *signalInfo;
         signalInfo = [[panel1DataController signalStats] objectAtIndex:0];
         
-        long startDateTime = [signalInfo startTime];
-        startDateTime = startDateTime - ([panel3SignalPlotLeadTimeTextField intValue] * 60 * 60);
-        long endDateTime = [signalInfo endTime];
+//        long startDateTime = [signalInfo startTime];
+//        startDateTime = startDateTime - ([panel3SignalPlotLeadTimeTextField intValue] * 60 * 60);
+//        long endDateTime = [signalInfo endTime];
         
-        [self plotSignalDataFrom:startDateTime To:endDateTime];
+        //[self plotSignalDataFrom:startDateTime To:endDateTime];
     }
     
     long minDataTime = [[panel1DataController dataSeries] minDateTime];
@@ -1209,14 +1212,16 @@
     [panel1ZoomBoxToDatePicker setDateValue:[NSDate dateWithTimeIntervalSince1970:maxDateTime]];
 }
 
-- (void) plotSignalDataFrom: (long) startDateTime To:(long) endDateTime 
-{
-    DataSeries *dataForPanel1Plot = [panel1DataController dataSeries];
-    [dataForPanel1Plot setPlotViewWithName:@"SIGNAL" AndStartDateTime:startDateTime AndEndDateTime:endDateTime];
-    
-    [panel3Plot setData:[panel1DataController dataSeries] WithViewName:@"SIGNAL"];
-    [panel3Plot renderPlotWithFields:panel3TimeSeries] ; 
-}
+//- (void) plotSignalDataFrom: (long) startDateTime To:(long) endDateTime 
+//{
+//    DataSeries *dataForPanel1Plot = [panel1DataController dataSeries];
+//    [dataForPanel1Plot setDataViewWithName:@"SIGNAL"
+//                          AndStartDateTime:startDateTime
+//                            AndEndDateTime:endDateTime];
+//    
+//    [panel3Plot setData:[panel1DataController dataSeries] WithViewName:@"SIGNAL"];
+//    //[panel3Plot renderPlotWithFields:panel3TimeSeries] ;
+//}
 
 -(void)putFieldNamesInCorrectOrdering:(NSMutableArray *) fieldNamesFromData
 {      
@@ -1265,41 +1270,41 @@
 
 -(void)resampleDataForZoomPlot:(NSDictionary *) parameters
 {
-    long startDateTime = [[parameters objectForKey:START_TIME] longValue];
-    long endDateTime  = [[parameters objectForKey:END_TIME] longValue];
-    long samplingRate = [[parameters objectForKey:SAMPLE_SECS] longValue];
-    BOOL updateUI = [[parameters objectForKey:UPDATE_UI] boolValue];
-    int success; 
-    NSArray *extraVariables;
-    
-    if([self signalSystem] == Nil){
-        extraVariables = [[NSArray alloc] init];
-    }else{
-        extraVariables = [SimulationController getNamesOfRequiredVariablesForSignal: [self signalSystem] 
-                                                                     AndPositioning: Nil 
-                                                                           AndRules: Nil];
-    }
-    
-    
-    [panel2DataController setDataForStartDateTime:startDateTime 
-                                   AndEndDateTime:endDateTime 
-                                AndExtraVariables: extraVariables
-                                  AndSignalSystem: [self signalSystem]
-                                  AndSamplingRate:samplingRate 
-                                      WithSuccess:&success 
-                                      AndUpdateUI:updateUI];
-    [panel2Plot setData:[panel2DataController dataSeries]  WithViewName:@"ALL"];
-    if(doThreads){
-        [self performSelectorOnMainThread:@selector(updateZoomPlotWithResampledData) withObject:nil waitUntilDone:YES];
-    }else{
-        [self updateZoomPlotWithResampledData];
-    }
+//    long startDateTime = [[parameters objectForKey:START_TIME] longValue];
+//    long endDateTime  = [[parameters objectForKey:END_TIME] longValue];
+//    long samplingRate = [[parameters objectForKey:SAMPLE_SECS] longValue];
+//    BOOL updateUI = [[parameters objectForKey:UPDATE_UI] boolValue];
+//    int success; 
+//    NSArray *extraVariables;
+//    
+//    if([self signalSystem] == Nil){
+//        extraVariables = [[NSArray alloc] init];
+//    }else{
+//        extraVariables = [SimulationController getNamesOfRequiredVariablesForSignal: [self signalSystem] 
+//                                                                     AndPositioning: Nil 
+//                                                                           AndRules: Nil];
+//    }
+//    
+//    
+//    [panel2DataController setDataForStartDateTime:startDateTime 
+//                                   AndEndDateTime:endDateTime 
+//                                AndExtraVariables: extraVariables
+//                                  AndSignalSystem: [self signalSystem]
+//                                  AndSamplingRate:samplingRate 
+//                                      WithSuccess:&success 
+//                                      AndUpdateUI:updateUI];
+//    [panel2Plot setData:[panel2DataController dataSeries]  WithViewName:@"ALL"];
+//    if(doThreads){
+//        [self performSelectorOnMainThread:@selector(updateZoomPlotWithResampledData) withObject:nil waitUntilDone:YES];
+//    }else{
+//        [self updateZoomPlotWithResampledData];
+//    }
 }
 
 -(void)updateZoomPlotWithResampledData
 {
     
-    [panel2Plot renderPlotWithFields:panel2TimeSeries];
+    //[panel2Plot renderPlotWithFields:panel2TimeSeries];
     [panel2DataMoveButton setEnabled:YES];
 }
 
@@ -1576,51 +1581,50 @@
 
 - (void)tableView:(NSTableView *)tableView setObjectValue:(id) obj forTableColumn:(NSTableColumn *)tableColumn row:(NSInteger)row
 {
-    TimeSeriesLine *tsl;
-    SeriesPlot *plot;
-    if([[tableView identifier] isEqualToString:@"P1TSTV"]){
-        tsl = [panel1TimeSeries objectAtIndex:row];
-        plot = panel1Plot;
-    }
-    if([[tableView identifier] isEqualToString:@"P2TSTV"]){
-        tsl = [panel2TimeSeries objectAtIndex:row];
-        plot = panel2Plot;
-    }
-    if([[tableView identifier] isEqualToString:@"P3TSTV"]){
-        tsl = [panel3TimeSeries objectAtIndex:row];
-        plot = panel3Plot;
-    }
-    
-    //int layerIndex = 0;
-    NSString *column = [tableColumn identifier];
-    if([[tableColumn identifier] isEqualToString:@"plot0"]){
-        if([obj boolValue]){
-            [tsl setLayerIndex:0];
-        }else{
-            [tsl setLayerIndex:-1];
-        }
-    }else if([[tableColumn identifier] isEqualToString:@"plot1"]){
-        if([obj boolValue]){
-            [tsl setLayerIndex:1];
-        }else{
-            [tsl setLayerIndex:-1];
-        }
-    }else if([[tableColumn identifier] isEqualToString:@"plot2"]){
-        if([obj boolValue]){
-            [tsl setLayerIndex:2];
-        }else{
-            [tsl setLayerIndex:-1];
-        }
-    }else{
-        [tsl setValue:obj forKey:column];
-    }
-    
-    if([[tableColumn identifier] isEqualToString:@"colourId"]){
-        [plot plotLineUpdated:NO];
-    }else{
-        [plot plotLineUpdated:YES];
-    }
-    [tableView reloadData];
+//    TimeSeriesLine *tsl;
+//    SeriesPlot *plot;
+//    if([[tableView identifier] isEqualToString:@"P1TSTV"]){
+//        tsl = [panel1TimeSeries objectAtIndex:row];
+//        plot = panel1Plot;
+//    }
+//    if([[tableView identifier] isEqualToString:@"P2TSTV"]){
+//        tsl = [panel2TimeSeries objectAtIndex:row];
+//        plot = panel2Plot;
+//    }
+//    if([[tableView identifier] isEqualToString:@"P3TSTV"]){
+//        tsl = [panel3TimeSeries objectAtIndex:row];
+//        plot = panel3Plot;
+//    }
+//    
+//    //int layerIndex = 0;
+//    NSString *column = [tableColumn identifier];
+//    if([[tableColumn identifier] isEqualToString:@"plot0"]){
+//        if([obj boolValue]){
+//            [tsl setLayerIndex:0];
+//        }else{
+//            [tsl setLayerIndex:-1];
+//        }
+//    }else if([[tableColumn identifier] isEqualToString:@"plot1"]){
+//        if([obj boolValue]){
+//            [tsl setLayerIndex:1];
+//        }else{
+//            [tsl setLayerIndex:-1];
+//        }
+//    }else if([[tableColumn identifier] isEqualToString:@"plot2"]){
+//        if([obj boolValue]){
+//            [tsl setLayerIndex:2];
+//        }else{
+//            [tsl setLayerIndex:-1];
+//        }
+//    }else{
+//        [tsl setValue:obj forKey:column];
+//    }
+//    if([[tableColumn identifier] isEqualToString:@"colourId"]){
+//        [plot updatePlotWithUpdateAxes:NO];
+//    }else{
+//        [plot updatePlotWithUpdateAxes:YES];
+//    }
+//    [tableView reloadData];
 }
 
 - (void) clearTSTableView:(NSTableView *)tableView
@@ -1663,10 +1667,10 @@
             SignalStats *signalStats;
             signalStats = [[panel1DataController signalStats] objectAtIndex:selectedRow];
             
-            long startDateTime = [signalStats getStartDateTime];
-            startDateTime = startDateTime - ([panel3SignalPlotLeadTimeTextField intValue] * 60 * 60);
-            long endDateTime = [signalStats getEndDateTime];
-            [self plotSignalDataFrom:startDateTime To:endDateTime];
+//            long startDateTime = [signalStats getStartDateTime];
+//            startDateTime = startDateTime - ([panel3SignalPlotLeadTimeTextField intValue] * 60 * 60);
+//            long endDateTime = [signalStats getEndDateTime];
+//            //[self plotSignalDataFrom:startDateTime To:endDateTime];
         }
     }
     return;

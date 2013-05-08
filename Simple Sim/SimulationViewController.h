@@ -27,6 +27,7 @@
     NSTabViewItem *dataTab;
     NSTabViewItem *reportTab;
     NSTabViewItem *signalsTab;
+    NSTabViewItem *compareTab;
        
     __weak NSScrollView *simulationRunScrollView;
     __weak NSButton *performSimulationButton;
@@ -44,9 +45,10 @@
     
     __weak NSTableView *simulationSignalSelectedTimeSeriesTableView;
     __weak NSTableView *simulationTimeSeriesSelectedTableView;
+        
+//    __weak CPTGraphHostingView *simulationSignalGraphHostingView;
+//    __weak CPTGraphHostingView *simulationResultGraphHostingView;
     
-    __weak CPTGraphHostingView *simulationSignalGraphHostingView;
-    __weak CPTGraphHostingView *simulationResultGraphHostingView;
     __weak NSTabView *centreTabView;
     __weak NSTabView *rightSideTabView;
     
@@ -111,7 +113,33 @@
     __weak NSBox *fullScreenBox;
     __weak NSBox *simPlotBox;
     __weak NSBox *signalAnalysisPlotBox;
+    __weak NSBox *_simCompareBox;
+    
+    //Simulation Comparison Tableview
+    __weak CPTGraphHostingView *_simulationCompareGraphHostingView;
+    __weak NSTableView *_simulationCompareTimeSeriesTableView;
+    __weak NSTableView *_simulationCompareOtherSimTableView;
+    __weak NSTableView *_simulationCompareSelectedTSTableView;
+    
+ 
+    __weak NSDatePicker *_simulationCompareFromDatePicker;
+    __weak NSDatePicker *_simulationCompareToDatePicker;
+    __weak NSButton *_simulationComparePlotRangeButton;
+    __weak NSMatrix *_simulationCompareSimRadio;
+    
+
 }
+
+- (void) setDelegate:(id)del;
+- (void) simulationEnded;
+- (void) setupResultsReport;
+- (void) readingRecordSetProgress: (NSNumber *) progressFraction;
+- (void) progressAsFraction:(NSNumber *) progressValue;
+- (void) progressBarOn;
+- (void) progressBarOff;
+- (void) viewChosenFromMainMenu;
+
+
 
 @property (retain) NSArray *coloursForPlots;
 @property (retain) NSDictionary *fxPairsAndDbIds;
@@ -173,17 +201,24 @@
 - (IBAction)exportBalanceAdjustments:(id)sender;
 - (IBAction)setupStartTimeChange:(id)sender;
 - (IBAction)setupEndTimeChange:(id)sender;
+
+
 - (IBAction)makeSimulationReport:(id)sender;
 - (IBAction)zoomButtonPress:(id)sender;
+- (IBAction)simCompareDateRangeButtonPress:(id)sender;
+
 - (IBAction)accountCurrencyChange:(id)sender;
 - (IBAction)importCsvData:(id)sender;
 - (IBAction)signalAnalysisPlotReload:(id)sender;
 - (IBAction)signalAnalysisPlotFullScreen:(id)sender;
 - (IBAction)simPlotFullScreen:(id)sender;
+- (IBAction)comparePlotFullScreen:(id)sender;
 - (IBAction)saveWorkingSimulation:(id)sender;
 - (IBAction)importSimulation:(id)sender;
 - (IBAction)removeWorkingSimulation:(id)sender;
 
+//- (IBAction)simulationCompareMakePlot:(id)sender;
+- (IBAction)simulationCompareChooseSimTimeSeries:(id)sender;
 
 
 @property (weak) IBOutlet NSProgressIndicator *performSimulationProgressBar;
@@ -225,14 +260,16 @@
 @property (weak) IBOutlet NSTableView *simulationTimeSeriesSelectedTableView;
 @property (weak) IBOutlet NSTableView *simulationSignalSelectedTimeSeriesTableView;
 
-- (void) setDelegate:(id)del;
-- (void) simulationEnded;
-//- (void) prepareForSimulationReport;
-- (void) setupResultsReport;
-- (void) readingRecordSetProgress: (NSNumber *) progressFraction;
-- (void) progressAsFraction:(NSNumber *) progressValue;
-- (void) progressBarOn;
-- (void) progressBarOff;
-- (void) viewChosenFromMainMenu;
+
+
+@property (weak) IBOutlet CPTGraphHostingView *simulationCompareGraphHostingView;
+@property (weak) IBOutlet NSBox *simCompareBox;
+@property (weak) IBOutlet NSTableView *simulationCompareTimeSeriesTableView;
+@property (weak) IBOutlet NSDatePicker *simulationCompareFromDatePicker;
+@property (weak) IBOutlet NSDatePicker *simulationCompareToDatePicker;
+@property (weak) IBOutlet NSButton *simulationComparePlotRangeButton;
+@property (weak) IBOutlet NSTableView *simulationCompareOtherSimTableView;
+@property (weak) IBOutlet NSTableView *simulationCompareSelectedTSTableView;
+@property (weak) IBOutlet NSMatrix *simulationCompareSimRadio;
 
 @end

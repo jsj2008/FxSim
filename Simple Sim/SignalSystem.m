@@ -23,6 +23,7 @@
         BOOL initStringUnderstood = NO;
         _miscStoredInfoDictionary = [[NSMutableDictionary alloc] init];
         _signalString = signalString;
+        _threshold = 0.0;
         NSMutableArray *signalComponentsPlusExtras = [[signalString componentsSeparatedByString:@";"] mutableCopy];
         NSString *signalStripped = [signalComponentsPlusExtras objectAtIndex:0];
         

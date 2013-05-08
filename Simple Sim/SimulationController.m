@@ -246,6 +246,8 @@
         newPosSystem = [[PositioningSystem alloc] initWithString:positioningString]; 
         [newSimulation setPositionSystem:newPosSystem];
         
+        [newSigSystem setThreshold:[newPosSystem signalThreshold]*[[self dataController] getPipsizeForSeriesName:tradingPair]];
+        
         BOOL rulesAdded = YES;
         if([rulesString length] > 0){
             rulesAdded = [newSimulation addTradingRules:rulesString];
@@ -719,16 +721,32 @@
             medianExposureLength = [[exposureLengths objectAtIndex:numberOfExposures/2-1] longValue];
         }
         
-        if([loserExposureLengths count] > 0 && [loserExposureLengths count] % 2 ){
+        if([loserExposureLengths count] > 1 && [loserExposureLengths count] % 2 ){
             medianLoserExposureLength = ([[loserExposureLengths objectAtIndex:floor(([loserExposureLengths count])/2.0)-1] longValue] + [[loserExposureLengths objectAtIndex:ceil(([loserExposureLengths count])/2.0)-1] longValue])/2;
         }else{
-            medianLoserExposureLength =  [[loserExposureLengths objectAtIndex:[loserExposureLengths count]/2-1] longValue];
+            if([loserExposureLengths count] == 0){
+                medianLoserExposureLength = 0;
+            }else{
+                if([loserExposureLengths count] == 1){
+                    medianLoserExposureLength = [[loserExposureLengths objectAtIndex:0] longValue];
+                }else{
+                    medianLoserExposureLength =  [[loserExposureLengths objectAtIndex:[loserExposureLengths count]/2-1] longValue];
+                }
+            }
         }
         
-        if([winnerExposureLengths count] > 0 && [winnerExposureLengths count] % 2){
+        if([winnerExposureLengths count] > 1 && [winnerExposureLengths count] % 2){
             medianWinnerExposureLength = ([[winnerExposureLengths objectAtIndex:floor(([winnerExposureLengths count])/2.0)-1] longValue] + [[winnerExposureLengths objectAtIndex:ceil(([winnerExposureLengths count])/2.0)-1] longValue])/2;
         }else{
-            medianWinnerExposureLength = [[winnerExposureLengths objectAtIndex:[winnerExposureLengths count]/2-1] longValue];
+            if([winnerExposureLengths count] == 0){
+                medianWinnerExposureLength = 0;
+            }else{
+                if([winnerExposureLengths count] == 1){
+                    medianWinnerExposureLength = [[winnerExposureLengths objectAtIndex:0] longValue];
+                }else{
+                    medianWinnerExposureLength = [[winnerExposureLengths objectAtIndex:[winnerExposureLengths count]/2-1] longValue];
+                }
+            }
         }
         
         [simulation addObjectToSimulationResults:[NSNumber numberWithLong:numberOfExposures]

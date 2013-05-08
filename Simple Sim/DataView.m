@@ -116,6 +116,49 @@
     return maxValue;
 }
 
+-(NSUInteger)numberOfRecordsForPlotLine
+{
+	return (NSUInteger)[self countForPlot];
+}
+
+
+- (CPTNumericData *)dataForPlotLine:(NSString *) plotId
+                              field:(NSUInteger) field
+                   recordIndexRange:(NSRange) indexRange
+{
+    
+    NSRange rangeOnOriginal =  NSMakeRange([self startIndexForPlot] + indexRange.location,indexRange.length);
+    CPTNumericData *dataToReturn;
+    
+    
+    if (field == CPTScatterPlotFieldX)
+    {
+        dataToReturn = [_dataSeries xData];
+    }else
+    {
+        dataToReturn = [[_dataSeries yData] objectForKey:plotId];
+    }
+    if (NSEqualRanges(rangeOnOriginal, NSMakeRange(0, [_dataSeries  length])))
+    {
+        return dataToReturn;
+    }
+    else
+    {
+        NSRange subRange = NSMakeRange(rangeOnOriginal.location * dataToReturn.dataType.sampleBytes,
+                                       rangeOnOriginal.length   * dataToReturn.dataType.sampleBytes);
+        return [CPTNumericData numericDataWithData:[dataToReturn.data subdataWithRange:subRange]
+                                          dataType:dataToReturn.dataType
+                                             shape:nil];
+    }
+    return nil;
+}
+
+
+
+#pragma mark -
+#pragma mark CPTPlotDataSource Methods
+
+
 -(NSUInteger)numberOfRecordsForPlot:(CPTPlot *)plot
 {
 	return (NSUInteger)[self countForPlot];
@@ -154,11 +197,11 @@
     return nil;
 }
 
--(void)addMin: (double) min AndMax: (double) max ForKey: (NSString *)key
-{
-    [[self minYvalues] setObject:[NSNumber numberWithDouble:min] forKey:key];
-    [[self maxYvalues] setObject:[NSNumber numberWithDouble:max] forKey:key];
-}
+//-(void)addMin: (double) min AndMax: (double) max ForKey: (NSString *)key
+//{
+//    [[self minYvalues] setObject:[NSNumber numberWithDouble:min] forKey:key];
+//    [[self maxYvalues] setObject:[NSNumber numberWithDouble:max] forKey:key];
+//}
 
 #pragma mark -
 #pragma mark Variables 

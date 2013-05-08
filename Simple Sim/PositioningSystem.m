@@ -92,13 +92,18 @@
             }
             if([[instructionDetails objectAtIndex:0] isEqualToString:@"WSO"]){
                 _stopEntryOnWeakeningSignal = YES;
-                //Backward compatibility 
-                if([instructionDetails count] ==2){
+                //Backward compatibility HACKS get rid of them
+                if([instructionDetails count] ==1){
                     _stopEntryOnWeakeningSignalLagTime = SIGNAL_LAG_INTERVAL;
                     _stopEntryOnWeakeningSignalThreshold = 10;
                 }else{
-                    _stopEntryOnWeakeningSignalLagTime = 60*[[instructionDetails objectAtIndex:1] intValue];
-                    _stopEntryOnWeakeningSignalThreshold = [[instructionDetails objectAtIndex:2] intValue];
+                    if([instructionDetails count] ==2){
+                        _stopEntryOnWeakeningSignalLagTime = 60*[[instructionDetails objectAtIndex:1] intValue];
+                        _stopEntryOnWeakeningSignalThreshold = 10;
+                    }else{
+                        _stopEntryOnWeakeningSignalLagTime = 60*[[instructionDetails objectAtIndex:1] intValue];
+                        _stopEntryOnWeakeningSignalThreshold = [[instructionDetails objectAtIndex:2] intValue];
+                    }
                 }
                 //_laggedSignalInterval = SIGNAL_LAG_INTERVAL;
             }
@@ -143,10 +148,10 @@
         leadTimeRequired = [self stepLength]  * 24 * 60 * 60;
     }
     if([self stopEntryOnWeakeningPrice] > leadTimeRequired){
-        leadTimeRequired = [self stopEntryOnWeakeningPrice];
+        leadTimeRequired = [self stopEntryOnWeakeningPriceLagTime];
     }
     if([self stopEntryOnWeakeningSignal] > leadTimeRequired){
-        leadTimeRequired = [self stopEntryOnWeakeningSignal];
+        leadTimeRequired = [self stopEntryOnWeakeningSignalLagTime];
     }
     return leadTimeRequired;
 }

@@ -15,6 +15,7 @@
 #import "TimeSeriesLine.h"
 #import "EpochTime.h"
 #import "UtilityFunctions.h"
+#import "SeriesPlotDataWrapper.h"
 
 #define DAY_SECONDS (24*60*60)
 
@@ -23,6 +24,11 @@
 @property (retain) NSMutableArray *allSimulations;
 @property (retain) NSMutableArray *simulationTimeSeries;
 @property (retain) NSMutableArray *simulationSignalTimeSeries;
+@property (retain) NSMutableArray *simulationCompareSimATimeSeries;
+@property (retain) NSMutableArray *simulationCompareSimBTimeSeries;
+@property (retain) NSMutableDictionary *simulationCompareSelectedTimeSeries;
+@property (retain) NSMutableDictionary *simulationSignalSelectedTimeSeries;
+@property (retain) NSMutableDictionary *simulationSelectedTimeSeries;
 @property (retain) NSMutableArray *signalTableViewOrdering;
 @property (retain) NSArray *hideObjectsOnStartup;
 @property (retain) NSArray *importDataArray;
@@ -33,11 +39,16 @@
 @property BOOL initialSetupComplete;
 @property BOOL signalTableViewSortedAscending;
 @property BOOL longShortIndicatorOn;
-@property (retain) DataSeries *simulationDataSeries;
+//@property (retain) DataSeries *simulationDataSeries;
 @property (retain) SeriesPlot *simulationResultsPlot;
 @property (retain) SeriesPlot *signalAnalysisPlot;
+@property (retain) SeriesPlot *simulationComparePlot;
 @property (retain) Simulation *workingSimulation;
-
+@property (retain) Simulation *compareSimulation;
+@property BOOL compareSimulationLoaded;
+@property (retain) SeriesPlotDataWrapper *comparePlotInfo;
+@property (retain) SeriesPlotDataWrapper *simulationPlotInfo;
+@property (retain) SeriesPlotDataWrapper *signalPlotInfo;
 
 - (void) putFieldNamesInCorrectOrdering:(NSMutableArray *) fieldNamesFromData;
 - (void) endSetupSheet;
@@ -61,11 +72,15 @@
 - (void) setupResultsReport;
 - (void) addSimInfoToAboutPanel;
 - (void) plotSimulationData;
+- (void) prepareSimCompareSheet;
 - (void) addSimulationDataToResultsTableView;
 - (void) prepareForSimulationReport;
 - (void) displayWorkingSim;
 - (void) disableSimulationBrowser;
 - (void) fillSetupSheet:(NSDictionary *) parameters;
+- (void) updateSelectedSimCompareTimeseries;
+- (void) updateSimulationSelectedTimeSeries;
+- (void) updateSimulationSignalSelectedTimeSeries;
 @end
 
 @implementation SimulationViewController
@@ -82,14 +97,19 @@
         _firstTimeSetup = YES;
         [self setDoThreads:NO];
         _simulationTimeSeries = [[NSMutableArray alloc] init];
+        _simulationCompareSimATimeSeries = [[NSMutableArray alloc] init];
+        _simulationCompareSimBTimeSeries = [[NSMutableArray alloc] init];
+        _simulationCompareSelectedTimeSeries = [[NSMutableDictionary alloc] init];
+        _simulationSignalSelectedTimeSeries = [[NSMutableDictionary alloc] init];
+        _simulationSelectedTimeSeries = [[NSMutableDictionary alloc] init];
         _simulationSignalTimeSeries = [[NSMutableArray alloc] init]; 
         _signalTableViewSortedAscending = YES;
         _allSimulations = [[NSMutableArray alloc] init];
         _simulationController = [[SimulationController alloc] init];
         [_simulationController setDelegate:self];
         [_simulationController setDoThreads:_doThreads];
-
-        _workingSimulation = Nil;
+        _compareSimulationLoaded = NO;
+        _workingSimulation = nil;
         
     }
     return self;
@@ -102,16 +122,23 @@
     
     NSTableColumn *simulationColourColumn =  [simulationTimeSeriesTableView tableColumnWithIdentifier:@"colourId"];
     NSTableColumn *signalAnalysisColourColumn =  [simulationSignalTimeSeriesTableView tableColumnWithIdentifier:@"colourId"];
+    NSTableColumn *simulationCompareColourColumn =  [_simulationCompareTimeSeriesTableView tableColumnWithIdentifier:@"colourId"];
+    
     
     NSPopUpButtonCell *simulationColourDropDownCell = [[NSPopUpButtonCell alloc] init];
     NSPopUpButtonCell *signalAnalysisColourDropDownCell = [[NSPopUpButtonCell alloc] init];
+    NSPopUpButtonCell *simulationCompareColourDropDownCell = [[NSPopUpButtonCell alloc] init];
     
     [simulationColourDropDownCell setBordered:NO];
     [simulationColourDropDownCell setEditable:YES];
     
+     
     [signalAnalysisColourDropDownCell setBordered:NO];
     [signalAnalysisColourDropDownCell setEditable:YES];
     
+    [simulationCompareColourDropDownCell setBordered:NO];
+    [simulationCompareColourDropDownCell setEditable:YES];
+     
     [simulationColourDropDownCell addItemsWithTitles:[self coloursForPlots]];
     [simulationColourColumn setDataCell:simulationColourDropDownCell];
     [simulationTimeSeriesTableView setDataSource:self];
@@ -125,6 +152,12 @@
     
     [simulationSignalSelectedTimeSeriesTableView setDataSource:self];
     [simulationSignalSelectedTimeSeriesTableView setDelegate:self];
+    
+    [simulationCompareColourDropDownCell addItemsWithTitles:[self coloursForPlots]];
+    [simulationCompareColourColumn setDataCell:simulationColourDropDownCell];
+    [_simulationCompareTimeSeriesTableView setDataSource:self];
+    [_simulationCompareTimeSeriesTableView setDelegate:self];
+    
     
     [registeredSimsTableView1 setDataSource:self];
     [registeredSimsTableView1 setDelegate:self];
@@ -141,6 +174,12 @@
     [registeredSimsTableView5 setDataSource:self];
     [registeredSimsTableView5 setDelegate:self];
     
+    
+    [_simulationCompareOtherSimTableView setDataSource:self];
+    [_simulationCompareOtherSimTableView setDelegate:self];
+     
+    [_simulationCompareSelectedTSTableView setDataSource:self];
+    [_simulationCompareSelectedTSTableView setDelegate:self];
     
     //Popup sheet stuff
     [setupTradingPairPopup removeAllItems];
@@ -199,10 +238,17 @@
     [zoomToDatePicker setTimeZone:[NSTimeZone timeZoneWithName:@"GMT"]];
     [zoomToDatePicker setCalendar:gregorian];
     
+    [[self simulationCompareFromDatePicker] setTimeZone:[NSTimeZone timeZoneWithName:@"GMT"]];
+    [[self simulationCompareFromDatePicker] setCalendar:gregorian];
+    
+    [[self simulationCompareToDatePicker] setTimeZone:[NSTimeZone timeZoneWithName:@"GMT"]];
+    [[self simulationCompareToDatePicker] setCalendar:gregorian];
+    
+    
     [setupSheetImportDataTableView setDataSource:self];
     
     NSUInteger tabIndex;
-    tabIndex = [centreTabView indexOfTabViewItemWithIdentifier:@"SIM RUN"];
+    tabIndex = [centreTabView indexOfTabViewItemWithIdentifier:@"SIMRUN"];
     setupTab = [centreTabView tabViewItemAtIndex:tabIndex];
     tabIndex = [centreTabView indexOfTabViewItemWithIdentifier:@"PLOT"];
     plotTab = [centreTabView tabViewItemAtIndex:tabIndex];
@@ -212,12 +258,16 @@
     reportTab = [centreTabView tabViewItemAtIndex:tabIndex];
     tabIndex = [centreTabView indexOfTabViewItemWithIdentifier:@"SIGNAL"];
     signalsTab = [centreTabView tabViewItemAtIndex:tabIndex];
+    tabIndex = [centreTabView indexOfTabViewItemWithIdentifier:@"COMPARE"];
+    compareTab = [centreTabView tabViewItemAtIndex:tabIndex];
+    
     //tabIndex = [centreTabView indexOfTabViewItemWithIdentifier:@"ZOOM"];
     
     [centreTabView removeTabViewItem:plotTab];
     [centreTabView removeTabViewItem:dataTab];
     [centreTabView removeTabViewItem:reportTab];
     [centreTabView removeTabViewItem:signalsTab];
+    [centreTabView removeTabViewItem:compareTab];
     
     [self setHideObjectsOnStartup:[NSArray arrayWithObjects: aboutSimNameLabel, aboutTradingPairLabel, aboutAccountCurrencyLabel, aboutSimStartTimeLabel,aboutSimEndTimeLabel, tradingPairLabel, accountCurrencyLabel, simulationNameLabel, startLabel, endLabel, samplingRateLabel, tradingLagLabel, tradingDayStartLabel, tradingDayEndLabel,descriptionLabel, registeredSimsScrollView1, removeSimulationButton, importSimulationButton, nil]];
     
@@ -247,8 +297,8 @@
     }
     
     [simulationRunScrollView setFrame:CGRectMake(18.0f, 59.0f, 650.0f, 417.0f)];
-    [centreTabView selectTabViewItemWithIdentifier:@"SETUP"];
-    [rightSideTabView selectTabViewItemWithIdentifier:@"SETUP"];
+    [centreTabView selectTabViewItemWithIdentifier:@"SIMRUN"];
+    [rightSideTabView selectTabViewItemWithIdentifier:@"SIMRUN"];
     
     [simulationSignalTimeSeriesTableView setDelegate:self];
     
@@ -261,9 +311,11 @@
     
     _signalAnalysisPlot = [[SeriesPlot alloc] initWithIdentifier:@"SIGNALS"];
     [_signalAnalysisPlot setHostingView:simulationSignalGraphHostingView];
-
     
-    
+    _simulationComparePlot = [[SeriesPlot alloc] initWithIdentifier:@"SIMCOMPARE"];
+    [_simulationComparePlot setHostingView:_simulationCompareGraphHostingView];
+    [_simulationComparePlot initialGraphAndAddAnnotation:NO];
+   
 }
 
 - (void) setDelegate:(id)del
@@ -308,9 +360,21 @@
         
         DataSeries *analysisDataSeries = [[self workingSimulation] analysisDataSeries]; 
         TimeSeriesLine *tsl;
-        NSMutableArray *fieldNames;
         
-        fieldNames = [[[analysisDataSeries yData] allKeys] mutableCopy];
+        NSMutableArray *fieldNames = [[[analysisDataSeries yData] allKeys] mutableCopy];
+        for(int i = 0; i < [fieldNames count]; i++){
+            if([[fieldNames objectAtIndex:i] isEqualToString:@"SHORT"]){
+                [fieldNames removeObjectAtIndex:i];
+                break;
+            }
+        }
+        for(int i = 0; i < [fieldNames count]; i++){
+            if([[fieldNames objectAtIndex:i] isEqualToString:@"LONG"]){
+                [fieldNames removeObjectAtIndex:i];
+                break;
+            }
+        }
+      
         [self putFieldNamesInCorrectOrdering:fieldNames];
         [self clearTSTableView:simulationSignalTimeSeriesTableView];
         int plotLayerIndex;
@@ -333,8 +397,20 @@
         }
         startDateTime = startDateTime - ([signalAnalysisPlotLeadHours intValue] * 60*60);
         [self setLongShortIndicatorOn:YES];
-        [self plotSignalDataFrom:startDateTime 
-                              To:endDateTime];
+        [self updateSimulationSignalSelectedTimeSeries];
+        SeriesPlotDataWrapper *signalPlotDataSource = [[SeriesPlotDataWrapper alloc] initWithTargetPlotName: @"SIG"
+                                                                                              AndSimulation:[self workingSimulation]
+                                                                                            AndTSDictionary:[self simulationSignalSelectedTimeSeries]
+                                                                                    AndDoShortLongIndicator:YES];
+        [signalPlotDataSource setDataViewWithStartDateTime:startDateTime
+                                            AndEndDateTime:endDateTime
+                                                    AsZoom:NO];
+        
+        [[self signalAnalysisPlot] setBasicParametersForPlot];
+        [[self signalAnalysisPlot] updateLines:signalPlotDataSource];
+        [self setSignalPlotInfo:signalPlotDataSource];
+        
+        
         [simulationSignalSelectedTimeSeriesTableView reloadData];
         [simulationSignalTableView reloadData];
     }
@@ -363,8 +439,21 @@
 {
     DataSeries *analysisDataSeries = [[self workingSimulation] analysisDataSeries];
     TimeSeriesLine *tsl;
-    NSMutableArray *fieldNames;
-    fieldNames = [[[analysisDataSeries yData] allKeys] mutableCopy];
+    
+    NSMutableArray *fieldNames = [[[analysisDataSeries yData] allKeys] mutableCopy];
+    for(int i = 0; i < [fieldNames count]; i++){
+        if([[fieldNames objectAtIndex:i] isEqualToString:@"SHORT"]){
+            [fieldNames removeObjectAtIndex:i];
+            break;
+        }
+    }
+    for(int i = 0; i < [fieldNames count]; i++){
+        if([[fieldNames objectAtIndex:i] isEqualToString:@"LONG"]){
+            [fieldNames removeObjectAtIndex:i];
+            break;
+        }
+    }
+    
     [self putFieldNamesInCorrectOrdering:fieldNames];
     
     // Simulation results plot
@@ -386,24 +475,76 @@
                                                AndColour:lineColour];
         [self addToTableView:simulationTimeSeriesTableView   TimeSeriesLine:tsl];
     }
+    [self updateSimulationSelectedTimeSeries];
     [simulationTimeSeriesTableView reloadData];
     [simulationTimeSeriesSelectedTableView reloadData];
-    [[self simulationResultsPlot] setHostingView:simulationResultGraphHostingView];
-    [[self simulationResultsPlot] setData:analysisDataSeries WithViewName:@"ALL"];
-    [[self simulationResultsPlot] renderPlotWithFields:[self simulationTimeSeries]];
     
-    long minDataTime = [analysisDataSeries minDateTime];
-    long maxDateTime = [analysisDataSeries maxDateTime];
+    SeriesPlotDataWrapper *plotDataSource = [[SeriesPlotDataWrapper alloc] initWithTargetPlotName: @"SIM"
+                                                                                    AndSimulation:[self workingSimulation]
+                                                                                  AndTSDictionary:[self simulationSelectedTimeSeries]
+                                                                          AndDoShortLongIndicator:YES];
     
-    [zoomFromDatePicker setMinDate:[NSDate dateWithTimeIntervalSince1970:minDataTime]];
-    [zoomFromDatePicker setMaxDate:[NSDate dateWithTimeIntervalSince1970:maxDateTime]];
-    [zoomFromDatePicker setDateValue:[NSDate dateWithTimeIntervalSince1970:minDataTime]];
-    [zoomToDatePicker setMinDate:[NSDate dateWithTimeIntervalSince1970:minDataTime]];
-    [zoomToDatePicker setMaxDate:[NSDate dateWithTimeIntervalSince1970:maxDateTime]];
-    [zoomToDatePicker setDateValue:[NSDate dateWithTimeIntervalSince1970:maxDateTime]];
+    [plotDataSource setDataViewWithStartDateTime:[analysisDataSeries minDateTime]
+                                  AndEndDateTime:[analysisDataSeries maxDateTime]
+                                          AsZoom:NO];
+    [self setSimulationPlotInfo:plotDataSource];
+    [[self simulationResultsPlot] setBasicParametersForPlot];
+    [[self simulationResultsPlot] updateLines:plotDataSource];
     
-    [self setSimulationDataSeries:analysisDataSeries];
+    [zoomFromDatePicker setMinDate:[NSDate dateWithTimeIntervalSince1970:[analysisDataSeries minDateTime]]];
+    [zoomFromDatePicker setMaxDate:[NSDate dateWithTimeIntervalSince1970:[analysisDataSeries maxDateTime]]];
+    [zoomFromDatePicker setDateValue:[NSDate dateWithTimeIntervalSince1970:[analysisDataSeries minDateTime]]];
+    [zoomToDatePicker setMinDate:[NSDate dateWithTimeIntervalSince1970:[analysisDataSeries minDateTime]]];
+    [zoomToDatePicker setMaxDate:[NSDate dateWithTimeIntervalSince1970:[analysisDataSeries maxDateTime]]];
+}
+
+-(void) prepareSimCompareSheet
+{
+    [[self simulationCompareSimRadio] selectCellAtRow:0 column:0];
+    NSArray *radioCells = [[self simulationCompareSimRadio] cells];
+    for(int i = 0; i < [radioCells count]; i++){
+        [[radioCells objectAtIndex:i] setEnabled:NO];
+    }
+    [[self simulationCompareSimATimeSeries] removeAllObjects];
+    TimeSeriesLine *tsl, *tsl2;
+    for(int i = 0; i < [[self simulationTimeSeries] count]; i++){
+        tsl = [[self simulationTimeSeries] objectAtIndex:i];
+        if(i == 0){
+            tsl2 = [[TimeSeriesLine alloc] initWithLayerIndex:0
+                                                      AndName:[tsl name]
+                                                    AndColour:[tsl colour]
+                                                     AndSimId:0];
+
+        }else{
+            tsl2 = [[TimeSeriesLine alloc] initWithLayerIndex:-1
+                                                      AndName:[tsl name]
+                                                    AndColour:[tsl colour]
+                                                     AndSimId:0];
+        }
+        [[self simulationCompareSimATimeSeries] addObject:tsl2];
+    }
+    [[self simulationCompareSimBTimeSeries] removeAllObjects];
+    [self updateSelectedSimCompareTimeseries];
+    [[self simulationCompareTimeSeriesTableView] reloadData];
     
+    [[self simulationCompareFromDatePicker] setDateValue:[NSDate dateWithTimeIntervalSince1970:[[self workingSimulation] startDate]]];
+    [[self simulationCompareFromDatePicker] setMinDate:[NSDate dateWithTimeIntervalSince1970:[[self workingSimulation] startDate]]];
+    [[self simulationCompareFromDatePicker] setMaxDate:[NSDate dateWithTimeIntervalSince1970:[[self workingSimulation] endDate]]];
+    [[self simulationCompareToDatePicker] setDateValue:[NSDate dateWithTimeIntervalSince1970:[[self workingSimulation] startDate] + (30*24*60*60)]];
+    [[self simulationCompareToDatePicker] setMinDate:[NSDate dateWithTimeIntervalSince1970:[[self workingSimulation] startDate]]];
+    [[self simulationCompareToDatePicker] setMaxDate:[NSDate dateWithTimeIntervalSince1970:[[self workingSimulation] endDate]]];
+    
+    
+    SeriesPlotDataWrapper *plotDataSource = [[SeriesPlotDataWrapper alloc] initWithTargetPlotName: @"COM"
+                                                                                    AndSimulation:[self workingSimulation]
+                                                                                  AndTSDictionary:[self simulationCompareSelectedTimeSeries]
+                                                                          AndDoShortLongIndicator:NO];
+    [plotDataSource setDataViewWithStartDateTime:[[self workingSimulation] startDate]
+                                  AndEndDateTime:[[self workingSimulation] endDate] + (30*24*60*60)
+                                          AsZoom:NO];
+    [[self simulationComparePlot] setBasicParametersForPlot];
+    [self setComparePlotInfo:plotDataSource];
+    [[self simulationComparePlot] updateLines:[self comparePlotInfo]];
 }
 
 - (void) addSimulationDataToResultsTableView
@@ -419,6 +560,18 @@
     float tableViewWidth = 0.0;
     
     fieldNames = [[[analysisDataSeries yData] allKeys] mutableCopy];
+    for(int i = 0; i < [fieldNames count]; i++){
+        if([[fieldNames objectAtIndex:i] isEqualToString:@"SHORT"]){
+            [fieldNames removeObjectAtIndex:i];
+            break;
+        }
+    }
+    for(int i = 0; i < [fieldNames count]; i++){
+        if([[fieldNames objectAtIndex:i] isEqualToString:@"LONG"]){
+            [fieldNames removeObjectAtIndex:i];
+            break;
+        }
+    }
     [self putFieldNamesInCorrectOrdering:fieldNames];
     
     isAvailable = [[NSMutableArray alloc] init];
@@ -474,18 +627,18 @@
     [simulationNumbersTableView reloadData];
 }
 
-- (void) plotSignalDataFrom: (long) startDateTime 
-                         To:(long) endDateTime
-{
-    DataSeries *analysisDataSeries = [[self workingSimulation] analysisDataSeries]; 
-    
-    [analysisDataSeries setPlotViewWithName:@"SIGNAL" AndStartDateTime:startDateTime AndEndDateTime:endDateTime];
-    
-    [[self signalAnalysisPlot] setData:analysisDataSeries WithViewName:@"SIGNAL"];
-    [[self signalAnalysisPlot] renderPlotWithFields:[self simulationSignalTimeSeries]];
-    [self setSimulationDataSeries:analysisDataSeries];
-    
-}
+//- (void) plotSignalDataFrom: (long) startDateTime 
+//                         To:(long) endDateTime
+//{
+////    DataSeries *analysisDataSeries = [[self workingSimulation] analysisDataSeries]; 
+////    
+////    [analysisDataSeries setDataViewWithName:@"SIGNAL"
+////                           AndStartDateTime:startDateTime
+////                             AndEndDateTime:endDateTime];
+//    
+//    //[[self signalAnalysisPlot] setData:analysisDataSeries WithViewName:@"SIGNAL"];
+//    [[self signalAnalysisPlot] updateLines:[self signalPlotInfo]];
+//}
 
 - (void) addSimInfoToAboutPanel
 {   
@@ -682,9 +835,14 @@
             endDateTime = [[signalInfo objectForKey:@"EXITTIME"] longValue] + 2*tradingLag;
         }
         if(startDateTime >= endDateTime){
-            NSLog(@"Check this");
+            NSLog(@"Error making signal plot, start time is after end time");
         }
-        [self plotSignalDataFrom:startDateTime To:endDateTime];
+        //[self plotSignalDataFrom:startDateTime To:endDateTime];
+        [[self signalPlotInfo] setDataViewWithStartDateTime:startDateTime
+                                             AndEndDateTime:endDateTime
+                                                     AsZoom:NO];
+        [self updateSimulationSignalSelectedTimeSeries];
+        [[self signalAnalysisPlot] updateLines:[self signalPlotInfo]];
     }
 }
 
@@ -724,6 +882,7 @@
         [centreTabView addTabViewItem:dataTab];
         [centreTabView addTabViewItem:reportTab];
         [centreTabView addTabViewItem:signalsTab];
+        [centreTabView addTabViewItem:compareTab];
     }
     [simulationRunScrollView setFrame:CGRectMake(18.0f, 59.0f, 650.0f, 306.0f)];
 }
@@ -746,6 +905,7 @@
     [registeredSimsTableView3 reloadData];
     [registeredSimsTableView reloadData];
     [registeredSimsTableView5 reloadData];
+    [[self simulationCompareOtherSimTableView] reloadData];
     
     NSIndexSet *indexSet = [NSIndexSet indexSetWithIndex:[[self allSimulations] count]-1];
     [registeredSimsTableView1 selectRowIndexes:indexSet byExtendingSelection:NO];
@@ -753,10 +913,7 @@
     [registeredSimsTableView3 selectRowIndexes:indexSet byExtendingSelection:NO];
     [registeredSimsTableView selectRowIndexes:indexSet byExtendingSelection:NO];
     [registeredSimsTableView5 selectRowIndexes:indexSet byExtendingSelection:NO];
-    
-    
-    //[self setWorkingSimulation:sim];
-    //[self displayWorkingSim];
+    [[self simulationCompareOtherSimTableView] selectRowIndexes:indexSet byExtendingSelection:NO];
     
     [removeSimulationButton setEnabled:YES];
     [exportSimulationButton setEnabled:YES];
@@ -770,6 +927,7 @@
     [self addSimInfoToAboutPanel];
     [self initialiseSignalTableView];
     [self setupResultsReport];
+    [self prepareSimCompareSheet];
 }
 
 -(void)fillSetupSheet:(NSDictionary *) parameters
@@ -838,7 +996,74 @@
     }
 }
 
+- (void) updateSimulationSelectedTimeSeries
+{
+    [[self simulationSelectedTimeSeries] removeAllObjects];
+    TimeSeriesLine *tsl, *newTsl;
+    NSString *lineName;
+    
+    for(int i = 0; i < [[self simulationTimeSeries] count]; i++){
+        tsl = [[self simulationTimeSeries] objectAtIndex:i];
+        if([tsl layerIndex] > -1){
+            newTsl = [[TimeSeriesLine alloc] initWithLayerIndex:[tsl layerIndex]
+                                                        AndName:[tsl name]
+                                                      AndColour:[tsl colour]
+                                                       AndSimId:0];
+            lineName = [NSString stringWithFormat:@"S%ld_L%d_%@",[tsl simId],[tsl layerIndex],[tsl name]];
+            [[self simulationSelectedTimeSeries] setObject:newTsl forKey:lineName];
+        }
+    }
+}
 
+- (void) updateSimulationSignalSelectedTimeSeries
+{
+    [[self simulationSignalSelectedTimeSeries] removeAllObjects];
+    TimeSeriesLine *tsl, *newTsl;
+    NSString *lineName;
+    
+    for(int i = 0; i < [[self simulationSignalTimeSeries] count]; i++){
+        tsl = [[self simulationSignalTimeSeries] objectAtIndex:i];
+        if([tsl layerIndex] > -1){
+            newTsl = [[TimeSeriesLine alloc] initWithLayerIndex:[tsl layerIndex]
+                                                        AndName:[tsl name]
+                                                      AndColour:[tsl colour]
+                                                       AndSimId:0];
+            lineName = [NSString stringWithFormat:@"S%ld_L%d_%@",[tsl simId],[tsl layerIndex],[tsl name]];
+            [[self simulationSignalSelectedTimeSeries] setObject:newTsl forKey:lineName];
+        }
+    }
+}
+
+
+- (void) updateSelectedSimCompareTimeseries
+{
+    [[self simulationCompareSelectedTimeSeries] removeAllObjects];
+    TimeSeriesLine *tsl, *newTsl;
+    NSString *lineName;
+    
+    for(int i = 0; i < [[self simulationCompareSimATimeSeries] count]; i++){
+        tsl = [[self simulationCompareSimATimeSeries] objectAtIndex:i];
+        if([tsl layerIndex] > -1){
+            newTsl = [[TimeSeriesLine alloc] initWithLayerIndex:[tsl layerIndex]
+                                                        AndName:[tsl name]
+                                                      AndColour:[tsl colour]
+                                                       AndSimId:0];
+            lineName = [NSString stringWithFormat:@"S%ld_L%d_%@",[tsl simId],[tsl layerIndex],[tsl name]];
+            [[self simulationCompareSelectedTimeSeries] setObject:newTsl forKey:lineName];
+        }
+    }
+    for(int i = 0; i < [[self simulationCompareSimBTimeSeries] count]; i++){
+        tsl = [[self simulationCompareSimBTimeSeries] objectAtIndex:i];
+        if([tsl layerIndex] > -1){
+            newTsl = [[TimeSeriesLine alloc] initWithLayerIndex:[tsl layerIndex]
+                                                        AndName:[tsl name]
+                                                      AndColour:[tsl colour]
+                                                       AndSimId:1];
+            lineName = [NSString stringWithFormat:@"S%ld_L%d_%@",[tsl simId],[tsl layerIndex],[tsl name]];
+            [[self simulationCompareSelectedTimeSeries] setObject:newTsl forKey:lineName];
+        }
+    }
+}
 
 #pragma mark -
 #pragma mark IBActions Methods
@@ -849,17 +1074,21 @@
         if([[senderIdentifer substringToIndex:7] isEqualToString:@"BIGPLOT"]){
             [[self simulationResultsPlot] rightSideExpand];
         }
-        
         if([[senderIdentifer substringToIndex:7] isEqualToString:@"SIGPLOT"]){
             [[self signalAnalysisPlot] rightSideExpand];
-        } 
+        }
+        if([[senderIdentifer substringToIndex:7] isEqualToString:@"COMPLOT"]){
+            [[self simulationComparePlot] rightSideExpand];
+        }
     }else{
         if([[senderIdentifer substringToIndex:7] isEqualToString:@"BIGPLOT"]){
             [[self simulationResultsPlot] leftSideContract];
         }
-    
         if([[senderIdentifer substringToIndex:7] isEqualToString:@"SIGPLOT"]){
             [[self signalAnalysisPlot] leftSideContract];
+        }
+        if([[senderIdentifer substringToIndex:7] isEqualToString:@"COMPLOT"]){
+            [[self simulationComparePlot] leftSideContract];
         }
     }
  
@@ -871,18 +1100,21 @@
         if([[senderIdentifer substringToIndex:7] isEqualToString:@"BIGPLOT"]){
             [[self simulationResultsPlot] rightSideContract];
         }
-        
         if([[senderIdentifer substringToIndex:7] isEqualToString:@"SIGPLOT"]){
             [[self signalAnalysisPlot] rightSideContract];
         }
-        
+        if([[senderIdentifer substringToIndex:7] isEqualToString:@"COMPLOT"]){
+            [[self simulationComparePlot] rightSideContract];
+        }
     }else{
         if([[senderIdentifer substringToIndex:7] isEqualToString:@"BIGPLOT"]){
             [[self simulationResultsPlot] leftSideExpand];
         }
-    
         if([[senderIdentifer substringToIndex:7] isEqualToString:@"SIGPLOT"]){
             [[self signalAnalysisPlot] leftSideExpand];
+        }
+        if([[senderIdentifer substringToIndex:7] isEqualToString:@"COMPLOT"]){
+            [[self simulationComparePlot] leftSideExpand];
         }
     }
 }
@@ -894,19 +1126,22 @@
         if([[senderIdentifer substringToIndex:7] isEqualToString:@"BIGPLOT"]){
             [[self simulationResultsPlot] topContract];
         }
-        
         if([[senderIdentifer substringToIndex:7] isEqualToString:@"SIGPLOT"]){
             [[self signalAnalysisPlot] topContract];
-        } 
-        
+        }
+        if([[senderIdentifer substringToIndex:7] isEqualToString:@"COMPLOT"]){
+            [[self simulationComparePlot] topContract];
+        }
     }else{
             // do normal action
         if([[senderIdentifer substringToIndex:7] isEqualToString:@"BIGPLOT"]){
             [[self simulationResultsPlot] bottomExpand];
         }
-    
         if([[senderIdentifer substringToIndex:7] isEqualToString:@"SIGPLOT"]){
             [[self signalAnalysisPlot] bottomExpand];
+        }
+        if([[senderIdentifer substringToIndex:7] isEqualToString:@"COMPLOT"]){
+            [[self simulationComparePlot] bottomExpand];
         }
     }
 }
@@ -917,19 +1152,23 @@
         if([[senderIdentifer substringToIndex:7] isEqualToString:@"BIGPLOT"]){
             [[self simulationResultsPlot] topExpand];
         }
-        
         if([[senderIdentifer substringToIndex:7] isEqualToString:@"SIGPLOT"]){
             [[self signalAnalysisPlot] topExpand];
         }
-
+        if([[senderIdentifer substringToIndex:7] isEqualToString:@"COMPLOT"]){
+            [[self simulationComparePlot] topExpand];
+        }
     }else{
         if([[senderIdentifer substringToIndex:7] isEqualToString:@"BIGPLOT"]){
             [[self simulationResultsPlot] bottomContract];
         }
-    
         if([[senderIdentifer substringToIndex:7] isEqualToString:@"SIGPLOT"]){
             [[self signalAnalysisPlot] bottomContract];
         }
+        if([[senderIdentifer substringToIndex:7] isEqualToString:@"COMPLOT"]){
+            [[self simulationComparePlot] bottomContract];
+        }
+
     }
 }
 
@@ -1033,6 +1272,7 @@
     [endDateDoWLabel setStringValue:[[setupEndTimePicker dateValue] descriptionWithCalendarFormat:@"%a" timeZone:[NSTimeZone timeZoneWithName:@"GMT"] locale:nil]]; 
 }
 
+
 - (IBAction)makeSimulationReport:(id)sender {
     // Create a File Open Dialog class.
     BOOL allOk;
@@ -1068,7 +1308,22 @@
     zoomStartDateTime = [[zoomFromDatePicker dateValue] timeIntervalSince1970];
     zoomEndDateTime = [[zoomToDatePicker dateValue] timeIntervalSince1970];
     
-    [[self simulationResultsPlot] setZoomDataViewFrom:zoomStartDateTime To:zoomEndDateTime];
+    [[self simulationPlotInfo] setDataViewWithStartDateTime:zoomStartDateTime
+                                             AndEndDateTime:zoomEndDateTime
+                                                     AsZoom:YES];
+    [[self simulationResultsPlot] updateLines:[self simulationPlotInfo]];
+}
+
+- (IBAction)simCompareDateRangeButtonPress:(id)sender {
+    if([self comparePlotInfo]){
+        long minDataTime = [[[self simulationCompareFromDatePicker] dateValue] timeIntervalSince1970];
+        long maxDateTime = [[[self simulationCompareToDatePicker] dateValue] timeIntervalSince1970];
+        
+        [[self comparePlotInfo] setDataViewWithStartDateTime: minDataTime
+                                              AndEndDateTime: maxDateTime
+                                                      AsZoom:YES];
+    }
+     [[self simulationComparePlot] updateLines:[self comparePlotInfo]];
 }
 
 - (IBAction)accountCurrencyChange:(id)sender {
@@ -1162,6 +1417,10 @@
     [self addPlotToFullScreenWindow:simulationResultGraphHostingView];
 }
 
+- (IBAction)comparePlotFullScreen:(id)sender {
+       [self addPlotToFullScreenWindow:[self simulationCompareGraphHostingView]];
+}
+
 - (IBAction)saveWorkingSimulation:(id)sender {
     BOOL allOk;
     NSString *suggestedFileName;
@@ -1240,7 +1499,27 @@
         [registeredSimsTableView2 reloadData];
         [registeredSimsTableView3 reloadData];
         [registeredSimsTableView5 reloadData];
+        [self prepareSimCompareSheet];
     }
+}
+
+//- (IBAction)simulationCompareMakePlot:(id)sender {
+//    
+//    [self plotSimulationCompare];
+//}
+
+- (IBAction)simulationCompareChooseSimTimeSeries:(id)sender {
+//    if([[[[self simulationCompareSimRadio] selectedCell] identifier] isEqualToString:@"SIMA"]){
+//        [self setSimulationCompareSelectTimeSeries:[self simulationCompareSimATimeSeries]];
+//        [[self simulationCompareTimeSeriesTableView] reloadData];
+//    }
+//    if([[[[self simulationCompareSimRadio] selectedCell] identifier] isEqualToString:@"SIMB"]){
+//        if([self compareSimulationLoaded]){
+//            [self setSimulationCompareSelectTimeSeries:[self simulationCompareSimBTimeSeries]];
+//            [[self simulationCompareTimeSeriesTableView] reloadData];
+//        }
+//    }
+    [[self simulationCompareTimeSeriesTableView] reloadData];
 }
 
 - (IBAction) changeSelectedTradingPair:(id)sender {
@@ -1558,11 +1837,29 @@
             return 0;
         }
     }
+    if([[tableView identifier] isEqualToString:@"COMPARESIMTV"]){
+        return MAX(0,[[self allSimulations] count]-1);
+    }
+    
+    if([[tableView identifier] isEqualToString:@"SIMCOMPARETSTV"]){
+        if([[[[self simulationCompareSimRadio] selectedCell] identifier] isEqualToString:@"SIMA"]){
+            return [[self simulationCompareSimATimeSeries] count];
+        }else{
+            if([self compareSimulationLoaded]){
+                return [[self simulationCompareSimBTimeSeries] count];
+            }
+        }
+    }
+    
     if([[tableView identifier] length] >= 10){
         if([[[tableView identifier] substringToIndex:10] isEqualToString:@"SAVEDSIMTV"])
         {
             return [[self allSimulations] count];
         }
+    }
+    if([[tableView identifier] isEqualToString:@"COMPARESELECTEDTSTV"]){
+       
+        return [[self simulationCompareSelectedTimeSeries] count];
     }
     
     return 0;
@@ -1770,6 +2067,64 @@
         }
     }
     
+    if([[tableView identifier] isEqualToString:@"COMPARESIMTV"]){
+        Simulation *sim;
+        int indexLessWorkingSim = 0;
+        while (indexLessWorkingSim <= row){
+            sim = [[self allSimulations] objectAtIndex:indexLessWorkingSim];
+            indexLessWorkingSim++;
+        }
+        return [sim name];
+    }
+    
+    if([[tableView identifier] isEqualToString:@"SIMCOMPARETSTV"]){
+        NSArray *timeSeriesArray;
+        if([[[[self simulationCompareSimRadio] selectedCell] identifier] isEqualToString:@"SIMA"]){
+            timeSeriesArray = [self simulationCompareSimATimeSeries];
+        }else{
+            timeSeriesArray = [self simulationCompareSimBTimeSeries];
+        }
+        
+        tsl = [timeSeriesArray objectAtIndex:row];
+        if([columnId isEqualToString:@"plot0"]){
+            return [NSNumber numberWithBool:[tsl layerIndex] == 0];
+        }else if([columnId isEqualToString:@"plot1"]){
+            return [NSNumber numberWithBool:[tsl layerIndex] == 1];
+        }else if([columnId isEqualToString:@"plot2"]){
+            return [NSNumber numberWithBool:[tsl layerIndex] == 2];
+        }else{
+            return [tsl valueForKey:columnId];
+        }
+    }
+    
+    if([[tableView identifier] isEqualToString:@"COMPARESELECTEDTSTV"]){
+        int numberSelected = 0;
+        NSArray *lineNames = [[self simulationCompareSelectedTimeSeries] allKeys];
+        for(int tslIndex = 0; tslIndex < [[self simulationCompareSelectedTimeSeries] count]; tslIndex++)
+        {
+            tsl = [[self simulationCompareSelectedTimeSeries]  objectForKey:[lineNames objectAtIndex:tslIndex]];
+            if([tsl layerIndex] != -1){
+                if(numberSelected == row){
+                    if([columnId isEqualToString:@"axis"])
+                    {
+                        return [NSNumber numberWithInt:[tsl layerIndex]];
+                    }else if([columnId isEqualToString:@"name"]){
+                        if([tsl simId]==0){
+                            return [NSString stringWithFormat:@"A_%@",[tsl name]];
+                        }else{
+                            return [NSString stringWithFormat:@"B_%@",[tsl name]];
+                        }
+                    }else{
+                        return [tsl valueForKey:columnId];
+                    }
+                }else{
+                    numberSelected++;
+                }
+            }
+        }
+        return @"Err";
+    }
+    
     if([[tableView identifier] length] >= 10){
         if([[[tableView identifier] substringToIndex:10] isEqualToString:@"SAVEDSIMTV"])
         {
@@ -1810,26 +2165,30 @@
             }
         }
     }
-
-    
-    
+   
     TimeSeriesLine *tsl;
-    SeriesPlot *plot;
-    //int layerIndex = 0;
-    
-    
+    //SeriesPlot *plot;
     
     if([[tableView identifier] isEqualToString:@"SIMTSTV"]){
         tsl = [[self simulationTimeSeries] objectAtIndex:row];
-        plot = [self simulationResultsPlot];
+        //plot = [self simulationResultsPlot];
     }
     
     if([[tableView identifier] isEqualToString:@"SIGTSTV"]){
         tsl = [[self simulationSignalTimeSeries] objectAtIndex:row];
-        plot = [self signalAnalysisPlot];
+        //plot = [self signalAnalysisPlot];
     }
     
-    //NSString *column = [tableColumn identifier];
+    if([[tableView identifier] isEqualToString:@"SIMCOMPARETSTV"]){
+        if([[[[self simulationCompareSimRadio] selectedCell] identifier] isEqualToString:@"SIMA"])
+        {
+            tsl = [[self simulationCompareSimATimeSeries] objectAtIndex:row];
+        }else{
+            tsl = [[self simulationCompareSimBTimeSeries] objectAtIndex:row];
+                   }
+        //plot = [self simulationComparePlot];
+    }
+    
     if([[tableColumn identifier] isEqualToString:@"plot0"]){
         if([obj boolValue]){
             [tsl setLayerIndex:0];
@@ -1851,10 +2210,24 @@
     }else {
         [tsl setValue:obj forKey:[tableColumn identifier]];
     }
-    if([[tableColumn identifier] isEqualToString:@"colourId"]){
-        [plot plotLineUpdated:NO];
-    }else{
-        [plot plotLineUpdated:YES];
+    
+    if([[tableView identifier] isEqualToString:@"SIMTSTV"]){
+        [self updateSimulationSelectedTimeSeries];
+        [[self simulationResultsPlot] updateLines:[self simulationPlotInfo]];
+    }
+    if([[tableView identifier] isEqualToString:@"SIGTSTV"]){
+        [self updateSimulationSignalSelectedTimeSeries];
+        [[self signalAnalysisPlot] updateLines:[self signalPlotInfo]];
+    }
+    if([[tableView identifier] isEqualToString:@"SIMCOMPARETSTV"]){
+        [self updateSelectedSimCompareTimeseries];
+        [[self simulationComparePlot] updateLines:[self comparePlotInfo]];
+//    }else{
+//        if([[tableColumn identifier] isEqualToString:@"colourId"]){
+//            [plot updatePlotWithUpdateAxes:NO];
+//        }else{
+//            [plot updatePlotWithUpdateAxes:YES];
+//        }
     }
     [tableView reloadData];
     
@@ -1864,6 +2237,9 @@
     }
     if([[tableView identifier] isEqualToString:@"SIGTSTV"]){
         [simulationSignalSelectedTimeSeriesTableView reloadData];
+    }
+    if([[tableView identifier] isEqualToString:@"SIMCOMPARETSTV"]){
+        [[self simulationCompareSelectedTSTableView] reloadData];
     }
 }
 
@@ -1890,25 +2266,30 @@
         [simulationSignalSelectedTimeSeriesTableView reloadData];
         found = YES;
     }
+   
+    
     if(!found){
         [NSException raise:@"clearTSTableView failure" format:@"Parameter %@ not handled",[tableView identifier]];
     }
 }
 
 -(void)addToTableView:(NSTableView *)tableView 
-       TimeSeriesLine: (TimeSeriesLine *)TSLine
+       TimeSeriesLine: (TimeSeriesLine *)tsl
 {
    if([[tableView identifier] isEqualToString:@"SIMTSTV"]){
-        [[self simulationTimeSeries] addObject:TSLine];
+    [[self simulationTimeSeries] addObject:tsl];
+       [simulationTimeSeriesSelectedTableView reloadData];
     }
     
     if([[tableView identifier] isEqualToString:@"SIGTSTV"]){
-        [[self simulationSignalTimeSeries] addObject:TSLine];
+        [[self simulationSignalTimeSeries] addObject:tsl];
+    }
+    if([[tableView identifier] isEqualToString:@"SIMCOMPARETSTV"]){
+        NSString *lineName = [NSString stringWithFormat:@"S%ld_L%d_%@",[tsl simId],[tsl layerIndex],[tsl name]];
+        [[self simulationCompareSelectedTimeSeries] setObject:tsl forKey:lineName];
+        [[self simulationCompareSelectedTSTableView] reloadData];
     }
     [tableView reloadData];
-    if([[tableView identifier] isEqualToString:@"SIMTSTV"]){
-        [simulationTimeSeriesSelectedTableView reloadData];
-    }
 }
 
 -(void)tableViewSelectionDidChange:(NSNotification *)notification
@@ -1916,7 +2297,7 @@
     if([[[notification object] identifier] isEqualToString:@"SIGANALTV"]){
         [self makeSignalAnalysisPlot];
     }
-   
+    
     if([[[notification object] identifier] length] >= 10){
         if([[[[notification object] identifier] substringToIndex:10] isEqualToString:@"SAVEDSIMTV"]){
             
@@ -1955,6 +2336,83 @@
             }
         }
     }
+    
+    if([[[notification object] identifier] isEqualToString:@"COMPARESIMTV"]){
+        if([[self simulationCompareOtherSimTableView] numberOfSelectedRows] == 1){
+            NSUInteger selectedSim = [[self simulationCompareOtherSimTableView] selectedRow];
+            NSInteger simIndex = -1;
+            NSArray *radioCells = [[self simulationCompareSimRadio] cells];
+            for(int i = 0; i < [[self allSimulations] count]; i++){
+                if([[self allSimulations] objectAtIndex:i] != [self workingSimulation]){
+                    simIndex++;
+                    if(simIndex==selectedSim){
+                        [self setCompareSimulation:[[self allSimulations] objectAtIndex:i]];
+                        [self setCompareSimulationLoaded:YES];
+                        [[radioCells objectAtIndex:0] setEnabled:YES];
+                        [[radioCells objectAtIndex:1] setEnabled:YES];
+                        break;
+                    }
+                }
+            }
+            [[self simulationCompareSimRadio] selectCell:[radioCells objectAtIndex:1]];
+            
+            DataSeries *compareDataSeries = [[self compareSimulation] analysisDataSeries];
+            
+            NSMutableArray *fieldNames = [[[compareDataSeries yData] allKeys] mutableCopy];
+            for(int i = 0; i < [fieldNames count]; i++){
+                if([[fieldNames objectAtIndex:i] isEqualToString:@"SHORT"]){
+                    [fieldNames removeObjectAtIndex:i];
+                    break;
+                }
+            }
+            for(int i = 0; i < [fieldNames count]; i++){
+                if([[fieldNames objectAtIndex:i] isEqualToString:@"LONG"]){
+                    [fieldNames removeObjectAtIndex:i];
+                    break;
+                }
+            }
+            [self putFieldNamesInCorrectOrdering:fieldNames];
+            
+            TimeSeriesLine *tsl;
+            NSString *lineColour;
+            
+            [[self simulationCompareSimBTimeSeries] removeAllObjects];
+            for(int i = 0; i < [fieldNames count]; i++){
+                lineColour = [[self coloursForPlots] objectAtIndex:i%[[self coloursForPlots] count]];
+                tsl = [[TimeSeriesLine alloc] initWithLayerIndex:-1
+                                                         AndName:[fieldNames objectAtIndex:i]
+                                                       AndColour:lineColour
+                                                        AndSimId:1];
+                [[self simulationCompareSimBTimeSeries] addObject:tsl];
+                
+            }
+            
+            long minDataTime = MIN([[self workingSimulation] startDate],[[self compareSimulation] startDate]);
+            long maxDateTime = MAX([[self workingSimulation] endDate],[[self compareSimulation] endDate]);
+            
+            [[self simulationCompareFromDatePicker] setMinDate:[NSDate dateWithTimeIntervalSince1970:minDataTime]];
+            [[self simulationCompareFromDatePicker] setMaxDate:[NSDate dateWithTimeIntervalSince1970:maxDateTime]];
+            [[self simulationCompareFromDatePicker] setDateValue:[NSDate dateWithTimeIntervalSince1970:minDataTime]];
+            [[self simulationCompareToDatePicker] setMinDate:[NSDate dateWithTimeIntervalSince1970:minDataTime]];
+            [[self simulationCompareToDatePicker] setMaxDate:[NSDate dateWithTimeIntervalSince1970:maxDateTime]];
+            [[self simulationCompareToDatePicker] setDateValue:[NSDate dateWithTimeIntervalSince1970:minDataTime + (30*24*60*60)]];
+        }
+        [[self simulationCompareTimeSeriesTableView] reloadData];
+        SeriesPlotDataWrapper *plotDataSource = [[SeriesPlotDataWrapper alloc] initWithTargetPlotName:@"COM"
+                                                                                       AndSimulationA: [self workingSimulation]
+                                                                                       AndSimulationB: [self compareSimulation]
+                                                                                      AndTSDictionary: [self simulationCompareSelectedTimeSeries]
+                                                                              AndDoShortLongIndicator:NO];
+        [self setComparePlotInfo:plotDataSource];
+        
+        long minDataTime = [[[self simulationCompareFromDatePicker] dateValue] timeIntervalSince1970];
+        long maxDateTime = [[[self simulationCompareToDatePicker] dateValue] timeIntervalSince1970];
+        
+        [[self comparePlotInfo] setDataViewWithStartDateTime:minDataTime
+                                              AndEndDateTime:maxDateTime AsZoom:[[self comparePlotInfo] isZoomed]];
+        [[self simulationComparePlot] updateLines:plotDataSource];
+        
+    }
     return;
 }
 
@@ -1978,6 +2436,16 @@
         }
         if([[tableColumn identifier] isEqualToString:@"plot2"]){
             [[self simulationResultsPlot] toggleAxisLabelsForLayer:2];
+        }
+        [tableView deselectColumn:[tableView selectedColumn]];
+    }
+    
+    if([[tableView identifier] isEqualToString:@"SIMCOMPARETSTV"]){
+        if([[tableColumn identifier] isEqualToString:@"plot1"]){
+            [[self simulationComparePlot] toggleAxisLabelsForLayer:1];
+        }
+        if([[tableColumn identifier] isEqualToString:@"plot2"]){
+            [[self simulationComparePlot] toggleAxisLabelsForLayer:2];
         }
         [tableView deselectColumn:[tableView selectedColumn]];
     }
@@ -2036,39 +2504,58 @@
   willDisplayCell:(id)aCell 
    forTableColumn:(NSTableColumn *)aTableColumn 
               row:(NSInteger)rowIndex {
-    NSArray *timeSeriesArray;
+    NSDictionary *timeSeriesDictionary;
     NSTextFieldCell *cell = aCell;
     NSColor *lineColour = [NSColor blackColor];
     NSString *lineColourName = @"BLACK";
     BOOL found = NO, doColour = NO;
     TimeSeriesLine *tsl;
     
-    
     if([[aTableView identifier] isEqualToString:@"SIMSELTSTV"]){
-        timeSeriesArray = [self simulationTimeSeries];
-        doColour = YES;
+        timeSeriesDictionary = [self simulationSelectedTimeSeries];
+            doColour = YES;
     }
     if([[aTableView identifier] isEqualToString:@"SIGSELTSTV"]){
-        timeSeriesArray = [self simulationSignalTimeSeries];
+        timeSeriesDictionary = [self simulationSignalSelectedTimeSeries];
+            doColour = YES;
+    }
+    if([[aTableView identifier] isEqualToString:@"COMPARESELECTEDTSTV"]){
+        timeSeriesDictionary = [self simulationCompareSelectedTimeSeries];
         doColour = YES;
     }
     
     if(doColour){
-        int numberSelected = 0;
-        for(int tslIndex = 0; tslIndex < [timeSeriesArray count]; tslIndex++)
+
+        NSTableColumn *nameColumn = [[aTableView tableColumns] objectAtIndex:[aTableView columnWithIdentifier:@"name"]];
+        NSString *tableLineName = [[nameColumn dataCellForRow:rowIndex] stringValue];
+    
+        NSArray *lineNames = [timeSeriesDictionary allKeys];
+        NSString *lineName;
+        for(int iLine = 0; iLine < [lineNames count]; iLine++)
         {
-            tsl = [timeSeriesArray objectAtIndex:tslIndex];
-            if([tsl layerIndex] != -1){
-                if(numberSelected == rowIndex){
+            tsl = [timeSeriesDictionary objectForKey:[lineNames objectAtIndex:iLine]];
+            lineName = [[lineNames objectAtIndex:iLine] substringFromIndex:6];
+            
+            if([[aTableView identifier] isEqualToString:@"COMPARESELECTEDTSTV"]){
+                if(([tsl simId]==0 && [[tableLineName substringToIndex:1] isEqualToString:@"A"]) ||
+                   ([tsl simId]==1 && [[tableLineName substringToIndex:1] isEqualToString:@"B"])){
+                    if([[tableLineName substringFromIndex:2] isEqualToString:lineName]){
+                        lineColour = [tsl nsColour];
+                        lineColourName = [tsl colour];
+                        found = YES;
+                        break;
+                    }
+                }
+            }else{
+                if([tableLineName isEqualToString:lineName]){
                     lineColour = [tsl nsColour];
                     lineColourName = [tsl colour];
                     found = YES;
                     break;
-                }else{
-                    numberSelected++;
                 }
             }
         }
+    
         if(found){
             if([lineColourName isEqualToString:@"White"]){
                 [cell setDrawsBackground:YES];
@@ -2202,6 +2689,9 @@
         if([fullScreenBox contentView] == simulationResultGraphHostingView){   
             [simPlotBox setContentView:simulationResultGraphHostingView];
         }
+        if([fullScreenBox contentView] == [self simulationCompareGraphHostingView]){
+            [[self simCompareBox] setContentView:[self simulationCompareGraphHostingView]];
+        }
     }
 }
 
@@ -2224,7 +2714,7 @@
 }
 #pragma mark -
 #pragma mark Properties
- 
+
 @synthesize setupSheetShowButton;
 @synthesize setupSheetImportDataButton;
 @synthesize setupSheetImportDataTableView;
@@ -2299,6 +2789,10 @@
 @synthesize allSimulations = _allSimulations;
 @synthesize simulationTimeSeries = _simulationTimeSeries;
 @synthesize simulationSignalTimeSeries = _simulationSignalTimeSeries;
+@synthesize simulationCompareSimATimeSeries = _simulationCompareSimATimeSeries;
+@synthesize simulationCompareSimBTimeSeries = _simulationCompareSimBTimeSeries;
+//@synthesize simulationCompareSelectTimeSeries = _simulationCompareSelectTimeSeries;
+@synthesize simulationCompareSelectedTimeSeries = _simulationCompareSelectedTimeSeries;
 @synthesize signalTableViewSortedAscending = _signalTableViewSortedAscending;
 @synthesize initialSetupComplete = _initialSetupComplete;
 @synthesize doingSetup = _doingSetup;
@@ -2310,8 +2804,9 @@
 @synthesize simulationController = _simulationController;
 @synthesize signalTableViewOrdering = _signalTableViewOrdering;
 @synthesize simulationResultsPlot = _simulationResultsPlot;
+@synthesize simulationComparePlot = _simulationComparePlot;
 @synthesize signalAnalysisPlot = _signalAnalysisPlot;
-@synthesize simulationDataSeries = _simulationDataSeries;
+//@synthesize simulationDataSeries = _simulationDataSeries;
 @synthesize importDataArray = _importDataArray;
 @synthesize fxPairsAndDbIds = _fxPairsAndDbIds;
 @synthesize coloursForPlots = _coloursForPlots;
@@ -2319,5 +2814,7 @@
 @synthesize doThreads = _doThreads;
 @synthesize firstTimeSetup = _firstTimeSetup;
 @synthesize workingSimulation = _workingSimulation;
+@synthesize compareSimulation = _compareSimulation;
+@synthesize compareSimulationLoaded = _compareSimulationLoaded;
 
 @end

@@ -35,4 +35,5 @@
 @property (readonly) int signalSmooth;
 @property (readonly) NSArray *extras;
 @property (readonly) NSMutableDictionary *miscStoredInfoDictionary;
+@property double threshold;
 @end

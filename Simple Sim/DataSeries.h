@@ -8,6 +8,8 @@
 
 #import <Foundation/Foundation.h> 
 #import <corePlot/corePlot.h> 
+//#import "SeriesPlotData.h"
+
 @class DataView;
 
 @interface DataSeries: NSObject<NSCoding>{
@@ -41,13 +43,9 @@
 
 - (NSString *)description;
 
-- (DataView *) setPlotViewWithName: (NSString *) description 
-                  AndStartDateTime: (long) startDateTime 
-                    AndEndDateTime: (long) endDateTime;
-
-//- (void) setDataSeriesWithFieldName: (NSString *) fieldName 
-//                           AndDates: (CPTNumericData *) epochdates 
-//                            AndData: (CPTNumericData *) dataSeries;
+- (NSDictionary *) setDataViewWithName: (NSString *) description
+                      AndStartDateTime: (long) startDateTime 
+                        AndEndDateTime: (long) endDateTime;
 
 - (void) reduceDataSeriesToSampledSeconds: (int) numberOfSeconds;
 
@@ -77,11 +75,14 @@
 
 - (NSArray *) getFieldNames;
 
+
 - (BOOL) writeDataSeriesToFile: (NSURL *) fileNameAndPath;
 
 - (BOOL) writeDataSeriesToFile: (NSURL *) fileNameAndPath
                   ForStartTime: (long) startDateTime
                     AndEndTime: (long) endDateTime;
+
+-(DataView *) getDataViewForKey: (NSString *) viewName;
 
 @end 
 

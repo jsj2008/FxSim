@@ -665,7 +665,7 @@ FMDatabase *db;
             [newDataSeries setSampleRate:samplingRate];
             [[newDataSeries dataViews] removeAllObjects];
             if([dateTimeCPTData length] > 0 ){
-                [newDataSeries setPlotViewWithName:@"ALL" 
+                [newDataSeries setDataViewWithName:@"ALL"
                               AndStartDateTime:[[dateTimeCPTData sampleValue:0] longValue]  
                                 AndEndDateTime:[[dateTimeCPTData sampleValue:([dateTimeCPTData length]/[dateTimeCPTData sampleBytes])-1] longValue]];
                 signalStats = statsArray;
@@ -1085,7 +1085,7 @@ FMDatabase *db;
         }
         
         [[[self dataSeries] dataViews] removeAllObjects];
-        [[self dataSeries] setPlotViewWithName:@"ALL" AndStartDateTime:newDateLongs[0] AndEndDateTime:newDateLongs[indexOnNew-1]];
+        [[self dataSeries] setDataViewWithName:@"ALL" AndStartDateTime:newDateLongs[0] AndEndDateTime:newDateLongs[indexOnNew-1]];
     }
     
     return success;
@@ -1157,7 +1157,7 @@ FMDatabase *db;
     }
     [newDataSeries setSampleRate:newSampleRate];
     [[newDataSeries dataViews] removeAllObjects];
-    [newDataSeries setPlotViewWithName:@"ALL" 
+    [newDataSeries setDataViewWithName:@"ALL"
                       AndStartDateTime:[[dateTimeData sampleValue:0] longValue]  
                         AndEndDateTime:[[dateTimeData sampleValue:([dateTimeData length]/[dateTimeData sampleBytes])-1] longValue]];
     return newDataSeries;

@@ -38,9 +38,9 @@
 - (id) initWithCoder:(NSCoder*)decoder;
 
 
-- (void)addMin: (double) min 
-        AndMax: (double) max 
-        ForKey: (NSString *)key;
+//- (void)addMin: (double) min 
+//        AndMax: (double) max 
+//        ForKey: (NSString *)key;
 
 - (NSString *)description;
 - (long) minDateTime;
@@ -48,9 +48,11 @@
 - (double) minDataValue;
 - (double) maxDataValue;
 
+- (NSUInteger) numberOfRecordsForPlotLine;
 
-
-
+- (CPTNumericData *)dataForPlotLine:(NSString *) plotId
+                              field:(NSUInteger) field
+                   recordIndexRange:(NSRange) indexRange;
 
 
 @end
