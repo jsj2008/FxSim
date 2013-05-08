@@ -81,6 +81,7 @@
 - (void) updateSelectedSimCompareTimeseries;
 - (void) updateSimulationSelectedTimeSeries;
 - (void) updateSimulationSignalSelectedTimeSeries;
+- (void) leftPanelTopMessage:(NSString *) message;
 @end
 
 @implementation SimulationViewController
@@ -928,6 +929,7 @@
     [self initialiseSignalTableView];
     [self setupResultsReport];
     [self prepareSimCompareSheet];
+    [self leftPanelTopMessage:[[self workingSimulation] name]];
 }
 
 -(void)fillSetupSheet:(NSDictionary *) parameters
@@ -2069,11 +2071,18 @@
     
     if([[tableView identifier] isEqualToString:@"COMPARESIMTV"]){
         Simulation *sim;
-        int indexLessWorkingSim = 0;
-        while (indexLessWorkingSim <= row){
-            sim = [[self allSimulations] objectAtIndex:indexLessWorkingSim];
-            indexLessWorkingSim++;
+        int index = 0, indexLessWorkingSim = -1;
+        for(index = 0; index < [[self allSimulations] count]; index++){
+            if(!([[self allSimulations] objectAtIndex:index]==[self workingSimulation] ))
+               {
+                   indexLessWorkingSim++;
+               }
+            if(indexLessWorkingSim==row){
+                sim = [[self allSimulations] objectAtIndex:index];
+                break;
+            }
         }
+        
         return [sim name];
     }
     
@@ -2635,6 +2644,16 @@
     }
 }
 
+- (void) leftPanelTopMessage:(NSString *) message
+{
+    if([[self delegate] respondsToSelector:@selector(leftPanelTopMessage:)])
+    {
+        [[self delegate] leftPanelTopMessage:message];
+    }else{
+        NSLog(@"Delegate doesn't respond to \'leftPanelTopMessage\'");
+    }
+    
+}
 
 
 #pragma mark -

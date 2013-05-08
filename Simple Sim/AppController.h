@@ -34,13 +34,14 @@
 - (void) gettingDataIndicatorSwitchOff;
 - (void) readingRecordSetProgress: (NSNumber *) progressFraction;
 - (void) readingRecordSetMessage:(NSString *) progressMessage;
+- (void) leftPanelTopMessage:(NSString *) message;
 - (void) putFieldNamesInCorrectOrdering:(NSMutableArray *) fieldNamesFromData;
 - (void) disableMainButtons;
 - (void) enableMainButtons;
 - (IBAction)changeToSimulationView:(id)sender;
 - (IBAction)changeToInteractiveView:(id)sender;
 
-
+@property (weak) IBOutlet NSTextField *leftSideTopLabel;
 @property (weak) IBOutlet NSProgressIndicator *leftSideProgressBar;
 @property (weak) IBOutlet NSProgressIndicator *leftSideProgressBar2;
 @property (weak) IBOutlet NSTextField *leftPanelStatusLabel;

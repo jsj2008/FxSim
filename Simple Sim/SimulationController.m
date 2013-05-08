@@ -2345,7 +2345,6 @@
     
 }
 
-
 -(void) registerSimulation: (Simulation *) sim
 {
     if([[self delegate] respondsToSelector:@selector(registerSimulation:)])

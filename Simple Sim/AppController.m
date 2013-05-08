@@ -272,7 +272,15 @@
     NSString *otherButton =  [alertInfo objectForKey:@"OTHERBUTTON"]; 
     NSRunAlertPanel(title, msgFormat, defaultButton, altButton, otherButton);
 }
- 
+
+
+- (void) leftPanelTopMessage:(NSString *) message
+{
+    [[self leftSideTopLabel] setStringValue:message];
+}
+
+
+
 - (void) putFieldNamesInCorrectOrdering:(NSMutableArray *) fieldNamesFromData
 {      
     
