@@ -541,7 +541,7 @@
                                                                                   AndTSDictionary:[self simulationCompareSelectedTimeSeries]
                                                                           AndDoShortLongIndicator:NO];
     [plotDataSource setDataViewWithStartDateTime:[[self workingSimulation] startDate]
-                                  AndEndDateTime:[[self workingSimulation] endDate] + (30*24*60*60)
+                                  AndEndDateTime:[[self workingSimulation] endDate]
                                           AsZoom:NO];
     [[self simulationComparePlot] setBasicParametersForPlot];
     [self setComparePlotInfo:plotDataSource];
@@ -2439,7 +2439,8 @@
         long maxDateTime = [[[self simulationCompareToDatePicker] dateValue] timeIntervalSince1970];
         
         [[self comparePlotInfo] setDataViewWithStartDateTime:minDataTime
-                                              AndEndDateTime:maxDateTime AsZoom:[[self comparePlotInfo] isZoomed]];
+                                              AndEndDateTime:maxDateTime
+                                                      AsZoom:[[self comparePlotInfo] isZoomed]];
         [[self simulationComparePlot] updateLines:plotDataSource];
         
     }
