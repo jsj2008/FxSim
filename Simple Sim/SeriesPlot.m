@@ -125,7 +125,7 @@
         [[[[self graph] plotAreaFrame] plotArea] addAnnotation:mainTitleAnnotation];
     
     
-        NSString *subString = @"2012, O'Connor Research";
+        NSString *subString = @"2013, O'Connor Research";
         CPTMutableTextStyle *subStringStyle = [CPTMutableTextStyle textStyle];
         subStringStyle.color	= [CPTColor grayColor];
         subStringStyle.fontSize = 12.0f;
