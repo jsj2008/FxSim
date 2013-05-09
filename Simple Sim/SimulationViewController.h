@@ -221,6 +221,7 @@
 //- (IBAction)simulationCompareMakePlot:(id)sender;
 - (IBAction)simulationCompareChooseSimTimeSeries:(id)sender;
 - (IBAction)simulationCompareToggleDashed:(id)sender;
+- (IBAction)simulationCompareGetRangeFromSigPlot:(id)sender;
 
 
 

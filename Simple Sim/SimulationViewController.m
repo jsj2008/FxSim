@@ -531,7 +531,7 @@
     [[self simulationCompareFromDatePicker] setDateValue:[NSDate dateWithTimeIntervalSince1970:[[self workingSimulation] startDate]]];
     [[self simulationCompareFromDatePicker] setMinDate:[NSDate dateWithTimeIntervalSince1970:[[self workingSimulation] startDate]]];
     [[self simulationCompareFromDatePicker] setMaxDate:[NSDate dateWithTimeIntervalSince1970:[[self workingSimulation] endDate]]];
-    [[self simulationCompareToDatePicker] setDateValue:[NSDate dateWithTimeIntervalSince1970:[[self workingSimulation] startDate] + (30*24*60*60)]];
+    [[self simulationCompareToDatePicker] setDateValue:[NSDate dateWithTimeIntervalSince1970:[[self workingSimulation] endDate]]];
     [[self simulationCompareToDatePicker] setMinDate:[NSDate dateWithTimeIntervalSince1970:[[self workingSimulation] startDate]]];
     [[self simulationCompareToDatePicker] setMaxDate:[NSDate dateWithTimeIntervalSince1970:[[self workingSimulation] endDate]]];
     
@@ -1531,6 +1531,16 @@
         [[self comparePlotInfo] setDoDotsForSecondPlot:doDots];
         [[self simulationComparePlot] updateLines:[self comparePlotInfo]];
     }
+}
+
+- (IBAction)simulationCompareGetRangeFromSigPlot:(id)sender {
+     NSDictionary *sigPlotRange = [[self signalPlotInfo] xyRanges];
+    long sigMinX = [[sigPlotRange objectForKey:@"MINX"] longValue];
+    long sigMaxX = [[sigPlotRange objectForKey:@"MAXX"] longValue];
+    
+    [[self simulationCompareFromDatePicker] setDateValue:[NSDate dateWithTimeIntervalSince1970:sigMinX]];
+    [[self simulationCompareToDatePicker] setDateValue:[NSDate dateWithTimeIntervalSince1970:sigMaxX]];
+    
 }
 
 - (IBAction) changeSelectedTradingPair:(id)sender {
