@@ -41,6 +41,7 @@
 @property long minStartDateTime;
 @property long maxEndDateTime;
 @property long isZoomed;
-@property BOOL shortLongIndicator;
+@property BOOL shortLongIndicatorA;
+@property BOOL shortLongIndicatorB;
 @property BOOL doDotsForSecondPlot;
 @end

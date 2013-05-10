@@ -1175,16 +1175,25 @@
             
             shortIndicatorArray[dateIndex] = ([UtilityFunctions signOfInt:currentPosition] < 0)? (double) -currentPosition: 0.0; 
             longIndicatorArray[dateIndex] =  ([UtilityFunctions signOfInt:currentPosition] > 0)? (double) currentPosition: 0.0;
+            
             // If there has been a trade one indicator will stop at t-1 and another start at time t
             // as these indictors are for plots better to join up the indicator for better visuals
             if(dateIndex > 0 ){
                 //There has been a trade at this time
-                if(marketPositionArray[dateIndex] != marketPositionArray[dateIndex-1]){
+                if(marketPositionArray[dateIndex] != marketPositionArray[dateIndex-1] ){
                     if(marketPositionArray[dateIndex] > 0){
                         shortIndicatorArray[dateIndex] = shortIndicatorArray[dateIndex-1];
+                        //Going from 0 to a position
+                        if(fabs(marketPositionArray[dateIndex-1])<1){
+                            longIndicatorArray[dateIndex] = 0.0;
+                        }
                     }
                     if(marketPositionArray[dateIndex] < 0){
                         longIndicatorArray[dateIndex] = longIndicatorArray[dateIndex-1];
+                        //Going from 0 to a position
+                        if(fabs(marketPositionArray[dateIndex-1])<1){
+                            shortIndicatorArray[dateIndex] = 0.0;
+                        }
                     }
                 }
             }

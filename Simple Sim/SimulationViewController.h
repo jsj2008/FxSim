@@ -126,6 +126,8 @@
     __weak NSDatePicker *_simulationCompareToDatePicker;
     __weak NSButton *_simulationComparePlotRangeButton;
     __weak NSMatrix *_simulationCompareSimRadio;
+    __weak NSMatrix *_simulationCompareLSIndicatorRadio;
+    
     __weak NSButton *_comparePlotDotsCheck;
     
 
@@ -193,10 +195,10 @@
 - (IBAction)performSimulation:(id)sender;
 - (IBAction)toggleLongShortIndicator:(id)sender;
 - (IBAction)sigPlotLongShortIndicatorToggle:(id)sender;
+- (IBAction)compPlotLongShortIndicatorToggle:(id)sender;
+
 - (IBAction)plotLeftSideExpand:(id)sender;
-- (IBAction)plotLeftSideContract:(id)sender;
 - (IBAction)plotBottomExpand:(id)sender;
-- (IBAction)plotBottomContract:(id)sender;
 - (IBAction)exportData:(id)sender;
 - (IBAction)exportTrades:(id)sender;
 - (IBAction)exportBalanceAdjustments:(id)sender;
@@ -220,6 +222,8 @@
 
 //- (IBAction)simulationCompareMakePlot:(id)sender;
 - (IBAction)simulationCompareChooseSimTimeSeries:(id)sender;
+- (IBAction)simulationCompareToggleLSIndicatorSim:(id)sender;
+
 - (IBAction)simulationCompareToggleDashed:(id)sender;
 - (IBAction)simulationCompareGetRangeFromSigPlot:(id)sender;
 
@@ -264,8 +268,6 @@
 @property (weak) IBOutlet NSTableView *simulationTimeSeriesSelectedTableView;
 @property (weak) IBOutlet NSTableView *simulationSignalSelectedTimeSeriesTableView;
 
-
-
 @property (weak) IBOutlet CPTGraphHostingView *simulationCompareGraphHostingView;
 @property (weak) IBOutlet NSBox *simCompareBox;
 @property (weak) IBOutlet NSTableView *simulationCompareTimeSeriesTableView;
@@ -277,4 +279,5 @@
 @property (weak) IBOutlet NSMatrix *simulationCompareSimRadio;
 
 @property (weak) IBOutlet NSButton *comparePlotDotsCheck;
+@property (weak) IBOutlet NSMatrix *simulationCompareLSIndicatorRadio;
 @end

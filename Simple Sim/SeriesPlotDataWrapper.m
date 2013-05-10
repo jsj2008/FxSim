@@ -31,8 +31,9 @@
         _simulationB = simB;
         _timeSeriesLinesDictionary = timeSeriesDictionary;
         _isZoomed = NO;
-        _shortLongIndicator = doShortLong;
         _doDotsForSecondPlot = doDots;
+        _shortLongIndicatorA = NO;
+        _shortLongIndicatorB = NO;
         return self;
     }
     return nil;

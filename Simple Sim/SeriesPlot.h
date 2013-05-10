@@ -64,7 +64,9 @@
 //-(void)setData: (SimDataCombi *) newData
 //  WithViewName: (NSString *) viewName;
 //- (void) updatePlotWithUpdateAxes: (BOOL) updateAxes;
-- (void) togglePositionIndicator;
+-(void)positionIndicatorOff: (SeriesPlotDataWrapper *) dataSource;
+- (void) updatePositionIndicator: (SeriesPlotDataWrapper *) dataSource;
+//- (void) togglePositionIndicator1;
 - (void) leftSideExpand;
 - (void) leftSideContract;
 - (void) rightSideExpand;

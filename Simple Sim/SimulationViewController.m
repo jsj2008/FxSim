@@ -506,6 +506,11 @@
     for(int i = 0; i < [radioCells count]; i++){
         [[radioCells objectAtIndex:i] setEnabled:NO];
     }
+    radioCells = [[self simulationCompareLSIndicatorRadio] cells];
+    for(int i = 0; i < [radioCells count]; i++){
+        [[radioCells objectAtIndex:i] setEnabled:NO];
+    }
+
     [[self simulationCompareSimATimeSeries] removeAllObjects];
     TimeSeriesLine *tsl, *tsl2;
     for(int i = 0; i < [[self simulationTimeSeries] count]; i++){
@@ -1083,96 +1088,135 @@
             [[self simulationComparePlot] rightSideExpand];
         }
     }else{
-        if([[senderIdentifer substringToIndex:7] isEqualToString:@"BIGPLOT"]){
-            [[self simulationResultsPlot] leftSideContract];
-        }
-        if([[senderIdentifer substringToIndex:7] isEqualToString:@"SIGPLOT"]){
-            [[self signalAnalysisPlot] leftSideContract];
-        }
-        if([[senderIdentifer substringToIndex:7] isEqualToString:@"COMPLOT"]){
-            [[self simulationComparePlot] leftSideContract];
-        }
+       
     }
  
 }
 
 - (IBAction)plotLeftSideExpand:(id)sender {
     NSString *senderIdentifer = [sender identifier];
-    if (([[NSApp currentEvent] modifierFlags] & NSAlternateKeyMask) != 0){
-        if([[senderIdentifer substringToIndex:7] isEqualToString:@"BIGPLOT"]){
-            [[self simulationResultsPlot] rightSideContract];
-        }
-        if([[senderIdentifer substringToIndex:7] isEqualToString:@"SIGPLOT"]){
-            [[self signalAnalysisPlot] rightSideContract];
-        }
-        if([[senderIdentifer substringToIndex:7] isEqualToString:@"COMPLOT"]){
-            [[self simulationComparePlot] rightSideContract];
+    if(([[NSApp currentEvent] modifierFlags] & NSCommandKeyMask) != 0){
+        if(([[NSApp currentEvent] modifierFlags] & NSAlternateKeyMask) != 0){
+            if([[senderIdentifer substringToIndex:7] isEqualToString:@"BIGPLOT"]){
+                [[self simulationResultsPlot] rightSideExpand];
+            }
+            if([[senderIdentifer substringToIndex:7] isEqualToString:@"SIGPLOT"]){
+                [[self signalAnalysisPlot] rightSideExpand];
+            }
+            if([[senderIdentifer substringToIndex:7] isEqualToString:@"COMPLOT"]){
+                [[self simulationComparePlot] rightSideExpand];
+            }
+        }else{
+            
+            if([[senderIdentifer substringToIndex:7] isEqualToString:@"BIGPLOT"]){
+                [[self simulationResultsPlot] rightSideContract];
+            }
+            if([[senderIdentifer substringToIndex:7] isEqualToString:@"SIGPLOT"]){
+                [[self signalAnalysisPlot] rightSideContract];
+            }
+            if([[senderIdentifer substringToIndex:7] isEqualToString:@"COMPLOT"]){
+                [[self simulationComparePlot] rightSideContract];
+            }
         }
     }else{
-        if([[senderIdentifer substringToIndex:7] isEqualToString:@"BIGPLOT"]){
-            [[self simulationResultsPlot] leftSideExpand];
-        }
-        if([[senderIdentifer substringToIndex:7] isEqualToString:@"SIGPLOT"]){
-            [[self signalAnalysisPlot] leftSideExpand];
-        }
-        if([[senderIdentifer substringToIndex:7] isEqualToString:@"COMPLOT"]){
-            [[self simulationComparePlot] leftSideExpand];
+        if (([[NSApp currentEvent] modifierFlags] & NSAlternateKeyMask) != 0){
+            if([[senderIdentifer substringToIndex:7] isEqualToString:@"BIGPLOT"]){
+                [[self simulationResultsPlot] leftSideContract];
+            }
+            if([[senderIdentifer substringToIndex:7] isEqualToString:@"SIGPLOT"]){
+                [[self signalAnalysisPlot] leftSideContract];
+            }
+            if([[senderIdentifer substringToIndex:7] isEqualToString:@"COMPLOT"]){
+                [[self simulationComparePlot] leftSideContract];
+            }
+        }else{
+            if([[senderIdentifer substringToIndex:7] isEqualToString:@"BIGPLOT"]){
+                [[self simulationResultsPlot] leftSideExpand];
+            }
+            if([[senderIdentifer substringToIndex:7] isEqualToString:@"SIGPLOT"]){
+                [[self signalAnalysisPlot] leftSideExpand];
+            }
+            if([[senderIdentifer substringToIndex:7] isEqualToString:@"COMPLOT"]){
+                [[self simulationComparePlot] leftSideExpand];
+            }
         }
     }
 }
 
 - (IBAction)plotBottomExpand:(id)sender {
     NSString *senderIdentifer = [sender identifier];
-    if (([[NSApp currentEvent] modifierFlags] & NSAlternateKeyMask) != 0){
-        // do alternate action
-        if([[senderIdentifer substringToIndex:7] isEqualToString:@"BIGPLOT"]){
-            [[self simulationResultsPlot] topContract];
-        }
-        if([[senderIdentifer substringToIndex:7] isEqualToString:@"SIGPLOT"]){
-            [[self signalAnalysisPlot] topContract];
-        }
-        if([[senderIdentifer substringToIndex:7] isEqualToString:@"COMPLOT"]){
-            [[self simulationComparePlot] topContract];
-        }
+    if(([[NSApp currentEvent] modifierFlags] & NSCommandKeyMask) != 0){
+         if (([[NSApp currentEvent] modifierFlags] & NSAlternateKeyMask) != 0){
+             if([[senderIdentifer substringToIndex:7] isEqualToString:@"BIGPLOT"]){
+                 [[self simulationResultsPlot] topExpand];
+             }
+             if([[senderIdentifer substringToIndex:7] isEqualToString:@"SIGPLOT"]){
+                 [[self signalAnalysisPlot] topExpand];
+             }
+             if([[senderIdentifer substringToIndex:7] isEqualToString:@"COMPLOT"]){
+                 [[self simulationComparePlot] topExpand];
+             }
+         }else{
+             if([[senderIdentifer substringToIndex:7] isEqualToString:@"BIGPLOT"]){
+                 [[self simulationResultsPlot] topContract];
+             }
+             if([[senderIdentifer substringToIndex:7] isEqualToString:@"SIGPLOT"]){
+                 [[self signalAnalysisPlot] topContract];
+             }
+             if([[senderIdentifer substringToIndex:7] isEqualToString:@"COMPLOT"]){
+                 [[self simulationComparePlot] topContract];
+             }
+         }
     }else{
-            // do normal action
-        if([[senderIdentifer substringToIndex:7] isEqualToString:@"BIGPLOT"]){
-            [[self simulationResultsPlot] bottomExpand];
-        }
-        if([[senderIdentifer substringToIndex:7] isEqualToString:@"SIGPLOT"]){
-            [[self signalAnalysisPlot] bottomExpand];
-        }
-        if([[senderIdentifer substringToIndex:7] isEqualToString:@"COMPLOT"]){
-            [[self simulationComparePlot] bottomExpand];
+        if (([[NSApp currentEvent] modifierFlags] & NSAlternateKeyMask) != 0){
+            if([[senderIdentifer substringToIndex:7] isEqualToString:@"BIGPLOT"]){
+                [[self simulationResultsPlot] bottomContract];
+            }
+            if([[senderIdentifer substringToIndex:7] isEqualToString:@"SIGPLOT"]){
+                [[self signalAnalysisPlot] bottomContract];
+            }
+            if([[senderIdentifer substringToIndex:7] isEqualToString:@"COMPLOT"]){
+                [[self simulationComparePlot] bottomContract];
+            }
+        }else{
+            if([[senderIdentifer substringToIndex:7] isEqualToString:@"BIGPLOT"]){
+                [[self simulationResultsPlot] bottomExpand];
+            }
+            if([[senderIdentifer substringToIndex:7] isEqualToString:@"SIGPLOT"]){
+                [[self signalAnalysisPlot] bottomExpand];
+            }
+            if([[senderIdentifer substringToIndex:7] isEqualToString:@"COMPLOT"]){
+                [[self simulationComparePlot] bottomExpand];
+            }
         }
     }
 }
 
-- (IBAction)plotBottomContract:(id)sender {
-    NSString *senderIdentifer = [sender identifier];
-    if (([[NSApp currentEvent] modifierFlags] & NSAlternateKeyMask) != 0){
-        if([[senderIdentifer substringToIndex:7] isEqualToString:@"BIGPLOT"]){
-            [[self simulationResultsPlot] topExpand];
-        }
-        if([[senderIdentifer substringToIndex:7] isEqualToString:@"SIGPLOT"]){
-            [[self signalAnalysisPlot] topExpand];
-        }
-        if([[senderIdentifer substringToIndex:7] isEqualToString:@"COMPLOT"]){
-            [[self simulationComparePlot] topExpand];
-        }
-    }else{
-        if([[senderIdentifer substringToIndex:7] isEqualToString:@"BIGPLOT"]){
-            [[self simulationResultsPlot] bottomContract];
-        }
-        if([[senderIdentifer substringToIndex:7] isEqualToString:@"SIGPLOT"]){
-            [[self signalAnalysisPlot] bottomContract];
-        }
-        if([[senderIdentifer substringToIndex:7] isEqualToString:@"COMPLOT"]){
-            [[self simulationComparePlot] bottomContract];
-        }
-
-    }
-}
+//- (IBAction)plotBottomContract:(id)sender {
+//    NSString *senderIdentifer = [sender identifier];
+//    if (([[NSApp currentEvent] modifierFlags] & NSAlternateKeyMask) != 0){
+//        if([[senderIdentifer substringToIndex:7] isEqualToString:@"BIGPLOT"]){
+//            [[self simulationResultsPlot] topExpand];
+//        }
+//        if([[senderIdentifer substringToIndex:7] isEqualToString:@"SIGPLOT"]){
+//            [[self signalAnalysisPlot] topExpand];
+//        }
+//        if([[senderIdentifer substringToIndex:7] isEqualToString:@"COMPLOT"]){
+//            [[self simulationComparePlot] topExpand];
+//        }
+//    }else{
+//        if([[senderIdentifer substringToIndex:7] isEqualToString:@"BIGPLOT"]){
+//            [[self simulationResultsPlot] bottomContract];
+//        }
+//        if([[senderIdentifer substringToIndex:7] isEqualToString:@"SIGPLOT"]){
+//            [[self signalAnalysisPlot] bottomContract];
+//        }
+//        if([[senderIdentifer substringToIndex:7] isEqualToString:@"COMPLOT"]){
+//            [[self simulationComparePlot] bottomContract];
+//        }
+//
+//    }
+//}
 
 - (IBAction)exportData:(id)sender {
     // Create a File Save Dialog class.
@@ -1524,6 +1568,18 @@
     [[self simulationCompareTimeSeriesTableView] reloadData];
 }
 
+- (IBAction)simulationCompareToggleLSIndicatorSim:(id)sender {
+    if([[self simulationCompareLSIndicatorRadio] selectedRow] == 0){
+        [[self comparePlotInfo] setShortLongIndicatorA:YES];
+        [[self comparePlotInfo] setShortLongIndicatorB:NO];
+    }else{
+        [[self comparePlotInfo] setShortLongIndicatorA:NO];
+        [[self comparePlotInfo] setShortLongIndicatorB:YES];
+    }
+    
+    [[self simulationComparePlot] updatePositionIndicator:[self comparePlotInfo]];
+}
+
 - (IBAction)simulationCompareToggleDashed:(id)sender {
     BOOL doDots = ([[self comparePlotDotsCheck] state] == NSOnState);
     if([self simulationComparePlot])
@@ -1593,13 +1649,24 @@
 
 - (IBAction)toggleLongShortIndicator:(id)sender {
     
-    [[self simulationResultsPlot] togglePositionIndicator];
+    [[self simulationPlotInfo] setShortLongIndicatorA:![[self simulationPlotInfo] shortLongIndicatorA]];
+    [[self simulationResultsPlot] updatePositionIndicator:[self simulationPlotInfo]];
 }
 
 - (IBAction)sigPlotLongShortIndicatorToggle:(id)sender {
-    [self setLongShortIndicatorOn:![self longShortIndicatorOn]];
-    [[self signalAnalysisPlot] togglePositionIndicator];
+    [[self signalPlotInfo] setShortLongIndicatorA:![[self signalPlotInfo] shortLongIndicatorA]];
+    [[self signalAnalysisPlot] updatePositionIndicator:[self signalPlotInfo]];
 }
+
+- (IBAction)compPlotLongShortIndicatorToggle:(id)sender {
+    if([[self simulationCompareLSIndicatorRadio] selectedRow] == 0){
+        [[self comparePlotInfo] setShortLongIndicatorA:![[self comparePlotInfo] shortLongIndicatorA]];
+    }else{
+        [[self comparePlotInfo] setShortLongIndicatorB:![[self comparePlotInfo] shortLongIndicatorB]];
+    }
+    [[self simulationComparePlot] updatePositionIndicator:[self comparePlotInfo]];
+    
+ }
 
 - (IBAction)performSimulation:(id)sender {
     BOOL basicCheckOk = YES;
@@ -2370,6 +2437,7 @@
             NSUInteger selectedSim = [[self simulationCompareOtherSimTableView] selectedRow];
             NSInteger simIndex = -1;
             NSArray *radioCells = [[self simulationCompareSimRadio] cells];
+            NSArray *radioCells2 = [[self simulationCompareLSIndicatorRadio] cells];
             for(int i = 0; i < [[self allSimulations] count]; i++){
                 if([[self allSimulations] objectAtIndex:i] != [self workingSimulation]){
                     simIndex++;
@@ -2378,12 +2446,14 @@
                         [self setCompareSimulationLoaded:YES];
                         [[radioCells objectAtIndex:0] setEnabled:YES];
                         [[radioCells objectAtIndex:1] setEnabled:YES];
+                        [[radioCells2 objectAtIndex:0] setEnabled:YES];
+                        [[radioCells2 objectAtIndex:1] setEnabled:YES];
                         break;
                     }
                 }
             }
             [[self simulationCompareSimRadio] selectCell:[radioCells objectAtIndex:1]];
-            
+            [[self simulationComparePlot] positionIndicatorOff:[self comparePlotInfo]];
             DataSeries *compareDataSeries = [[self compareSimulation] analysisDataSeries];
             
             NSMutableArray *fieldNames = [[[compareDataSeries yData] allKeys] mutableCopy];
@@ -2415,18 +2485,25 @@
                 
             }
             
-            long minDataTime = MIN([[self workingSimulation] startDate],[[self compareSimulation] startDate]);
-            long maxDateTime = MAX([[self workingSimulation] endDate],[[self compareSimulation] endDate]);
+            long minDataTime = MAX([[self workingSimulation] startDate],[[self compareSimulation] startDate]);
+            long maxDateTime = MIN([[self workingSimulation] endDate],[[self compareSimulation] endDate]);
             
             [[self simulationCompareFromDatePicker] setMinDate:[NSDate dateWithTimeIntervalSince1970:minDataTime]];
             [[self simulationCompareFromDatePicker] setMaxDate:[NSDate dateWithTimeIntervalSince1970:maxDateTime]];
             [[self simulationCompareFromDatePicker] setDateValue:[NSDate dateWithTimeIntervalSince1970:minDataTime]];
             [[self simulationCompareToDatePicker] setMinDate:[NSDate dateWithTimeIntervalSince1970:minDataTime]];
             [[self simulationCompareToDatePicker] setMaxDate:[NSDate dateWithTimeIntervalSince1970:maxDateTime]];
-            [[self simulationCompareToDatePicker] setDateValue:[NSDate dateWithTimeIntervalSince1970:minDataTime + (30*24*60*60)]];
+            [[self simulationCompareToDatePicker] setDateValue:[NSDate dateWithTimeIntervalSince1970:maxDateTime]];
         }
+        [self updateSelectedSimCompareTimeseries];
         [[self simulationCompareTimeSeriesTableView] reloadData];
+        [[self simulationCompareSelectedTSTableView] reloadData];
         BOOL doDots = ([[self comparePlotDotsCheck] state] == NSOnState);
+//        BOOL oldShortLongIndicatorA= NO, oldShortLongIndicatorB = NO;
+//        if([self comparePlotInfo]){
+//            oldShortLongIndicatorA = [[self comparePlotInfo] shortLongIndicatorA];
+//            oldShortLongIndicatorB = [[self comparePlotInfo] shortLongIndicatorB];
+//        }
         SeriesPlotDataWrapper *plotDataSource = [[SeriesPlotDataWrapper alloc] initWithTargetPlotName:@"COM"
                                                                                        AndSimulationA: [self workingSimulation]
                                                                                        AndSimulationB: [self compareSimulation]

@@ -553,27 +553,119 @@
 //    [self setZoomedOut:YES];
 //}
 
--(void)togglePositionIndicator
+-(void)positionIndicatorOff: (SeriesPlotDataWrapper *) dataSource
 {
-    CPTPlot * plot;
-    plot = [[self graph] plotWithIdentifier:@"S0_L0_SHORT"];
-    if([plot dataSource] == nil){
-        [plot setDataSource:[self dataSource]];
-    }else {
-        [plot setDataSource:nil];
+    CPTPlot *plot1, *plot2, *plot3, *plot4;
+    plot1 = [[self graph] plotWithIdentifier:@"S0_L0_SHORT"];
+    plot2 = [[self graph] plotWithIdentifier:@"S0_L0_LONG"];
+    [plot1 setDataSource:nil];
+    [plot2 setDataSource:nil];
+    [dataSource setShortLongIndicatorA:NO];
+ 
+    if([dataSource simulationB]){
+        plot3 = [[self graph] plotWithIdentifier:@"S1_L0_SHORT"];
+        plot4 = [[self graph] plotWithIdentifier:@"S1_L0_LONG"];
+        [plot3 setDataSource:nil];
+        [plot4 setDataSource:nil];
+        [dataSource setShortLongIndicatorB:NO];
     }
-    [plot dataNeedsReloading];
-
-    plot = [[plot graph] plotWithIdentifier:@"S0_L0_LONG"];
-    if(plot.dataSource == nil){
-        [plot setDataSource:[self dataSource]];
-    }else {
-        plot.dataSource = nil;
-    }
-    [plot dataNeedsReloading];
+    
 }
 
 
+//-(void)positionIndicatorChangeSim: (SeriesPlotDataWrapper *) dataSource
+//{
+//    CPTPlot *plot1, *plot2, *plot3, *plot4;
+//    plot1 = [[self graph] plotWithIdentifier:@"S0_L0_SHORT"];
+//    plot2 = [[self graph] plotWithIdentifier:@"S0_L0_LONG"];
+//    plot3 = [[self graph] plotWithIdentifier:@"S1_L0_SHORT"];
+//    plot4 = [[self graph] plotWithIdentifier:@"S1_L0_LONG"];
+//    
+//    if([plot1 dataSource] && [plot2 dataSource]){
+//        [plot1 setDataSource:nil];
+//        [plot2 setDataSource:nil];
+//        [dataSource setShortLongIndicatorA:NO];
+//        
+//        [plot3 setDataSource:[self dataSource]];
+//        [plot4 setDataSource:[self dataSource]];
+//        [dataSource setShortLongIndicatorA:YES];
+//    }else{
+//        if([plot3 dataSource] && [plot4 dataSource]){
+//            [plot1 setDataSource:[self dataSource]];
+//            [plot2 setDataSource:[self dataSource]];
+//            [plot3 setDataSource:nil];
+//            [plot4 setDataSource:nil];
+//        }else{
+//            [plot1 setDataSource:nil];
+//            [plot2 setDataSource:nil];
+//            [plot3 setDataSource:nil];
+//            [plot4 setDataSource:nil];
+//        }
+//    }
+//    
+//    [plot1 dataNeedsReloading];
+//    [plot2 dataNeedsReloading];
+//    [plot3 dataNeedsReloading];
+//    [plot4 dataNeedsReloading];
+//    
+//}
+
+
+-(void)updatePositionIndicator: (SeriesPlotDataWrapper *) dataSource
+{
+    CPTPlot *plotS, *plotL;
+    
+    plotS = [[self graph] plotWithIdentifier:@"S0_L0_SHORT"];
+    plotL = [[self graph] plotWithIdentifier:@"S0_L0_LONG"];
+    
+    if([dataSource shortLongIndicatorA]){
+        [plotS setDataSource:[self dataSource]];
+        [plotL setDataSource:[self dataSource]];
+    }else{
+        [plotS setDataSource:nil];
+        [plotL setDataSource:nil];
+    }
+    [plotS dataNeedsReloading];
+    [plotL dataNeedsReloading];
+    
+    
+    if([dataSource simulationB]){
+        plotS = [[self graph] plotWithIdentifier:@"S1_L0_SHORT"];
+        plotL = [[self graph] plotWithIdentifier:@"S1_L0_LONG"];
+
+        if([dataSource shortLongIndicatorB]){
+            [plotS setDataSource:[self dataSource]];
+            [plotL setDataSource:[self dataSource]];
+        }else{
+            [plotS setDataSource:nil];
+            [plotL setDataSource:nil];
+        }
+        [plotS dataNeedsReloading];
+        [plotL dataNeedsReloading];
+    }
+    
+    
+}
+
+//-(void)togglePositionIndicator1
+//{
+//    CPTPlot * plot;
+//    plot = [[self graph] plotWithIdentifier:@"S1_L0_SHORT"];
+//    if([plot dataSource] == nil){
+//        [plot setDataSource:[self dataSource]];
+//    }else {
+//        [plot setDataSource:nil];
+//    }
+//    [plot dataNeedsReloading];
+//    
+//    plot = [[plot graph] plotWithIdentifier:@"S1_L0_LONG"];
+//    if(plot.dataSource == nil){
+//        [plot setDataSource:[self dataSource]];
+//    }else {
+//        [plot setDataSource:nil];
+//    }
+//    [plot dataNeedsReloading];
+//}
 
 -(void)setBasicParametersForPlot
 {
@@ -735,8 +827,6 @@
         [[self dateAnnotationArray] removeObjectAtIndex:0];
     }
     
-    
-    
     NSDictionary *timeSeriesLinesDictionary = [dataSource timeSeriesLinesDictionary];
     NSArray *lineNames = [timeSeriesLinesDictionary allKeys];
     TimeSeriesLine *tsl;
@@ -761,7 +851,6 @@
             lineDisplayedOK = YES;
             lineName = [lineNames objectAtIndex:i];
             tsl = [timeSeriesLinesDictionary objectForKey:lineName];
-            //lineName = [NSString stringWithFormat:@"S%ld_L%d_%@",[tsl simId],[tsl layerIndex],[tsl name]];
             
             if([[[self graph] allPlots] count] > 0){
                 dataSourceLinePlot = (CPTScatterPlot *)[[self graph] plotWithIdentifier:lineName];
@@ -837,10 +926,51 @@
             }
         }
         
-        if([dataSource shortLongIndicator]){
-            //Short Indicator
+        
+        //Short Indicator
+        dataSourceLinePlot = [[CPTScatterPlot alloc] init];
+        dataSourceLinePlot.identifier = @"S0_L0_SHORT";
+        lineStyle = [[dataSourceLinePlot dataLineStyle] mutableCopy];
+        [lineStyle setLineWidth:1.0];
+        [lineStyle setLineColor:[CPTColor clearColor]];
+        
+        CPTColor *areaColor = [CPTColor colorWithComponentRed:1.0 green:0.0 blue:0.0 alpha:0.3];
+        
+        [dataSourceLinePlot setAreaFill	:[CPTFill fillWithColor:areaColor]];
+        [dataSourceLinePlot setAreaBaseValue:CPTDecimalFromDouble(0.0)];
+        
+        [dataSourceLinePlot setDataLineStyle:lineStyle];
+        //
+        if([dataSource shortLongIndicatorA]){
+            [dataSourceLinePlot setDataSource:dataSource];
+        }else{
+            [dataSourceLinePlot setDataSource:nil];
+        }
+        
+        [[self graph] addPlot:dataSourceLinePlot toPlotSpace:[self shortLongPlotSpace]];
+        // Long indicator
+        dataSourceLinePlot = [[CPTScatterPlot alloc] init];
+        dataSourceLinePlot.identifier = @"S0_L0_LONG";
+        lineStyle = [dataSourceLinePlot.dataLineStyle mutableCopy];
+        [lineStyle setLineWidth:1.0];
+        [lineStyle setLineColor:[CPTColor clearColor]];
+        
+        areaColor		  = [CPTColor colorWithComponentRed:0.0 green:1.0 blue:0.0 alpha:0.3];
+        [dataSourceLinePlot setAreaFill:[CPTFill fillWithColor:areaColor]];
+        [dataSourceLinePlot setAreaBaseValue :CPTDecimalFromDouble(0.0)];
+        [dataSourceLinePlot setDataLineStyle:lineStyle];
+  
+        if([dataSource shortLongIndicatorA]){
+            [dataSourceLinePlot setDataSource:dataSource];
+        }else{
+            [dataSourceLinePlot setDataSource:nil];
+        }
+        [[self graph] addPlot:dataSourceLinePlot toPlotSpace:[self shortLongPlotSpace]];
+        
+        
+        if([dataSource simulationB]){
             dataSourceLinePlot = [[CPTScatterPlot alloc] init];
-            dataSourceLinePlot.identifier = @"S0_L0_SHORT";
+            dataSourceLinePlot.identifier = @"S1_L0_SHORT";
             lineStyle = [[dataSourceLinePlot dataLineStyle] mutableCopy];
             [lineStyle setLineWidth:1.0];
             [lineStyle setLineColor:[CPTColor clearColor]];
@@ -851,11 +981,16 @@
             [dataSourceLinePlot setAreaBaseValue:CPTDecimalFromDouble(0.0)];
             
             [dataSourceLinePlot setDataLineStyle:lineStyle];
-            [dataSourceLinePlot setDataSource:dataSource];
+            
+             if([dataSource shortLongIndicatorB]){
+                 [dataSourceLinePlot setDataSource:dataSource];
+             }else{
+                 [dataSourceLinePlot setDataSource:nil];
+             }
             [[self graph] addPlot:dataSourceLinePlot toPlotSpace:[self shortLongPlotSpace]];
             // Long indicator
             dataSourceLinePlot = [[CPTScatterPlot alloc] init];
-            dataSourceLinePlot.identifier = @"S0_L0_LONG";
+            dataSourceLinePlot.identifier = @"S1_L0_LONG";
             lineStyle = [dataSourceLinePlot.dataLineStyle mutableCopy];
             [lineStyle setLineWidth:1.0];
             [lineStyle setLineColor:[CPTColor clearColor]];
@@ -864,9 +999,15 @@
             [dataSourceLinePlot setAreaFill:[CPTFill fillWithColor:areaColor]];
             [dataSourceLinePlot setAreaBaseValue :CPTDecimalFromDouble(0.0)];
             [dataSourceLinePlot setDataLineStyle:lineStyle];
-            [dataSourceLinePlot setDataSource:dataSource];
+            //
+            if([dataSource shortLongIndicatorB]){
+                [dataSourceLinePlot setDataSource:dataSource];
+            }else{
+                [dataSourceLinePlot setDataSource:nil];
+            }
             [[self graph] addPlot:dataSourceLinePlot toPlotSpace:[self shortLongPlotSpace]];
-        }
+         }
+        
         // Find a good range for the X axis
         double niceXrange = (ceil( (double)([self maxXrangeForPlot] - [self minXrangeForPlot]) / majorIntervalForX ) * majorIntervalForX);
         CPTMutablePlotRange *xRange;
@@ -909,13 +1050,12 @@
             [self setPlot2AxisVisible:NO];
         }
 
-        if([dataSource shortLongIndicator]){
-            CPTPlotRange *shortLongPlotYRange;
-            shortLongPlotYRange = [[CPTPlotRange alloc] initWithLocation:[[NSDecimalNumber numberWithInt:0] decimalValue]  length:[[NSDecimalNumber numberWithInt:1] decimalValue]];
-            CPTMutablePlotRange *shortLongPlotXRange =[[[self plotSpace0] xRange] copy];
-            [[self shortLongPlotSpace] setXRange:shortLongPlotXRange];
-            [[self shortLongPlotSpace] setYRange:shortLongPlotYRange];
-        }
+        CPTPlotRange *shortLongPlotYRange;
+        shortLongPlotYRange = [[CPTPlotRange alloc] initWithLocation:[[NSDecimalNumber numberWithInt:0] decimalValue]  length:[[NSDecimalNumber numberWithInt:1] decimalValue]];
+        CPTMutablePlotRange *shortLongPlotXRange =[[[self plotSpace0] xRange] copy];
+        [[self shortLongPlotSpace] setXRange:shortLongPlotXRange];
+        [[self shortLongPlotSpace] setYRange:shortLongPlotYRange];
+        
 //        [self setXRangeZoomOut:xRange];
         
         BOOL dateAnnotateRequired = [self fixUpXAxisLabels];
