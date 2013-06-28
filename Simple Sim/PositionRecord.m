@@ -7,6 +7,8 @@
 //
 
 #import "PositionRecord.h"
+#import "EpochTime.h"
+
 @implementation PositionRecord
 
 - (id) initWithAmount: (int) amount
@@ -52,6 +54,14 @@
     return self;   
 }
 
+- (NSString *)description
+{
+    NSString *description;
+    description = [NSString stringWithFormat:@"%@   ", [EpochTime stringDateWithTime:[self dateTime]]];
+    description = [NSString stringWithFormat:@"%@Amount   :%d   ",description, [self amount]];
+    description = [NSString stringWithFormat:@"%@Price    :%5.2f\n",description,[self price]];
+    return description;
+}
 
 
 

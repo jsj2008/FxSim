@@ -8,7 +8,6 @@
 
 #import "AppController.h"
 #import "SimulationViewController.h"
-#import "InteractiveTradeViewController.h"
 #import "TitlePaneViewController.h"
 
 #define THREADS YES
@@ -21,8 +20,6 @@
 @implementation AppController
 @synthesize realtimeButton;
 @synthesize simulationViewButton;
-@synthesize interactiveViewButton;
-
 @synthesize leftPanelStatusLabel;
 @synthesize minAvailableDate;
 @synthesize maxAvailableDate;
@@ -64,7 +61,8 @@
                              @"POS_PNL",
                              @"CASHTRANSFER",
                              @"SIGNAL",
-                             @"THRESSIG",
+                             @"SIGLTHRES",
+                             @"SIGUTHRES",
                              @"POSITION",
                              @"SHORT",@"LONG",
                              @"POSAVEPRICE",
@@ -95,25 +93,16 @@
     svc = [[SimulationViewController alloc] init];
     
     [viewControllers setObject:svc forKey:@"SIMVIEW"];
-    InteractiveTradeViewController *itvc;
-    itvc = [[InteractiveTradeViewController alloc] init];
     if(THREADS){
-        [itvc setDoThreads:YES];
         [svc setDoThreads:YES];
     }
-    [viewControllers setObject:itvc forKey:@"INTERVIEW"];
     
     [svc setColoursForPlots:coloursForPlots];
     //[svc setFieldNameOrdering:fieldNameOrdering];
     [svc setFxPairsAndDbIds:listOfFxPairs];
     [svc setDataControllerForUI:dataControllerForUI];
-    [itvc setColoursForPlots:coloursForPlots];
-    //[itvc setFieldNameOrdering:fieldNameOrdering];
-    [itvc setFxPairsAndDbIds:listOfFxPairs];
     
     [svc setDelegate:self];
-    [itvc setDelegate:self];
-    
     
     NSWindow *w = [box window];
     
@@ -144,7 +133,6 @@
 }
 
 - (IBAction)changeToSimulationView:(id)sender {
-    [interactiveViewButton setState:0];
     
     // Try to end editing
     NSWindow *w = [box window];
@@ -157,9 +145,11 @@
     NSView *v;
     if([simulationViewButton state]==0){
         v = [[viewControllers objectForKey:@"TITLEPANE"] view];
+        [[self leftSideTopLabel] setHidden:YES];
     }else{
     //Put the view in the box
         v = [[viewControllers objectForKey:@"SIMVIEW"] view];
+        [[self leftSideTopLabel] setHidden:NO];
     }
     [box setContentView:v];
         
@@ -185,46 +175,6 @@
     
 }
     
--  (IBAction) changeToInteractiveView:(id)sender {
-    [simulationViewButton setState:0];
-    // Try to end editing
-    NSWindow *w = [box window];
-    BOOL ended = [w makeFirstResponder:w];
-    if(!ended){
-        NSBeep();
-        return;
-    }
-    //Put the view in the box
-    NSView *v;
-    if([interactiveViewButton state] == 0){
-        v = [[viewControllers objectForKey:@"TITLEPANE"] view];    
-    }else{
-        v = [[viewControllers objectForKey:@"INTERVIEW"] view];
-    }
-
-    [box setContentView:v];
-    
-    //Compute the new window frame
-    NSSize currentSize = [[box contentView] frame].size;
-    NSSize newSize = [v frame].size;
-    float deltaWidth = newSize.width - currentSize.width;
-    float deltaHeight = newSize.height - currentSize.height;
-    NSRect windowFrame = [w frame];
-    windowFrame.size.height += deltaHeight;
-    windowFrame.origin.y -= deltaHeight;
-    windowFrame.size.width += deltaWidth;
-    
-    //Clear the box for resizing
-    [box setContentView:nil];
-    [w setFrame:windowFrame display:YES animate:YES];
-    [box setContentView:v];
-    
-    if([interactiveViewButton state] == 1){
-        InteractiveTradeViewController *controllerOfView = (InteractiveTradeViewController *)[viewControllers objectForKey:@"INTERVIEW"];
-        [controllerOfView viewChosenFromMainMenu];
-    }
-}
-
 #pragma mark -
 #pragma mark Simulation Output Methods
 
@@ -333,14 +283,12 @@
 
 -(void)disableMainButtons
 {
-    [interactiveViewButton setEnabled:NO];
     [simulationViewButton setEnabled:NO];
     [realtimeButton setEnabled:NO];
 }
 
 -(void)enableMainButtons
 {
-    [interactiveViewButton setEnabled:[[buttonStates objectForKey:[interactiveViewButton identifier]]boolValue]];
     [simulationViewButton setEnabled:[[buttonStates objectForKey:[simulationViewButton identifier]] boolValue]];
     [realtimeButton setEnabled:[[buttonStates objectForKey:[realtimeButton identifier]] boolValue]];
 }

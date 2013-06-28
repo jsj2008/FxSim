@@ -118,6 +118,11 @@
     
 }
 
+- (void) setYRanges
+{
+    
+}
+
 //- (NSDictionary *) setCompareDataViewWithStartDateTime: (long) startDateTime
 //                                        AndEndDateTime: (long) endDateTime
 //{

@@ -12,7 +12,6 @@
 @interface AppController : NSObject <NSTableViewDataSource, NSTabViewDelegate, NSTableViewDelegate>{
     @private
     __weak NSBox *box;
-    __weak NSButton *interactiveViewButton;
     __weak NSButton *simulationViewButton;
     __weak NSButton *realtimeButton;
     DataController *dataControllerForUI;
@@ -39,14 +38,13 @@
 - (void) disableMainButtons;
 - (void) enableMainButtons;
 - (IBAction)changeToSimulationView:(id)sender;
-- (IBAction)changeToInteractiveView:(id)sender;
+
 
 @property (weak) IBOutlet NSTextField *leftSideTopLabel;
 @property (weak) IBOutlet NSProgressIndicator *leftSideProgressBar;
 @property (weak) IBOutlet NSProgressIndicator *leftSideProgressBar2;
 @property (weak) IBOutlet NSTextField *leftPanelStatusLabel;
 @property (weak) IBOutlet NSBox *box;
-@property (weak) IBOutlet NSButton *interactiveViewButton;
 @property (weak) IBOutlet NSButton *simulationViewButton;
 @property (weak) IBOutlet NSButton *realtimeButton;
 @end

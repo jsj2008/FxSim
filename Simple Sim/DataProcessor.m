@@ -8,16 +8,19 @@
 
 #import "DataProcessor.h"
 #import "UtilityFunctions.h"
-//#import "SignalStats.h"
 #import "PositioningSystem.h"
 #import "SignalSystem.h"
-#import "DataSeries.h"
+//#import "DataSeries.h"
 #import "EpochTime.h"
 
 @interface DataProcessor()
 + (NSDictionary *) calcEMAForCode: (NSString *) seriesCode
                          WithData: (NSDictionary *) dataDictionary
                        AndOldData: (NSDictionary *) oldDataDictionary;
+
++ (NSDictionary *) calcREMAForCode: (NSString *) remaCode
+                          WithData: (NSDictionary *) dataDictionary
+                        AndOldData: (NSDictionary *) oldDataDictionary;
 
 + (NSDictionary *) calcSpreadWithData: (NSDictionary *) dataDictionary
                            AndOldData: (NSDictionary *) oldDataDictionary;
@@ -45,7 +48,9 @@
 
 + (NSDictionary *) calcEmadForCode: (NSString *) macdCode
                           WithData: (NSDictionary *) dataDictionary
-                        AndOldData: (NSDictionary *) oldDataDictionary;
+                        AndOldData: (NSDictionary *) oldDataDictionary
+                       AndDoPickup: (BOOL) doPerf
+                     WithThreshold: (double) threshold;
 
 + (NSDictionary *) calcTicNumberWithData: (NSDictionary *) dataDictionary
                               AndOldData: (NSDictionary *) oldDataDictionary;
@@ -54,12 +59,18 @@
                               AndOldDerivedData: (NSDictionary *) oldDataDictionary
                                    AndPriceData: (NSDictionary *) priceDataDictionary
                                         ForCode: (NSString *) gridStatsCode
-                                andSignalSystem: (SignalSystem *) signalSystem;
+                                AndSignalSystem: (SignalSystem *) signalSystem;
 
++ (NSDictionary *) calcAemadForCode: (NSString *) aemadCode
+                           WithData: (NSDictionary *) emadData
+                         AndOldData: (NSDictionary *) oldDataDictionary
+                         AndPipSize: (double) pipSize;
 
-//+ (NSDictionary *) calcFRAMAForCode: (NSString *) seriesCode
-//                           WithData: (NSDictionary *) dataDictionary
-//                         AndOldData: (NSDictionary *) oldDataDictionary;
++ (NSDictionary *) calcPACSForCode: (NSString *) pacsCode
+                   WithDerivedData: (NSDictionary *) dataDictionary
+                 AndOldDerivedData: (NSDictionary *) oldDataDictionary
+                        AndPipSize: (double) pipSize
+                   AndSignalSystem: (SignalSystem *) signalSystem;
 
 @end
 
@@ -74,13 +85,12 @@
 {
     BOOL success = YES, useAllNewData;
     NSMutableDictionary *returnData = [[NSMutableDictionary alloc] init];
-    //NSMutableArray *seriesCodes = [[NSMutableArray alloc] init];
     int dataLength;
     NSData *dateTimeData, *oldDateTimeData;
     long *dateTimeArray;
-    //NSString *varName;
     BOOL doSignal= NO;
     NSDictionary *oldDataDictionary;
+    double pipSize = 0.0;
     
     //If needed
     NSDictionary *hlocDataSeries;
@@ -112,15 +122,73 @@
         dateTimeData =  [dataDictionary objectForKey:@"DATETIME"];
         dateTimeArray = (long *)[dateTimeData bytes];
         dataLength = [dateTimeData length]/sizeof(long);
+        pipSize = [[dataDictionary objectForKey:@"PIPSIZE"] doubleValue];
         
         long *oldDataTimeArray;
         long oldDataLength;
         long dataOverlapIndex;
         
+        NSMutableArray *orderedDerivedVariables = [[NSMutableArray alloc] init];
+        
+        for(int i = 0; i < [derivedVariables count];i++){
+            if([[[derivedVariables objectAtIndex:i] substringToIndex:4] isEqualToString:@"EMA/"]){
+                [orderedDerivedVariables addObject:[derivedVariables objectAtIndex:i]];
+            }
+        }
+        for(int i = 0; i < [derivedVariables count];i++){
+            if([[[derivedVariables objectAtIndex:i] substringToIndex:5] isEqualToString:@"EMAD/"]){
+                [orderedDerivedVariables addObject:[derivedVariables objectAtIndex:i]];
+            }
+        }
+        for(int i = 0; i < [derivedVariables count];i++){
+            if([[[derivedVariables objectAtIndex:i] substringToIndex:5] isEqualToString:@"EMAG/"]){
+                [orderedDerivedVariables addObject:[derivedVariables objectAtIndex:i]];
+            }
+        }
+        for(int i = 0; i < [derivedVariables count];i++){
+            if([[[derivedVariables objectAtIndex:i] substringToIndex:6] isEqualToString:@"AEMAD/"]){
+                [orderedDerivedVariables addObject:[derivedVariables objectAtIndex:i]];
+            }
+        }
+        for(int i = 0; i < [derivedVariables count];i++){
+            if([[[derivedVariables objectAtIndex:i] substringToIndex:5] isEqualToString:@"PACS/"]){
+                [orderedDerivedVariables addObject:[derivedVariables objectAtIndex:i]];
+            }
+        }
+        for(int i = 0; i < [derivedVariables count];i++){
+            if([[[derivedVariables objectAtIndex:i] substringToIndex:4] isEqualToString:@"EMB/"]){
+                [orderedDerivedVariables addObject:[derivedVariables objectAtIndex:i]];
+            }
+        }
+        for(int i = 0; i < [derivedVariables count];i++){
+            if([[[derivedVariables objectAtIndex:i] substringToIndex:5] isEqualToString:@"EMBD/"]){
+                [orderedDerivedVariables addObject:[derivedVariables objectAtIndex:i]];
+            }
+        }
+        for(int i = 0; i < [derivedVariables count];i++){
+            if([[[derivedVariables objectAtIndex:i] substringToIndex:6] isEqualToString:@"AEMBD/"]){
+                [orderedDerivedVariables addObject:[derivedVariables objectAtIndex:i]];
+            }
+        }
+
+        
+        for(int i = 0; i < [derivedVariables count];i++){
+            if(!([[[derivedVariables objectAtIndex:i] substringToIndex:4] isEqualToString:@"EMA/"] ||
+                 [[[derivedVariables objectAtIndex:i] substringToIndex:5] isEqualToString:@"EMAD/"] ||
+                 [[[derivedVariables objectAtIndex:i] substringToIndex:5] isEqualToString:@"EMAG/"] ||
+                 [[[derivedVariables objectAtIndex:i] substringToIndex:6] isEqualToString:@"AEMAD/"] ||
+                 [[[derivedVariables objectAtIndex:i] substringToIndex:5] isEqualToString:@"PACS/"] ||
+                 [[[derivedVariables objectAtIndex:i] substringToIndex:4] isEqualToString:@"EMB/"] ||
+                 [[[derivedVariables objectAtIndex:i] substringToIndex:6] isEqualToString:@"EMBD/"] ||
+                 [[[derivedVariables objectAtIndex:i] substringToIndex:6] isEqualToString:@"AEMBD/"] )){
+                [orderedDerivedVariables addObject:[derivedVariables objectAtIndex:i]];
+            }
+        }
+        
         NSString  *currentSeriesName, *currentSeriesType;
         int seriesIndex = 0;
-        while(seriesIndex < [derivedVariables count] && success){
-            currentSeriesName = [derivedVariables objectAtIndex:seriesIndex];
+        while(seriesIndex < [orderedDerivedVariables count] && success){
+            currentSeriesName = [orderedDerivedVariables objectAtIndex:seriesIndex];
             NSArray *seriesComponents = [currentSeriesName componentsSeparatedByString:@"/"];
             currentSeriesType = [seriesComponents objectAtIndex:0];
             
@@ -225,7 +293,42 @@
                     [returnData setObject:emaData forKey:currentSeriesName];
                 }
             }
-         
+            //Variable: EMB
+            if([currentSeriesType  isEqualToString:@"EMB"])
+            {
+                NSDictionary *embDataSeries = [self calcEMAForCode:currentSeriesName
+                                                          WithData:returnData
+                                                        AndOldData:trailingData];
+                
+                success = [[embDataSeries objectForKey:@"SUCCESS"] boolValue];
+                
+                if(success){
+                    NSData *embData = [embDataSeries objectForKey:currentSeriesName];
+                    [returnData setObject:embData forKey:currentSeriesName];
+                }
+            }
+            
+            
+
+            //Variable: REMA
+            if([currentSeriesType  isEqualToString:@"REMA"])
+            {
+                NSDictionary *remaDataSeries = [self calcREMAForCode:currentSeriesName
+                                                           WithData:dataDictionary
+                                                         AndOldData:trailingData];
+                
+                success = [[remaDataSeries objectForKey:@"SUCCESS"] boolValue];
+                
+                if(success){
+                    NSData *remaData = [remaDataSeries objectForKey:currentSeriesName];
+                    NSData *remarvar = [remaDataSeries objectForKey:[NSString stringWithFormat:@"%@rvar",currentSeriesName]];
+                    [returnData setObject:remaData forKey:currentSeriesName];
+                    [returnData setObject:remarvar forKey:[NSString stringWithFormat:@"%@rvar",currentSeriesName]];
+                }
+            }
+
+            
+            
             // Variable: SPREAD
             if([currentSeriesType isEqualToString:@"SPREAD"] || [[currentSeriesType substringToIndex:3]  isEqualToString:@"SPD"])
             {
@@ -312,11 +415,13 @@
                 }
             }
             // Variable: EMAD
-            if([currentSeriesType isEqualToString:@"EMAD"])
+            if([currentSeriesType isEqualToString:@"EMAD"] || [currentSeriesType isEqualToString:@"EMBD"])
             {
                 NSDictionary *emadDataSeries = [self calcEmadForCode:currentSeriesName
                                                             WithData:returnData
-                                                          AndOldData:trailingData];
+                                                          AndOldData:trailingData
+                                                         AndDoPickup:NO
+                                                       WithThreshold:0.0];
                 
                 success = [[emadDataSeries objectForKey:@"SUCCESS"] boolValue];
                 if(success){
@@ -330,7 +435,71 @@
                     }
                 }
             }
+            // Variable: AEMAD
+            if([currentSeriesType isEqualToString:@"AEMAD"] || [currentSeriesType isEqualToString:@"AEMBD"])
+            {
+                NSDictionary *aemadDataSeries = [self calcAemadForCode:currentSeriesName
+                                                              WithData:returnData
+                                                            AndOldData:trailingData
+                                                            AndPipSize:pipSize];
+                
+                success = [[aemadDataSeries objectForKey:@"SUCCESS"] boolValue];
+                if(success){
+                    NSArray *dataKeys = [aemadDataSeries allKeys];
+                    for( int i = 0; i < [dataKeys count]; i++){
+                        if([[dataKeys objectAtIndex:i] isNotEqualTo:@"SUCCESS"])
+                        {
+                            [returnData setObject:[aemadDataSeries objectForKey:[dataKeys objectAtIndex:i]]
+                                           forKey:[dataKeys objectAtIndex:i]];
+                        }
+                    }
+                }
+            }
+           
+            // Variable: EMAG
+            if([currentSeriesType isEqualToString:@"EMAG"])
+            {
+                NSDictionary *emagDataSeries = [self calcEmagForCode:currentSeriesName
+                                                            WithData:returnData
+                                                          AndOldData:trailingData];
+                
+                success = [[emagDataSeries objectForKey:@"SUCCESS"] boolValue];
+                if(success){
+                    NSArray *dataKeys = [emagDataSeries allKeys];
+                    for( int i = 0; i < [dataKeys count]; i++){
+                        if([[dataKeys objectAtIndex:i] isNotEqualTo:@"SUCCESS"])
+                        {
+                            [returnData setObject:[emagDataSeries objectForKey:[dataKeys objectAtIndex:i]]
+                                           forKey:[dataKeys objectAtIndex:i]];
+                        }
+                    }
+                }
+            }
             
+            // Variable: EDPU
+            if([currentSeriesType isEqualToString:@"EDPU"])
+            {
+                [returnData setObject:[dataDictionary objectForKey:@"MID"] forKey:@"MID"];
+                
+                NSDictionary *edpuDataSeries = [self calcEmadForCode:currentSeriesName
+                                                            WithData:returnData
+                                                          AndOldData:trailingData
+                                                         AndDoPickup:YES
+                                                       WithThreshold:[signalSystem threshold]];
+                [returnData removeObjectForKey:@"MID"];
+                success = [[edpuDataSeries objectForKey:@"SUCCESS"] boolValue];
+                if(success){
+                    NSArray *dataKeys = [edpuDataSeries allKeys];
+                    for( int i = 0; i < [dataKeys count]; i++){
+                        if([[dataKeys objectAtIndex:i] isNotEqualTo:@"SUCCESS"])
+                        {
+                            [returnData setObject:[edpuDataSeries objectForKey:[dataKeys objectAtIndex:i]]
+                                           forKey:[dataKeys objectAtIndex:i]];
+                        }
+                    }
+                }
+            }
+
             //Variable: TICN
             if([currentSeriesType  isEqualToString:@"TICN"])
             {
@@ -350,12 +519,9 @@
             {
                 NSDictionary *gridDataSeries = [self calcGridStatsWithDerivedData:returnData 
                                                                 AndOldDerivedData:trailingData
-                                                                 AndPriceData:dataDictionary
-                                                                  ForCode:currentSeriesName
-                                                           andSignalSystem:signalSystem];
-                
-                
-                
+                                                                     AndPriceData:dataDictionary
+                                                                          ForCode:currentSeriesName
+                                                                  AndSignalSystem:signalSystem];
                 
                 success = [[gridDataSeries objectForKey:@"SUCCESS"] boolValue];
                 
@@ -369,6 +535,36 @@
                         }
                     }                }
             }
+            
+            //Variable: PACS
+            if([currentSeriesType  isEqualToString:@"PACS"])
+            {
+                [returnData setObject:[dataDictionary objectForKey:@"MID"] forKey:@"MID"];
+                [returnData setObject:[dataDictionary objectForKey:@"DATETIME"] forKey:@"DATETIME"];
+                NSDictionary *pacsDataSeries = [self calcPACSForCode:currentSeriesName
+                                                     WithDerivedData:returnData
+                                                   AndOldDerivedData:trailingData
+                                                          AndPipSize:pipSize
+                                                     AndSignalSystem:signalSystem];
+                [returnData removeObjectForKey:@"MID"];
+                [returnData removeObjectForKey:@"DATETIME"];
+                
+                success = [[pacsDataSeries objectForKey:@"SUCCESS"] boolValue];
+                
+                if(success){
+                    NSArray *dataKeys = [pacsDataSeries allKeys];
+                    for( int i = 0; i < [dataKeys count]; i++){
+                        if([[dataKeys objectAtIndex:i] isNotEqualTo:@"SUCCESS"])
+                        {
+                            [returnData setObject:[pacsDataSeries objectForKey:[dataKeys objectAtIndex:i]]
+                                           forKey:[dataKeys objectAtIndex:i]];
+                        }
+                    }
+                }
+            }
+            
+            
+            
             seriesIndex++;
         }
         
@@ -384,9 +580,21 @@
 
                 double *fastArray, *slowArray;
                 NSData *variableData;
-                variableData =  [returnData objectForKey:[NSString stringWithFormat:@"EMA/%d",[signalSystem fastCode]]];
+                NSString *fastCode = [NSString stringWithFormat:@"EMA/%d",[signalSystem fastCode]];
+                NSString *slowCode = [NSString stringWithFormat:@"EMA/%d",[signalSystem slowCode]];
+                
+                if([returnData objectForKey:fastCode]){
+                    variableData =  [returnData objectForKey:fastCode];
+                }else{
+                    variableData =  [dataDictionary objectForKey:fastCode];
+                }
                 fastArray = (double *)[variableData bytes];
-                variableData =  [returnData objectForKey:[NSString stringWithFormat:@"EMA/%d",[signalSystem slowCode]]];
+                
+                if([returnData objectForKey:slowCode]){
+                    variableData =  [returnData objectForKey:slowCode];
+                }else{
+                    variableData =  [dataDictionary objectForKey:slowCode];
+                }
                 slowArray = (double *)[variableData bytes];
                 
                 if(!useAllNewData){
@@ -408,12 +616,39 @@
             if([[signalSystem type] isEqualToString:@"MACD"]){
                 NSString *macdSigString = [NSString stringWithFormat:@"S%@",[signalSystem signalString]];
                 macdSigString = [[macdSigString componentsSeparatedByString:@";"] objectAtIndex:0];
-                signalData = [returnData objectForKey:macdSigString];
+                if([returnData objectForKey:macdSigString]){
+                    signalData = [returnData objectForKey:macdSigString];
+                }else{
+                    signalData = [dataDictionary objectForKey:macdSigString];
+
+                }
             }
             
-            if([[signalSystem type] isEqualToString:@"EMAD"]){
+            if([[signalSystem type] isEqualToString:@"EMAD"] || [[signalSystem type] isEqualToString:@"EMBD"]){
                 NSString *emadSigString = [[[signalSystem signalString] componentsSeparatedByString:@";"] objectAtIndex:0];
-                signalData = [returnData objectForKey:emadSigString];
+                if([returnData objectForKey:emadSigString]){
+                    signalData = [returnData objectForKey:emadSigString];
+                }else{
+                    signalData = [dataDictionary objectForKey:emadSigString];
+                }
+            }
+            
+            if([[signalSystem type] isEqualToString:@"AEMAD"]){
+                NSString *aemadSigString = [[[signalSystem signalString] componentsSeparatedByString:@";"] objectAtIndex:0];
+                if([returnData objectForKey:aemadSigString]){
+                    signalData = [returnData objectForKey:aemadSigString];
+                }else{
+                    signalData = [dataDictionary objectForKey:aemadSigString];
+                }
+            }
+           
+            if([[signalSystem type] isEqualToString:@"AEMBD"]){
+                NSString *aembdSigString = [[[signalSystem signalString] componentsSeparatedByString:@";"] objectAtIndex:0];
+                if([returnData objectForKey:aembdSigString]){
+                    signalData = [returnData objectForKey:aembdSigString];
+                }else{
+                    signalData = [dataDictionary objectForKey:aembdSigString];
+                }
             }
             
             if([[signalSystem type] isEqualToString:@"MCD2"]){
@@ -423,11 +658,21 @@
                 macdSigString = [[macdSigString componentsSeparatedByString:@";"] objectAtIndex:0];
                 
                 NSString *macdHistDeltaString = [NSString stringWithFormat:@"MACDHISTD%@",[macdSigString substringFromIndex:5]];
-                
-                NSData *macdSigData = [returnData objectForKey:macdSigString];
+                NSData *macdSigData, *macdHistDeltaData;
+                if([returnData objectForKey:macdSigString]){
+                    macdSigData = [returnData objectForKey:macdSigString];
+                }else{
+                    macdSigData = [dataDictionary objectForKey:macdSigString];
+                }
                 double *macdSigArray = (double *)[macdSigData bytes];
-                NSData *macdHistDeltaData = [returnData objectForKey:macdHistDeltaString];
+                
+                if([returnData objectForKey:macdHistDeltaString]){
+                    macdHistDeltaData = [returnData objectForKey:macdHistDeltaString];
+                }else{
+                    macdHistDeltaData = [dataDictionary objectForKey:macdHistDeltaString];
+                }
                 double *macdHistDeltaArray = (double *)[macdHistDeltaData bytes];
+                
                 for(int i = 0; i < dataLength; i++){
                     if([UtilityFunctions signOfDouble:macdSigArray[i]] == [UtilityFunctions signOfDouble:macdHistDeltaArray[i]]){
                         signalArray[i] = macdSigArray[i];
@@ -437,19 +682,17 @@
                 }
             }
             
-            NSMutableData *thresholdedSignalData = [[NSMutableData alloc] initWithLength:dataLength * sizeof(double)];
-            double *thresholdedSignalArray = (double *)[thresholdedSignalData mutableBytes];
+            NSMutableData *signalthresholdDataL = [[NSMutableData alloc] initWithLength:dataLength * sizeof(double)];
+            NSMutableData *signalthresholdDataU = [[NSMutableData alloc] initWithLength:dataLength * sizeof(double)];
+            double *signalthresholdArrayL = (double *)[signalthresholdDataL mutableBytes];
+            double *signalthresholdArrayU = (double *)[signalthresholdDataU mutableBytes];
             signalArray = (double *)[signalData mutableBytes];
             for(int i = 0; i < dataLength; i++){
-                thresholdedSignalArray[i] = 0.0;
-                if(signalArray[i] > [signalSystem threshold]){
-                    thresholdedSignalArray[i] = signalArray[i];
-                }
-                if(signalArray[i] < -[signalSystem threshold]){
-                    thresholdedSignalArray[i] = signalArray[i];
-                }
+                signalthresholdArrayL[i] = -[signalSystem threshold];
+                signalthresholdArrayU[i] = [signalSystem threshold];
             }
-            [returnData setObject:thresholdedSignalData forKey:@"THRESSIG"];
+            [returnData setObject:signalthresholdDataL forKey:@"SIGLTHRES"];
+            [returnData setObject:signalthresholdDataU forKey:@"SIGUTHRES"];
             [returnData setObject:signalData forKey:@"SIGNAL"];
         }
     }
@@ -465,14 +708,29 @@
 {
     NSMutableDictionary *returnData = [[NSMutableDictionary alloc] init];
     NSMutableData *emaData;
+    NSString *baseSeriesString;
     
     double *emaArray, parameter;
     NSArray *codeComponents = [emaCode componentsSeparatedByString:@"/"];
-    int emaCodeParam = [[codeComponents objectAtIndex:1] intValue];
+    int emaCodeParam;
+    
+    if([[codeComponents objectAtIndex:0] isEqualToString:@"EMA"]){
+        baseSeriesString = @"MID";
+        emaCodeParam = [[codeComponents objectAtIndex:1] intValue];
+        
+    }
+    if([[codeComponents objectAtIndex:0] isEqualToString:@"EMB"]){
+        NSRange firstBracket = [emaCode rangeOfString:@"/"];
+        NSString *subString = [emaCode substringFromIndex:firstBracket.location];
+        NSRange lastBracket = [subString rangeOfString:@"/"
+                                               options:NSBackwardsSearch];
+        baseSeriesString = [NSString stringWithFormat:@"BMID%@",[subString substringToIndex:lastBracket.location]];
+        emaCodeParam = [[codeComponents objectAtIndex:4] intValue];
+    }
     
     BOOL includeOldData = NO, success = YES;
     includeOldData = ![[oldDataDictionary objectForKey:@"ALLNEWDATA"] boolValue];
-    
+     
     int dataOverlapIndex;
     NSDictionary *trailingSeriesDictionary;
     long oldDataLength, dataLength, *oldDataTimeArray, *dateTimeArray;
@@ -480,7 +738,7 @@
     NSData *midData,  *dateTimeData, *oldDateTimeData, *oldEmaData;
     double *midArray, *oldEmaArray;
     
-    midData = [dataDictionary objectForKey:@"MID"];
+    midData = [dataDictionary objectForKey:baseSeriesString];
     dataLength = [midData length]/sizeof(double);
     midArray = (double *)[midData bytes];
     dateTimeData =  [dataDictionary objectForKey:@"DATETIME"];
@@ -539,6 +797,116 @@
 
     return returnData;
 }
+
++ (NSDictionary *) calcREMAForCode: (NSString *) remaCode
+                          WithData: (NSDictionary *) dataDictionary
+                        AndOldData: (NSDictionary *) oldDataDictionary
+{
+    double rho = 0.0;
+    double sdelta = 0.0;
+    const double k = 2;
+    const double ck = 2.52;
+    NSString *deviationString = [NSString stringWithFormat:@"%@rvar",remaCode];
+    
+    NSMutableDictionary *returnData = [[NSMutableDictionary alloc] init];
+    NSMutableData *remaData, *deviationData;
+    
+    double *remaArray, *deviationArray, parameter;
+    NSArray *codeComponents = [remaCode componentsSeparatedByString:@"/"];
+    int remaCodeParam = [[codeComponents objectAtIndex:1] intValue];
+    
+    BOOL includeOldData = NO, success = YES;
+    includeOldData = ![[oldDataDictionary objectForKey:@"ALLNEWDATA"] boolValue];
+    
+    int dataOverlapIndex;
+    NSDictionary *trailingSeriesDictionary;
+    long oldDataLength, dataLength, *oldDataTimeArray, *dateTimeArray;
+    
+    NSData *midData,  *dateTimeData, *oldDateTimeData, *oldRemaData, *oldDeviationData;
+    double *midArray, *oldRemaArray, *oldDeviationArray;
+    
+    midData = [dataDictionary objectForKey:@"MID"];
+    dataLength = [midData length]/sizeof(double);
+    midArray = (double *)[midData bytes];
+    dateTimeData =  [dataDictionary objectForKey:@"DATETIME"];
+    dateTimeArray = (long *)[dateTimeData bytes];
+    
+    if(includeOldData){
+        if([oldDataDictionary objectForKey:@"OLDDATA"] == nil || [oldDataDictionary objectForKey: @"OVERLAPINDEX"] == nil || [oldDataDictionary objectForKey:@"OLDDATETIME"] == nil){
+            success = NO;
+        }else{
+            trailingSeriesDictionary = [oldDataDictionary objectForKey:@"OLDDATA"];
+            dataOverlapIndex = [[oldDataDictionary objectForKey:@"OVERLAPINDEX"] intValue];
+            oldDateTimeData = [oldDataDictionary objectForKey:@"OLDDATETIME"];
+            oldDataTimeArray = (long *) [oldDateTimeData bytes];
+            oldDataLength = [oldDateTimeData length]/sizeof(long);
+            
+            for(long i = dataOverlapIndex ; i < oldDataLength; i++){
+                if(dateTimeArray[i-dataOverlapIndex] != oldDataTimeArray[i]){
+                    success = NO;
+                    NSLog(@"Problem with overlapping periods, times don't match");
+                }
+            }
+        }
+    }
+    
+    if(success){
+        parameter = 2.0/(1.0+[UtilityFunctions fib:remaCodeParam]);
+        remaData = [[NSMutableData alloc] initWithLength:dataLength * sizeof(double)];
+        remaArray = [remaData mutableBytes];
+        deviationData = [[NSMutableData alloc] initWithLength:dataLength * sizeof(double)];
+        deviationArray = [deviationData mutableBytes];
+        
+        if(includeOldData){
+            oldRemaData = [trailingSeriesDictionary objectForKey:remaCode];
+            oldRemaArray = (double *)[oldRemaData bytes];
+            oldDeviationData = [trailingSeriesDictionary objectForKey:deviationString];
+            oldDeviationArray = (double *)[oldDeviationData bytes];
+            for(long i = dataOverlapIndex ; i <= oldDataLength; i++){
+                remaArray[i-dataOverlapIndex] = oldRemaArray[i];
+                deviationArray[i-dataOverlapIndex] = oldDeviationArray[i];
+            }
+            for(long i = oldDataLength - dataOverlapIndex; i < dataLength; i++){
+                remaArray[i] = (parameter*midArray[i]) + ((1-parameter) * remaArray[i-1]);
+                sdelta = (remaArray[i] - remaArray[i-1])/deviationArray[i-1];
+                if(fabs(sdelta) < k){
+                    rho = ck * (1- pow(1- pow(sdelta/k,2.0),3));
+                }else{
+                    rho = ck;
+                }
+                deviationArray[i] = (parameter * rho *deviationArray[i-1]*deviationArray[i-1]) + (1- parameter)*deviationArray[i-1];
+            }
+        }else{
+            remaArray[0] = midArray[0];
+            deviationArray[0] =0;
+            for(int i = 1; i < dataLength; i++){
+                remaArray[i] = (parameter*midArray[i]) + ((1-parameter) * remaArray[i-1]);
+                sdelta = (remaArray[i] - remaArray[i-1])/deviationArray[i-1];
+                if(fabs(sdelta) < k){
+                    rho = ck * (1- pow(1- pow(sdelta/k,2.0),3));
+                }else{
+                    rho = ck;
+                }
+                deviationArray[i] = (parameter * rho *deviationArray[i-1]*deviationArray[i-1]) + (1- parameter)*deviationArray[i-1];
+            }
+            
+        }
+        [returnData setObject:remaData forKey:remaCode];
+        [returnData setObject:deviationData forKey:deviationString];
+    }
+    
+    if(success){
+        [returnData setObject:[NSNumber numberWithBool:YES] forKey:@"SUCCESS"];
+    }else{
+        [returnData setObject:[NSNumber numberWithBool:NO] forKey:@"SUCCESS"];
+        
+    }
+    
+    return returnData;
+}
+
+
+
 
 + (NSDictionary *) calcMacdForCode: (NSString *) macdCode
                          WithData: (NSDictionary *) emaData
@@ -679,10 +1047,11 @@
     return returnData;
 }
 
-+ (NSDictionary *) calcEmadForCode: (NSString *) macdCode
++ (NSDictionary *) calcEmadForCode: (NSString *) emadString
                           WithData: (NSDictionary *) dataDictionary
                         AndOldData: (NSDictionary *) oldDataDictionary
-                       
+                       AndDoPickup: (BOOL) doPickup
+                     WithThreshold: (double) threshold
 {
     NSData *emaData;
     double *emaArray;
@@ -690,33 +1059,75 @@
     
     NSMutableDictionary *returnData = [[NSMutableDictionary alloc] init];
     
-    NSArray *emadComponents = [macdCode componentsSeparatedByString:@"/"];
-    int emaCode = [[emadComponents objectAtIndex:1] intValue];
-    int smoothCode = [[emadComponents objectAtIndex:2] intValue];
+    NSArray *emadComponents = [emadString componentsSeparatedByString:@"/"];
+     NSMutableData *emadPickupData, *midData;
+    double *emadPickupArray, *midArray;
+    
+    NSString *emaString, *emadPickupString;
+    int emaCode, emadCode;
+    if([[emadComponents objectAtIndex:0] isEqualToString:@"EMAD"]){
+        emaCode = [[emadComponents objectAtIndex:1] intValue];
+        emadCode = [[emadComponents objectAtIndex:2] intValue];
         
-    NSString *emaString = [NSString stringWithFormat:@"EMA/%d",emaCode];
-    NSString *emadString = [NSString stringWithFormat:@"EMAD/%d/%d",emaCode,smoothCode];
-    
-    NSArray *dataKeys = [dataDictionary allKeys];
-    
-    BOOL emaFound = NO;
-    for(int i = 0; i < [dataKeys count]; i++){
-        if([[dataKeys objectAtIndex:i] isEqualToString:emaString]){
-            emaFound = YES;
-            emaData = [dataDictionary objectForKey:emaString];
-            emaArray = (double *)[emaData bytes];
-            dataLength = [emaData length]/sizeof(double);
+        emaString = [NSString stringWithFormat:@"EMA/%d",emaCode];
+        //emadString = [NSString stringWithFormat:@"EMAD/%d/%d",emaCode,smoothCode];
+        if(doPickup){
+            emadPickupString = [NSString stringWithFormat:@"EDPU/%d/%d",emaCode,emadCode];
+        }
+        
+    }
+    if([[emadComponents objectAtIndex:0] isEqualToString:@"EMBD"]){
+        NSRange firstBracket = [emadString rangeOfString:@"/"];
+        NSString *pacsString = [emadString substringFromIndex:firstBracket.location+1];
+        NSRange lastBracket = [pacsString rangeOfString:@"/"
+                                                options:NSBackwardsSearch];
+        emadCode = [[pacsString substringFromIndex:lastBracket.location+1] intValue];
+        pacsString = [pacsString substringToIndex:lastBracket.location];
+        lastBracket = [pacsString rangeOfString:@"/"
+                                        options:NSBackwardsSearch];
+        int emaCode = [[pacsString substringFromIndex:(lastBracket.location+1)] intValue];
+        lastBracket = [pacsString rangeOfString:@"/"
+                                        options:NSBackwardsSearch];
+        pacsString = [pacsString substringToIndex:lastBracket.location];
+        emaString = [NSString stringWithFormat:@"EMB/%@/%d",pacsString, emaCode];
+        if(doPickup){
+            emadPickupString = [NSString stringWithFormat:@"EBDPU/%d/%d",emaCode,emadCode];
         }
     }
     
-    if(emaFound){
+    BOOL requiredDataFound = NO;
+    if([dataDictionary objectForKey:emaString] != nil){
+        requiredDataFound = YES;
+        emaData = [dataDictionary objectForKey:emaString];
+        emaArray = (double *)[emaData bytes];
+        dataLength = [emaData length]/sizeof(double);
+    }
+    if(requiredDataFound){
+        if(doPickup){
+            if([dataDictionary objectForKey:@"MID"] != nil){
+                requiredDataFound = YES;
+                midData = [dataDictionary objectForKey:@"MID"];
+                midArray = (double *)[midData bytes];
+            }else{
+                requiredDataFound = NO;
+            }
+        }
+    }
+    
+    if(requiredDataFound){
         BOOL includeOldData = NO;
         includeOldData = ![[oldDataDictionary objectForKey:@"ALLNEWDATA"] boolValue];
         
         NSMutableData *emadData = [[NSMutableData alloc] initWithLength:dataLength * sizeof(double)];
         double *emadArray = (double *)[emadData mutableBytes];
         
-        long lagLengthForDelta = [UtilityFunctions fib:(smoothCode)];
+         
+        if(doPickup){
+            emadPickupData = [[NSMutableData alloc] initWithLength:dataLength * sizeof(double)];
+            emadPickupArray = (double *)[emadPickupData mutableBytes];
+        }
+        
+        long lagLengthForDelta = [UtilityFunctions fib:(emadCode)];
         
         if(includeOldData){
             int dataOverlapIndex;
@@ -731,24 +1142,49 @@
             NSData *oldEmadData = [trailingSeriesDictionary objectForKey:emadString];
             double *oldEmadArray = (double *)[oldEmadData bytes];
             
+            
+            NSData *oldEmadPickupData;
+            double *oldEmadPickupArray;
+            if(doPickup){
+                oldEmadPickupData = [trailingSeriesDictionary objectForKey:emadPickupString];
+                oldEmadPickupArray = (double *)[oldEmadPickupData bytes];
+            }
+            
             long lagIndexForOldData = -1;
             
             oldDataLength = [oldEmadData length]/sizeof(long);
             
             for(long i = dataOverlapIndex ; i < oldDataLength; i++){
                 emadArray[i-dataOverlapIndex] = oldEmadArray[i];
-                 if(i - lagLengthForDelta > 0){
-                    lagIndexForOldData = i - lagLengthForDelta;
+                if(doPickup){
+                    emadPickupArray[i-dataOverlapIndex] = oldEmadPickupArray[i];
                 }
             }
+            
+            lagIndexForOldData = oldDataLength - lagLengthForDelta;
+            
             for(long i = oldDataLength - dataOverlapIndex; i < dataLength; i++){
-                
                 if(i - lagLengthForDelta >= 0){
                     emadArray[i] = emaArray[i] - emaArray[i- lagLengthForDelta];
                 }else{
                     if(lagIndexForOldData > -1 && lagIndexForOldData < oldDataLength){
                         emadArray[i] = emaArray[i] - oldEmaArray[lagIndexForOldData];
-                        lagIndexForOldData++;
+                    }else{
+                        emadArray[i] = 0.0;
+                    }
+                    lagIndexForOldData++;
+                }
+                if(doPickup){
+                    //ignore hte case when i == 0, it should be taken care of by calulation overlap and doesn't matter much anyway for tick data
+                    if(i > 0){
+                        if((emadArray[i-1] >= threshold) ){
+                            emadPickupArray[i] = emadPickupArray[i-1] + midArray[i] - midArray[i-1] ;
+                        }else if (emadArray[i-1] <= -threshold)
+                        {
+                            emadPickupArray[i] = emadPickupArray[i-1]  + midArray[i-1] - midArray[i];
+                        }else{
+                            emadPickupArray[i] = emadPickupArray[i-1];
+                        }
                     }
                 }
             }
@@ -756,11 +1192,114 @@
             for(int i = 0; i < dataLength; i++){
                 if(i - lagLengthForDelta >= 0){
                     emadArray[i] = emaArray[i] - emaArray[i- lagLengthForDelta];
+                    if(doPickup){
+                        if(i > 0){
+                            if((emadArray[i-1] >= threshold) ){
+                                emadPickupArray[i] = emadPickupArray[i-1] + midArray[i] - midArray[i-1] ;
+                            }else if (emadArray[i-1] <= -threshold)
+                            {
+                                emadPickupArray[i] = emadPickupArray[i-1]  + midArray[i-1] - midArray[i];
+                            }else{
+                                emadPickupArray[i] = emadPickupArray[i-1];
+                            }
+                        }
+                    }
                 }
             }
         }
         [returnData setObject:emadData
                        forKey:emadString];
+        if(doPickup){
+            [returnData setObject:emadPickupData
+                           forKey:emadPickupString];
+        }
+        [returnData setObject:[NSNumber numberWithBool:YES]
+                       forKey:@"SUCCESS"];
+    }else{
+        [returnData setObject:[NSNumber numberWithBool:NO]
+                       forKey:@"SUCCESS"];
+    }
+return returnData;
+}
+
++ (NSDictionary *) calcEmagForCode: (NSString *) emagCode
+                          WithData: (NSDictionary *) dataDictionary
+                        AndOldData: (NSDictionary *) oldDataDictionary
+{
+    NSData *emadData;
+    double *emadArray;
+    int dataLength;
+    
+    NSMutableDictionary *returnData = [[NSMutableDictionary alloc] init];
+
+    NSArray *emagComponents = [emagCode componentsSeparatedByString:@"/"];
+    int emaCode = [[emagComponents objectAtIndex:1] intValue];
+    int smoothCode = [[emagComponents objectAtIndex:2] intValue];
+    int gammaCode = [[emagComponents objectAtIndex:3] intValue];
+    NSString *emadString = [NSString stringWithFormat:@"EMAD/%d/%d",emaCode,smoothCode];
+    
+    BOOL requiredDataFound = NO;
+    if([dataDictionary objectForKey:emadString] != nil){
+        requiredDataFound = YES;
+        emadData = [dataDictionary objectForKey:emadString];
+        emadArray = (double *)[emadData bytes];
+        dataLength = [emadData length]/sizeof(double);
+    }
+    
+    NSMutableData *emagData = [[NSMutableData alloc] initWithLength:dataLength * sizeof(double)];
+    double *emagArray = (double *)[emagData mutableBytes];
+    
+    if(requiredDataFound){
+        BOOL includeOldData = NO;
+        includeOldData = ![[oldDataDictionary objectForKey:@"ALLNEWDATA"] boolValue];
+        long lagLengthForGamma = [UtilityFunctions fib:(gammaCode)];
+        
+        if(includeOldData){
+            int dataOverlapIndex;
+            NSDictionary *trailingSeriesDictionary;
+            long oldDataLength;
+            
+            trailingSeriesDictionary = [oldDataDictionary objectForKey:@"OLDDATA"];
+            dataOverlapIndex = [[oldDataDictionary objectForKey:@"OVERLAPINDEX"] intValue];
+            
+            NSData *oldEmadData = [trailingSeriesDictionary objectForKey:emadString];
+            double *oldEmadArray = (double *)[oldEmadData bytes];
+            NSData *oldEmagData = [trailingSeriesDictionary objectForKey:emagCode];
+            double *oldEmagArray = (double *)[oldEmagData bytes];
+            
+            long lagIndexForOldData = -1;
+            
+            oldDataLength = [oldEmadData length]/sizeof(long);
+            
+            for(long i = dataOverlapIndex ; i < oldDataLength; i++){
+                emagArray[i-dataOverlapIndex] = oldEmagArray[i];
+            }
+            
+            if(oldDataLength - lagLengthForGamma > 0){
+                lagIndexForOldData = oldDataLength - lagLengthForGamma;
+            }
+            
+            for(long i = oldDataLength - dataOverlapIndex; i < dataLength; i++){
+                if(i - lagLengthForGamma >= 0){
+                    emagArray[i] = emadArray[i] - emadArray[i- lagLengthForGamma];
+                }else{
+                    if(lagIndexForOldData > -1 && lagIndexForOldData < oldDataLength){
+                        emagArray[i] = emadArray[i] - oldEmadArray[lagIndexForOldData];
+                        lagIndexForOldData++;
+                    }
+                }
+            }
+        }else{
+            for(int i = 0; i < dataLength; i++){
+                if(i - lagLengthForGamma >= 0){
+                    emagArray[i] = emadArray[i] - emadArray[i- lagLengthForGamma];
+                    
+                }
+            }
+        }
+        [returnData setObject:emagData
+                       forKey:emagCode];
+        
         [returnData setObject:[NSNumber numberWithBool:YES]
                        forKey:@"SUCCESS"];
     }else{
@@ -769,8 +1308,8 @@
     }
     return returnData;
 }
-
-
+    
+    
 
 + (NSDictionary *) calcSpreadWithData: (NSDictionary *) dataDictionary
                            AndOldData: (NSDictionary *) oldDataDictionary
@@ -853,7 +1392,7 @@
                               AndOldDerivedData: (NSDictionary *) oldDataDictionary
                                    AndPriceData: (NSDictionary *) priceDataDictionary
                                         ForCode: (NSString *) gridStatsCode
-                                andSignalSystem: (SignalSystem *) signalSystem
+                                AndSignalSystem: (SignalSystem *) signalSystem
 {
     int dataLength;
     NSString *seriesString;
@@ -1215,7 +1754,9 @@
     dateTimeArray = (long *)[dateTimeData bytes];
     
     if(includeOldData){
-        if([oldDataDictionary objectForKey:@"OLDDATA"] == nil || [oldDataDictionary objectForKey: @"OVERLAPINDEX"] == nil || [oldDataDictionary objectForKey:@"OLDDATETIME"] == nil){
+        if([oldDataDictionary objectForKey:@"OLDDATA"] == nil ||
+           [oldDataDictionary objectForKey: @"OVERLAPINDEX"] == nil ||
+           [oldDataDictionary objectForKey:@"OLDDATETIME"] == nil){
             success = NO;
         }else{
             trailingSeriesDictionary = [oldDataDictionary objectForKey:@"OLDDATA"];
@@ -1913,7 +2454,7 @@
 }
 
 + (NSDictionary *) calcFDIMWithOHLCData: (NSDictionary *) ohlcDataDictionary
-                            AndTicData: (NSDictionary *) dataDictionary
+                             AndTicData: (NSDictionary *) dataDictionary
                           AndOldTicData: (NSDictionary *) oldDataDictionary;
 {
     NSMutableDictionary *returnData = [[NSMutableDictionary alloc] init];
@@ -2109,6 +2650,477 @@
     return returnData;
 }
 
++ (NSDictionary *) calcAemadForCode: (NSString *) aemadCode
+                           WithData: (NSDictionary *) emadData
+                         AndOldData: (NSDictionary *) oldDataDictionary
+                         AndPipSize: (double) pipSize
+{
+    double *fastArray, *slowArray;
+    int dataLength;
+    
+    NSMutableDictionary *returnData = [[NSMutableDictionary alloc] init];
+    
+    NSArray *aemadComponents = [aemadCode componentsSeparatedByString:@"/"];
+    
+    NSString *fastString, *slowString;
+    double slowThreshold, fastThreshold, stepAdjust;
+    int slowCode, fastCode;
+    if([[aemadComponents objectAtIndex:0] isEqualToString:@"AEMAD"]){
+        slowCode = [[aemadComponents objectAtIndex:1] intValue];
+        slowThreshold = [[aemadComponents objectAtIndex:2] doubleValue];
+        slowThreshold = slowThreshold * pipSize;
+        fastCode = [[aemadComponents objectAtIndex:3] intValue];
+        stepAdjust = [[aemadComponents objectAtIndex:4] doubleValue];
+        
+        fastString = [NSString stringWithFormat:@"EMAD/%d/%d",fastCode,fastCode];
+        slowString = [NSString stringWithFormat:@"EMAD/%d/%d",slowCode,slowCode];
+    }
+    
+    if([[aemadComponents objectAtIndex:0] isEqualToString:@"AEMBD"]){
+        NSRange firstBracket = [aemadCode rangeOfString:@"/"];
+        NSString *pacsString = [aemadCode substringFromIndex:firstBracket.location+1];
+        NSRange lastBracket = [pacsString rangeOfString:@"/"
+                                                options:NSBackwardsSearch];
+        
+        stepAdjust = [[pacsString substringFromIndex:lastBracket.location+1] doubleValue];
+        pacsString = [pacsString substringToIndex:lastBracket.location];
+        lastBracket = [pacsString rangeOfString:@"/"
+                                        options:NSBackwardsSearch];
+        
+        fastCode = [[pacsString substringFromIndex:lastBracket.location+1] intValue];
+        pacsString = [pacsString substringToIndex:lastBracket.location];
+        lastBracket = [pacsString rangeOfString:@"/"
+                                        options:NSBackwardsSearch];
+        
+        slowThreshold = [[pacsString substringFromIndex:lastBracket.location+1] doubleValue];
+        pacsString = [pacsString substringToIndex:lastBracket.location];
+        lastBracket = [pacsString rangeOfString:@"/"
+                                        options:NSBackwardsSearch];
+        
+        slowCode = [[pacsString substringFromIndex:lastBracket.location+1] intValue];
+        pacsString = [pacsString substringToIndex:lastBracket.location];
+        lastBracket = [pacsString rangeOfString:@"/"
+                                        options:NSBackwardsSearch];
+        
+        fastString = [NSString stringWithFormat:@"EMBD/%@/%d/%d",pacsString,fastCode,fastCode];
+        slowString = [NSString stringWithFormat:@"EMBD/%@/%d/%d",pacsString,slowCode,slowCode];
+     }
+    fastThreshold = slowThreshold * pow(stepAdjust,(slowCode - fastCode));
+    slowThreshold = slowThreshold * pipSize;
+    fastThreshold = fastThreshold * pipSize;
+    
+    
+    //NSString *aemadString = [NSString stringWithFormat:@"AEMAD/%d/%f/%d/%f",fastCode,slowThreshold,slowCode,stepAdjust];
+    
+    NSData *fastData, *slowData;
+    
+    NSArray *dataKeys = [emadData allKeys];
+    
+    BOOL foundFast = NO, foundSlow = NO;
+    for(int i = 0; i < [dataKeys count]; i++){
+        if([[dataKeys objectAtIndex:i] isEqualToString:fastString]){
+            foundFast = YES;
+            fastData = [emadData objectForKey:fastString];
+            fastArray = (double *)[fastData bytes];
+            dataLength = [fastData length]/sizeof(double);
+        }
+        if([[dataKeys objectAtIndex:i] isEqualToString:slowString]){
+            foundSlow = YES;
+            slowData = [emadData objectForKey:slowString];
+            slowArray = (double *)[slowData bytes];
+        }
+    }
+    
+    if(foundFast && foundSlow){
+        BOOL includeOldData = NO;
+        includeOldData = ![[oldDataDictionary objectForKey:@"ALLNEWDATA"] boolValue];
+        
+        
+        NSMutableData *aemadData = [[NSMutableData alloc] initWithLength:dataLength * sizeof(double)];
+        double *aemadArray = (double *)[aemadData mutableBytes];
+        
+//        NSMutableData *macdHistData = [[NSMutableData alloc] initWithLength:dataLength * sizeof(double)];
+//        double *macdHistArray = (double *)[macdHistData mutableBytes];
+//        
+//        NSMutableData *macdHistDeltaData = [[NSMutableData alloc] initWithLength:dataLength * sizeof(double)];
+//        double *macdHistDeltaArray = (double *)[macdHistDeltaData mutableBytes];
+//        
+//        NSMutableData *macdSigData = [[NSMutableData alloc] initWithLength:dataLength * sizeof(double)];
+//        double *macdSigArray = (double *)[macdSigData mutableBytes];
+//        
+        
+        
+//        long lagLengthForHistDelta = [UtilityFunctions fib:(slowCode - fastCode)];
+        
+        if(includeOldData){
+            int dataOverlapIndex;
+            NSDictionary *trailingSeriesDictionary;
+            long oldDataLength;
+            
+            trailingSeriesDictionary = [oldDataDictionary objectForKey:@"OLDDATA"];
+            dataOverlapIndex = [[oldDataDictionary objectForKey:@"OVERLAPINDEX"] intValue];
+            
+            NSData *oldAemadData = [trailingSeriesDictionary objectForKey:aemadCode];
+            double *oldAemadArray = (double *)[oldAemadData bytes];
+            oldDataLength = [oldAemadData length]/sizeof(long);
+            for(long i = dataOverlapIndex ; i < oldDataLength; i++){
+                aemadArray[i-dataOverlapIndex] = oldAemadArray[i];
+            }
+            for(long i = oldDataLength - dataOverlapIndex; i < dataLength; i++){
+                if(slowArray[i] >= slowThreshold & fastArray[i] >= fastThreshold){
+                    aemadArray[i] = 1;
+                }
+                if(slowArray[i] <= -slowThreshold & fastArray[i] <= -fastThreshold){
+                    aemadArray[i] = -1;
+                }
+             }
+        }else{
+            for(int i = 0; i < dataLength; i++){
+                if(slowArray[i] >= slowThreshold & fastArray[i] >= fastThreshold){
+                    aemadArray[i] = 1;
+                }
+                if(slowArray[i] <= -slowThreshold & fastArray[i] <= -fastThreshold){
+                    aemadArray[i] = -1;
+                }
+
+            }
+        }
+        [returnData setObject:aemadData
+                       forKey:aemadCode];
+        [returnData setObject:[NSNumber numberWithBool:YES]
+                       forKey:@"SUCCESS"];
+    }else{
+        [returnData setObject:[NSNumber numberWithBool:NO]
+                       forKey:@"SUCCESS"];
+    }
+    return returnData;
+}
+
+
+
++ (NSDictionary *) calcPACSForCode: (NSString *) pacsCode
+                   WithDerivedData: (NSDictionary *) dataDictionary
+                 AndOldDerivedData: (NSDictionary *) oldDataDictionary
+                        AndPipSize: (double) pipSize
+                   AndSignalSystem: (SignalSystem *) signalSystem
+{
+    long dataLength;
+    BOOL success = YES;
+    
+    NSArray *pacsCodeComponents = [pacsCode componentsSeparatedByString:@"/"];
+    int minimumStep = [[pacsCodeComponents objectAtIndex:1] intValue];
+    int maximumStep = [[pacsCodeComponents objectAtIndex:2] intValue];
+    double quantile = [[pacsCodeComponents objectAtIndex:3] doubleValue];
+    
+    if(quantile > 1 || quantile < 0.5){
+        success = NO;
+    }
+    
+    int numberOfSeries = (maximumStep - minimumStep) + 1;
+    
+    NSMutableDictionary *returnData = [[NSMutableDictionary alloc] init];
+    NSData *midData = [dataDictionary objectForKey:@"MID"];
+    double *midArray = (double *)[midData bytes];
+    NSData *dateTimeData  = [dataDictionary objectForKey:@"DATETIME"];
+    long *dateTimeArray = (long *)[dateTimeData bytes];
+    dataLength = [midData length]/sizeof(double);
+    
+    NSRange firstBracket = [pacsCode rangeOfString:@"/"];
+    NSString *subString = [pacsCode substringFromIndex:firstBracket.location];
+    NSString *bmidString = [NSString stringWithFormat:@"BMID%@",subString];
+    NSString *bremString = [NSString stringWithFormat:@"BREM%@",subString];
+    
+    NSMutableArray *pacsSeriesNames = [[NSMutableArray alloc] initWithCapacity:numberOfSeries];
+    for(int i = minimumStep; i <= maximumStep; i++){
+        [pacsSeriesNames addObject:[NSString stringWithFormat:@"PACS%d",i]];
+    }
+    
+    BOOL includeOldData = NO;
+    includeOldData = ![[oldDataDictionary objectForKey:@"ALLNEWDATA"] boolValue];
+    
+    NSMutableData *pacsGridData, *newPacsGridData, *pacsGridUseData;
+    long *pacsGridArray, *pacsGridUseArray;
+    long gridWidth, newGridWidth;
+    long *newPacsGridArray;
+    long countOfSmallerMoves;
+    long midAbsMove, midMove, newMidMove, seriesIndex, moveCount, newDataIndex = 0, moveSign;
+    
+    // This is an array of data totals we need for calculation
+    
+    NSMutableData *pacsDivisorData = [[NSMutableData alloc] initWithLength:sizeof(long)*numberOfSeries];
+    long *pacsDivisorArray = (long *)[pacsDivisorData bytes];
+    
+    //Create the data series structures for which we will need to calculate data
+    NSMutableArray *pacsSeriesTempHolder = [[NSMutableArray alloc] initWithCapacity:numberOfSeries];
+    NSMutableData *pacsSeriesTempHolderData  = [[NSMutableData alloc] initWithLength:sizeof(double *) * numberOfSeries];
+    double **pacsSeriesTempHolderArray = (double **)[pacsSeriesTempHolderData bytes];
+    NSMutableData *pacsSeriesData;
+    
+    for(int i = minimumStep; i <= maximumStep; i++){
+        seriesIndex = i - minimumStep;
+        pacsSeriesData = [[NSMutableData alloc] initWithLength:sizeof(double) * dataLength];
+        [pacsSeriesTempHolder addObject:pacsSeriesData];
+        pacsSeriesTempHolderArray[seriesIndex] = (double *)[pacsSeriesData bytes];
+    }
+    NSMutableData *bmidData = [[NSMutableData alloc] initWithLength:sizeof(double) * dataLength];
+    double *bmidArray = (double *)[bmidData bytes];
+    NSMutableData *bremData = [[NSMutableData alloc] initWithLength:sizeof(double) * dataLength];
+    double *bremArray = (double *)[bremData bytes];
+    
+    if(includeOldData){
+        NSDictionary *trailingSeriesDictionary = [oldDataDictionary objectForKey:@"OLDDATA"];
+        int dataOverlapIndex = [[oldDataDictionary objectForKey:@"OVERLAPINDEX"] intValue];
+        NSData *oldDateTimeData = [oldDataDictionary objectForKey:@"OLDDATETIME"];
+        long *oldDateTimeArray = (long *) [oldDateTimeData bytes];
+        long oldDataLength = [oldDateTimeData length]/sizeof(long);
+        //NSData *oldMidData = [trailingSeriesDictionary objectForKey:@"MID"];
+        //double *oldMidArray = (double *)[oldMidData bytes];
+        NSData *oldBmidData = [trailingSeriesDictionary objectForKey:bmidString];
+        double *oldBmidArray = (double *)[oldBmidData bytes];
+        NSData *oldBremData = [trailingSeriesDictionary objectForKey:bremString];
+        double *oldBremArray = (double *)[oldBremData bytes];
+        
+        
+        NSMutableArray *oldPacsSeriesTempHolder;
+        NSData *oldPacsSeriesTempHolderData;
+        double **oldPacsSeriesTempHolderArray;
+        
+        for(int i = 0; i < numberOfSeries; i++){
+            oldPacsSeriesTempHolderData = [trailingSeriesDictionary objectForKey:[pacsSeriesNames objectAtIndex:i]];
+            [oldPacsSeriesTempHolder addObject:oldPacsSeriesTempHolderData];
+            oldPacsSeriesTempHolderArray[seriesIndex] = (double *)[oldPacsSeriesTempHolderData bytes];
+        }
+        
+        int oldDataIndex = dataOverlapIndex;
+        
+        if(oldDateTimeArray[oldDataIndex] == dateTimeArray[newDataIndex]){
+            for(int i = 0; i < numberOfSeries; i++){
+                pacsSeriesTempHolderArray[i][newDataIndex] = oldPacsSeriesTempHolderArray[i][oldDataIndex];
+                oldDataIndex++;
+                newDataIndex++;
+            }
+            bmidArray[newDataIndex] = oldBmidArray[oldDataIndex];
+            bremArray[newDataIndex] = oldBremArray[oldDataIndex];
+            if(oldDataIndex != oldDataLength){
+                NSLog(@"CHECK");
+            }
+        }else{
+            NSLog(@"CHECK!");
+        }
+        
+        pacsGridData = [[signalSystem miscStoredInfoDictionary] objectForKey:@"PACSGRID"];
+        pacsGridArray = (long *)[pacsGridData mutableBytes];
+        pacsGridUseData = [[signalSystem miscStoredInfoDictionary] objectForKey:@"PACSGRIDUSE"];
+        pacsGridUseArray = (long *)[pacsGridUseData mutableBytes];
+        
+        gridWidth = [[[signalSystem miscStoredInfoDictionary] objectForKey:@"PACSGRIDWIDTH"] longValue];
+         
+        for(int iSeries = 0; iSeries < numberOfSeries; iSeries++){
+            pacsDivisorArray[iSeries] = 0;
+            for(int j = 0; j < gridWidth; j++){
+                pacsDivisorArray[iSeries] = pacsDivisorArray[iSeries] + pacsGridArray[(iSeries*gridWidth)+j];
+            }
+        }
+       
+        // Do up to position maximumStep
+        while(newDataIndex <= maximumStep){
+            // This is the initial value of the new mid data,
+            //it will be adjusted if required later
+            bmidArray[newDataIndex] = bmidArray[newDataIndex-1] + (midArray[newDataIndex] - midArray[newDataIndex-1]) ;
+            bremArray[newDataIndex] = midArray[newDataIndex] - bmidArray[newDataIndex];
+            
+            for(int iLookback = minimumStep; iLookback <= maximumStep; iLookback++){
+                seriesIndex = iLookback - minimumStep;
+                
+                if(newDataIndex-iLookback<0 && dataOverlapIndex-iLookback >= 0 ){
+                    midMove = (int)((bmidArray[newDataIndex] - oldBmidArray[dataOverlapIndex-iLookback])/pipSize);
+                    midAbsMove = labs(midMove);
+                    moveSign = midMove == midAbsMove? 1: -1;
+                }else{
+                    midMove = (int)((bmidArray[newDataIndex] - bmidArray[newDataIndex-iLookback])/pipSize);
+                    midAbsMove = labs(midMove);
+                    moveSign = midMove == midAbsMove? 1: -1;
+                }
+                
+                // Do the winsorising
+                moveCount = 0;
+                newMidMove = 0;
+                while((double)moveCount/pacsDivisorArray[seriesIndex] < quantile && newMidMove < gridWidth){
+                    moveCount = moveCount +  pacsGridArray[(seriesIndex*gridWidth)+newMidMove];
+                    newMidMove++;
+                }
+                if(newMidMove>0)newMidMove--;
+                
+                if((double)moveCount/pacsDivisorArray[seriesIndex] >= quantile)
+                {
+                    if(fabs(bmidArray[newDataIndex]-bmidArray[newDataIndex-iLookback])/pipSize > newMidMove){
+                        bmidArray[newDataIndex] = bmidArray[newDataIndex-iLookback] + newMidMove*pipSize*moveSign;
+                        //NSLog(@"Adjusting lookback %ld %@, %d from %ld to %ld", dateTimeArray[newDataIndex], [EpochTime stringDateWithTime:dateTimeArray[newDataIndex]], iLookback,midMove,newMidMove);
+                        bremArray[newDataIndex] = midArray[newDataIndex] - bmidArray[newDataIndex];
+                        pacsGridUseArray[seriesIndex]++;
+                    }
+                }
+                
+                if(midAbsMove >= gridWidth){
+                    pacsSeriesTempHolderArray[seriesIndex][newDataIndex] = 1.0;
+                    
+                    //Expand the grid width
+                    newGridWidth = gridWidth + MAX(20,midAbsMove-gridWidth+1);
+                    newPacsGridData = [NSMutableData dataWithLength:sizeof(long) * numberOfSeries * newGridWidth];
+                    newPacsGridArray = (long *)[newPacsGridData mutableBytes];
+                    //Fill it in
+                    for(int iSeries = 0; iSeries < numberOfSeries; iSeries++){
+                        for(int iWidth = 0; iWidth < gridWidth; iWidth++){
+                            newPacsGridArray[(iSeries*newGridWidth) + iWidth] = pacsGridArray[(iSeries*gridWidth) + iWidth];
+                        }
+                    }
+                    pacsGridData = newPacsGridData;
+                    pacsGridArray = newPacsGridArray;
+                    gridWidth = newGridWidth;
+                    newPacsGridArray[(seriesIndex*gridWidth)+midAbsMove]++;
+                }else{
+                    countOfSmallerMoves = 0;
+                    for(int iLower = 0;iLower <midAbsMove; iLower++){
+                        countOfSmallerMoves = countOfSmallerMoves +  pacsGridArray[(seriesIndex*gridWidth) + iLower];
+                    }
+                    if(pacsDivisorArray[seriesIndex] > 0){
+                        pacsSeriesTempHolderArray[seriesIndex][newDataIndex] = (double)countOfSmallerMoves/pacsDivisorArray[seriesIndex];
+                        
+                    }else{
+                        pacsSeriesTempHolderArray[seriesIndex][newDataIndex] = 0.0;
+                    }
+                    pacsGridArray[(seriesIndex*gridWidth)+midAbsMove]++;
+                    
+                }
+                pacsDivisorArray[seriesIndex]++;
+           }
+            newDataIndex++;
+        }
+    }else{
+        gridWidth = 20;
+        pacsGridData = [NSMutableData dataWithLength:sizeof(long) * numberOfSeries * gridWidth];
+        pacsGridArray = (long *)[pacsGridData mutableBytes];
+        pacsGridUseData = [NSMutableData dataWithLength:sizeof(long) * numberOfSeries];
+        pacsGridUseArray = (long *)[pacsGridUseData mutableBytes];
+        
+        for(newDataIndex = 0; newDataIndex < maximumStep; newDataIndex++){
+            bmidArray[newDataIndex] = midArray[newDataIndex];
+            bremArray[newDataIndex] = 0;
+            if(newDataIndex >0){
+                for(int iLookback = minimumStep; iLookback <= maximumStep; iLookback++){
+                    seriesIndex = iLookback - minimumStep;
+                    if(newDataIndex-iLookback >= 0){
+                        midMove = (int)((bmidArray[newDataIndex] - bmidArray[newDataIndex-iLookback])/pipSize);
+                        midAbsMove = labs(midMove);
+                        if(midAbsMove >= gridWidth){
+                            pacsSeriesTempHolderArray[seriesIndex][newDataIndex] = 1.0;
+                            
+                            //Expand the grid width
+                            newGridWidth = gridWidth + MAX(20,midAbsMove-gridWidth+1);
+                            newPacsGridData = [NSMutableData dataWithLength:sizeof(long) * numberOfSeries * newGridWidth];
+                            newPacsGridArray = (long *)[newPacsGridData mutableBytes];
+                            //Fill it in
+                            for(int iSeries = 0; iSeries < numberOfSeries; iSeries++){
+                                for(int iWidth = 0; iWidth < gridWidth; iWidth++){
+                                    newPacsGridArray[(iSeries*newGridWidth) + iWidth] = pacsGridArray[(iSeries*gridWidth) + iWidth];
+                                }
+                            }
+                            pacsGridData = newPacsGridData;
+                            pacsGridArray = newPacsGridArray;
+                            gridWidth = newGridWidth;
+                            newPacsGridArray[(seriesIndex*gridWidth)+midAbsMove]++;
+                        }else{
+                            pacsGridArray[(seriesIndex*gridWidth)+midAbsMove]++;
+                        }
+                        pacsDivisorArray[seriesIndex]++;
+                    }
+                }
+            }
+        }
+    }
+             
+    while(newDataIndex < dataLength){
+        bmidArray[newDataIndex] = bmidArray[newDataIndex-1] + (midArray[newDataIndex] - midArray[newDataIndex-1]);
+        bremArray[newDataIndex] = midArray[newDataIndex] - bmidArray[newDataIndex];
+         
+        for(int iLookback = minimumStep; iLookback <= maximumStep; iLookback++){
+            seriesIndex = iLookback - minimumStep;
+            
+            midMove = (int)((bmidArray[newDataIndex] - bmidArray[newDataIndex-iLookback])/pipSize);
+            midAbsMove = labs(midMove);
+            moveSign = midMove == midAbsMove? 1: -1;
+            
+            if(newDataIndex > 100){
+                // Do the winsorising
+                moveCount = 0;
+                newMidMove = 0;
+                while((double)moveCount/pacsDivisorArray[seriesIndex] < quantile && newMidMove < gridWidth){
+                    moveCount = moveCount +  pacsGridArray[(seriesIndex*gridWidth)+newMidMove];
+                    newMidMove++;
+                }
+                if(newMidMove>0)newMidMove--;
+                
+                if((double)moveCount/pacsDivisorArray[seriesIndex] >= quantile)
+                {
+                    if(fabs(bmidArray[newDataIndex]-bmidArray[newDataIndex-iLookback])/pipSize > newMidMove){
+                        bmidArray[newDataIndex] = bmidArray[newDataIndex-iLookback] + newMidMove*pipSize*moveSign;
+                        //NSLog(@"Adjusting lookback %ld %@, %d from %ld to %ld", dateTimeArray[newDataIndex], [EpochTime stringDateWithTime:dateTimeArray[newDataIndex]], iLookback,midMove,newMidMove);
+                        bremArray[newDataIndex] = midArray[newDataIndex] - bmidArray[newDataIndex];
+                        pacsGridUseArray[seriesIndex]++;
+                    }
+                }
+            }
+            
+            if(midAbsMove >= gridWidth){
+                pacsSeriesTempHolderArray[seriesIndex][newDataIndex] = 1.0;
+                
+                //Expand the grid width
+                newGridWidth = gridWidth + MAX(20,midAbsMove-gridWidth+1);
+                newPacsGridData = [NSMutableData dataWithLength:sizeof(long) * numberOfSeries * newGridWidth];
+                newPacsGridArray = (long *)[newPacsGridData mutableBytes];
+                //Fill it in
+                for(int iSeries = 0; iSeries < numberOfSeries; iSeries++){
+                    for(int iWidth = 0; iWidth < gridWidth; iWidth++){
+                        newPacsGridArray[(iSeries*newGridWidth) + iWidth] = pacsGridArray[(iSeries*gridWidth) + iWidth];
+                    }
+                }
+                pacsGridData = newPacsGridData;
+                pacsGridArray = newPacsGridArray;
+                gridWidth = newGridWidth;
+                newPacsGridArray[(seriesIndex*gridWidth)+midAbsMove]++;
+            }else{
+                countOfSmallerMoves = 0;
+                for(int iLower = 0;iLower <midAbsMove; iLower++){
+                    countOfSmallerMoves = countOfSmallerMoves +  pacsGridArray[(seriesIndex*gridWidth) + iLower];
+                }
+                if(pacsDivisorArray[seriesIndex]>0){
+                    pacsSeriesTempHolderArray[seriesIndex][newDataIndex] = (double)countOfSmallerMoves/pacsDivisorArray[seriesIndex];
+                }else{
+                    pacsSeriesTempHolderArray[seriesIndex][newDataIndex] = 0.0;
+                }
+                pacsGridArray[(seriesIndex*gridWidth)+midAbsMove]++;
+            }
+            pacsDivisorArray[seriesIndex]++;
+        }
+        newDataIndex++;
+    }
+    [[signalSystem miscStoredInfoDictionary] setObject:pacsGridData forKey:@"PACSGRID"];
+    [[signalSystem miscStoredInfoDictionary] setObject:pacsGridUseData forKey:@"PACSGRIDUSE"];
+    [[signalSystem miscStoredInfoDictionary] setObject:[NSNumber numberWithLong:gridWidth]  forKey:@"PACSGRIDWIDTH"];
+    
+    for(int i = minimumStep; i <= maximumStep; i++){
+        seriesIndex = i - minimumStep;
+        [returnData setObject:[pacsSeriesTempHolder objectAtIndex:seriesIndex] forKey:[pacsSeriesNames objectAtIndex:seriesIndex]];
+    }
+    [returnData setObject:bmidData
+                   forKey:bmidString];
+    [returnData setObject:bremData
+                   forKey:bremString];
+    [returnData setObject:[NSNumber numberWithBool:success]
+                   forKey:@"SUCCESS"];
+
+    return returnData;
+}
 
 
 //+ (NSDictionary *) calcFRAMAForCode: (NSString *) seriesCode
@@ -2117,12 +3129,12 @@
 //{
 //    NSArray *codeComponents = [seriesCode componentsSeparatedByString:@"/"];
 //    int daysForAveraging = [[codeComponents objectAtIndex:1] intValue];
-//    
+//
 //    NSMutableData  *lastDateTimeForDayData, *closeForDayData, *highForDayData, *lowForDayData, *atrForDayData;
 //    NSMutableDictionary *returnData = [[NSMutableDictionary alloc] init];
-//    
+//
 //    long *lastDateTimeForDayArray;
-//    
+//
 //    double  *closeForDayArray, *highForDayArray, *lowForDayArray, *atrForDayArray;
 //    
 //    BOOL includeOldData = NO, success = YES;
@@ -2364,7 +3376,160 @@
 //}
 
 
-
+//+ (NSDictionary *) calcEmadForCode: (NSString *) emadCode
+//                          WithData: (NSDictionary *) dataDictionary
+//                        AndOldData: (NSDictionary *) oldDataDictionary
+//                       AndDoPickup: (BOOL) doPickup
+//                     WithThreshold: (double) threshold
+//{
+//    NSData *emaData;
+//    double *emaArray;
+//    int dataLength;
+//    
+//    NSMutableDictionary *returnData = [[NSMutableDictionary alloc] init];
+//    
+//    NSArray *emadComponents = [emadCode componentsSeparatedByString:@"/"];
+//    int emaCode = [[emadComponents objectAtIndex:1] intValue];
+//    int smoothCode = [[emadComponents objectAtIndex:2] intValue];
+//    NSMutableData *emadPickupData, *midData;
+//    double *emadPickupArray, *midArray;
+//    
+//    NSString *emaString = [NSString stringWithFormat:@"EMA/%d",emaCode];
+//    NSString *emadString = [NSString stringWithFormat:@"EMAD/%d/%d",emaCode,smoothCode];
+//    NSString *emadPickupString;
+//    if(doPickup){
+//        emadPickupString = [NSString stringWithFormat:@"EDPU/%d/%d",emaCode,smoothCode];
+//    }
+//    
+//    
+//    //NSArray *dataKeys = [dataDictionary allKeys];
+//    
+//    BOOL requiredDataFound = NO;
+//    if([dataDictionary objectForKey:emaString] != nil){
+//        requiredDataFound = YES;
+//        emaData = [dataDictionary objectForKey:emaString];
+//        emaArray = (double *)[emaData bytes];
+//        dataLength = [emaData length]/sizeof(double);
+//    }
+//    if(requiredDataFound){
+//        if(doPickup){
+//            if([dataDictionary objectForKey:@"MID"] != nil){
+//                requiredDataFound = YES;
+//                midData = [dataDictionary objectForKey:@"MID"];
+//                midArray = (double *)[midData bytes];
+//            }else{
+//                requiredDataFound = NO;
+//            }
+//        }
+//    }
+//    
+//    if(requiredDataFound){
+//        BOOL includeOldData = NO;
+//        includeOldData = ![[oldDataDictionary objectForKey:@"ALLNEWDATA"] boolValue];
+//        
+//        NSMutableData *emadData = [[NSMutableData alloc] initWithLength:dataLength * sizeof(double)];
+//        double *emadArray = (double *)[emadData mutableBytes];
+//        
+//        
+//        if(doPickup){
+//            emadPickupData = [[NSMutableData alloc] initWithLength:dataLength * sizeof(double)];
+//            emadPickupArray = (double *)[emadPickupData mutableBytes];
+//        }
+//        
+//        long lagLengthForDelta = [UtilityFunctions fib:(smoothCode)];
+//        
+//        if(includeOldData){
+//            int dataOverlapIndex;
+//            NSDictionary *trailingSeriesDictionary;
+//            long oldDataLength;
+//            
+//            trailingSeriesDictionary = [oldDataDictionary objectForKey:@"OLDDATA"];
+//            dataOverlapIndex = [[oldDataDictionary objectForKey:@"OVERLAPINDEX"] intValue];
+//            
+//            NSData *oldEmaData = [trailingSeriesDictionary objectForKey:emaString];
+//            double *oldEmaArray = (double *)[oldEmaData bytes];
+//            NSData *oldEmadData = [trailingSeriesDictionary objectForKey:emadString];
+//            double *oldEmadArray = (double *)[oldEmadData bytes];
+//            
+//            
+//            NSData *oldEmadPickupData;
+//            double *oldEmadPickupArray;
+//            if(doPickup){
+//                oldEmadPickupData = [trailingSeriesDictionary objectForKey:emadPickupString];
+//                oldEmadPickupArray = (double *)[oldEmadPickupData bytes];
+//            }
+//            
+//            long lagIndexForOldData = -1;
+//            
+//            oldDataLength = [oldEmadData length]/sizeof(long);
+//            
+//            for(long i = dataOverlapIndex ; i < oldDataLength; i++){
+//                emadArray[i-dataOverlapIndex] = oldEmadArray[i];
+//                if(doPickup){
+//                    emadPickupArray[i-dataOverlapIndex] = oldEmadPickupArray[i];
+//                }
+//            }
+//            
+//            lagIndexForOldData = oldDataLength - lagLengthForDelta;
+//            
+//            for(long i = oldDataLength - dataOverlapIndex; i < dataLength; i++){
+//                if(i - lagLengthForDelta >= 0){
+//                    emadArray[i] = emaArray[i] - emaArray[i- lagLengthForDelta];
+//                }else{
+//                    if(lagIndexForOldData > -1 && lagIndexForOldData < oldDataLength){
+//                        emadArray[i] = emaArray[i] - oldEmaArray[lagIndexForOldData];
+//                    }else{
+//                        emadArray[i] = 0.0;
+//                    }
+//                    lagIndexForOldData++;
+//                }
+//                if(doPickup){
+//                    //ignore hte case when i == 0, it should be taken care of by calulation overlap and doesn't matter much anyway for tick data
+//                    if(i > 0){
+//                        if((emadArray[i-1] >= threshold) ){
+//                            emadPickupArray[i] = emadPickupArray[i-1] + midArray[i] - midArray[i-1] ;
+//                        }else if (emadArray[i-1] <= -threshold)
+//                        {
+//                            emadPickupArray[i] = emadPickupArray[i-1]  + midArray[i-1] - midArray[i];
+//                        }else{
+//                            emadPickupArray[i] = emadPickupArray[i-1];
+//                        }
+//                    }
+//                }
+//            }
+//        }else{
+//            for(int i = 0; i < dataLength; i++){
+//                if(i - lagLengthForDelta >= 0){
+//                    emadArray[i] = emaArray[i] - emaArray[i- lagLengthForDelta];
+//                    if(doPickup){
+//                        if(i > 0){
+//                            if((emadArray[i-1] >= threshold) ){
+//                                emadPickupArray[i] = emadPickupArray[i-1] + midArray[i] - midArray[i-1] ;
+//                            }else if (emadArray[i-1] <= -threshold)
+//                            {
+//                                emadPickupArray[i] = emadPickupArray[i-1]  + midArray[i-1] - midArray[i];
+//                            }else{
+//                                emadPickupArray[i] = emadPickupArray[i-1];
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//        [returnData setObject:emadData
+//                       forKey:emadString];
+//        if(doPickup){
+//            [returnData setObject:emadPickupData
+//                           forKey:emadPickupString];
+//        }
+//        [returnData setObject:[NSNumber numberWithBool:YES]
+//                       forKey:@"SUCCESS"];
+//    }else{
+//        [returnData setObject:[NSNumber numberWithBool:NO]
+//                       forKey:@"SUCCESS"];
+//    }
+//    return returnData;
+//}
 
 
 @end

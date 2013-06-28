@@ -45,10 +45,7 @@
 		5BE5093D158EB5BA00AB4026 /* SignalRecord.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BE5093C158EB5BA00AB4026 /* SignalRecord.m */; };
 		5BEC77F11517694B0084D778 /* SimulationViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BEC77EF1517694B0084D778 /* SimulationViewController.m */; };
 		5BEC77F21517694B0084D778 /* SimulationView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 5BEC77F01517694B0084D778 /* SimulationView.xib */; };
-		5BEC77F615176A0F0084D778 /* InteractiveTradeViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BEC77F415176A0E0084D778 /* InteractiveTradeViewController.m */; };
-		5BEC77F715176A0F0084D778 /* InteractiveTrade.xib in Resources */ = {isa = PBXBuildFile; fileRef = 5BEC77F515176A0E0084D778 /* InteractiveTrade.xib */; };
 		5BECD1F71548F21800819CBE /* DataProcessor.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BECD1F61548F21800819CBE /* DataProcessor.m */; };
-		5BF3E4511560B96F004A1634 /* SignalStats.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BF3E4501560B96F004A1634 /* SignalStats.m */; };
 		5BFF896114D81F7B00F68453 /* TimeSeriesLine.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BFF896014D81F7B00F68453 /* TimeSeriesLine.m */; };
 /* End PBXBuildFile section */
 
@@ -151,13 +148,8 @@
 		5BEC77EE1517694B0084D778 /* SimulationViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SimulationViewController.h; sourceTree = "<group>"; };
 		5BEC77EF1517694B0084D778 /* SimulationViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SimulationViewController.m; sourceTree = "<group>"; };
 		5BEC77F01517694B0084D778 /* SimulationView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = SimulationView.xib; sourceTree = "<group>"; };
-		5BEC77F315176A0E0084D778 /* InteractiveTradeViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = InteractiveTradeViewController.h; sourceTree = "<group>"; };
-		5BEC77F415176A0E0084D778 /* InteractiveTradeViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = InteractiveTradeViewController.m; sourceTree = "<group>"; };
-		5BEC77F515176A0E0084D778 /* InteractiveTrade.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = InteractiveTrade.xib; sourceTree = "<group>"; };
 		5BECD1F51548F21800819CBE /* DataProcessor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DataProcessor.h; sourceTree = "<group>"; };
 		5BECD1F61548F21800819CBE /* DataProcessor.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DataProcessor.m; sourceTree = "<group>"; };
-		5BF3E44F1560B96F004A1634 /* SignalStats.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SignalStats.h; sourceTree = "<group>"; };
-		5BF3E4501560B96F004A1634 /* SignalStats.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SignalStats.m; sourceTree = "<group>"; };
 		5BFF895F14D81F7B00F68453 /* TimeSeriesLine.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TimeSeriesLine.h; sourceTree = "<group>"; };
 		5BFF896014D81F7B00F68453 /* TimeSeriesLine.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TimeSeriesLine.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -186,8 +178,6 @@
 				5BECD1F61548F21800819CBE /* DataProcessor.m */,
 				5B904A0214B7368D008A20AA /* DataSeries.h */,
 				5B904A0314B7368E008A20AA /* DataSeries.m */,
-				5BF3E44F1560B96F004A1634 /* SignalStats.h */,
-				5BF3E4501560B96F004A1634 /* SignalStats.m */,
 				5BDA503A14D225E9009842D5 /* DataView.h */,
 				5BDA503B14D225E9009842D5 /* DataView.m */,
 				5BB9A35814EF5B71001372D1 /* DataSeriesValue.h */,
@@ -216,15 +206,12 @@
 				5BE265BD1519EE6D003CAA60 /* TitlePaneViewController.m */,
 				5BEC77EE1517694B0084D778 /* SimulationViewController.h */,
 				5BEC77EF1517694B0084D778 /* SimulationViewController.m */,
-				5BEC77F315176A0E0084D778 /* InteractiveTradeViewController.h */,
-				5BEC77F415176A0E0084D778 /* InteractiveTradeViewController.m */,
 				5B8C03EE149ECEC70071189F /* AppDelegate.h */,
 				5B8C03EF149ECEC70071189F /* AppDelegate.m */,
 				5B8C03FC149ED0870071189F /* AppController.h */,
 				5B8C03FD149ED0870071189F /* AppController.m */,
 				5BCA3B6B14F4949A000141A4 /* SimulationOutput.h */,
 				5BE265BE1519EE6D003CAA60 /* TitlePane.xib */,
-				5BEC77F515176A0E0084D778 /* InteractiveTrade.xib */,
 				5BEC77F01517694B0084D778 /* SimulationView.xib */,
 				5B8C03F1149ECEC70071189F /* MainMenu.xib */,
 			);
@@ -438,7 +425,6 @@
 				5B8C03F3149ECEC70071189F /* MainMenu.xib in Resources */,
 				5B2EDCC014CD979600EC26B8 /* OCR2.icns in Resources */,
 				5BEC77F21517694B0084D778 /* SimulationView.xib in Resources */,
-				5BEC77F715176A0F0084D778 /* InteractiveTrade.xib in Resources */,
 				5BE265C01519EE6D003CAA60 /* TitlePane.xib in Resources */,
 				5B9382D51521C092003F8FE5 /* redgreen14b.jpg in Resources */,
 			);
@@ -468,10 +454,8 @@
 				5BB9A35A14EF5B71001372D1 /* DataSeriesValue.m in Sources */,
 				5BC43F5C151463C20020300A /* UtilityFunctions.m in Sources */,
 				5BEC77F11517694B0084D778 /* SimulationViewController.m in Sources */,
-				5BEC77F615176A0F0084D778 /* InteractiveTradeViewController.m in Sources */,
 				5BE265BF1519EE6D003CAA60 /* TitlePaneViewController.m in Sources */,
 				5BECD1F71548F21800819CBE /* DataProcessor.m in Sources */,
-				5BF3E4511560B96F004A1634 /* SignalStats.m in Sources */,
 				5BC52992158D9A0F00FDFAF0 /* CashFlowRecord.m in Sources */,
 				5BC52995158D9B0700FDFAF0 /* TransactionRecord.m in Sources */,
 				5BC52998158D9ECB00FDFAF0 /* PositionRecord.m in Sources */,

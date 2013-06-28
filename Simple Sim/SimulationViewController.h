@@ -196,6 +196,8 @@
 - (IBAction)toggleLongShortIndicator:(id)sender;
 - (IBAction)sigPlotLongShortIndicatorToggle:(id)sender;
 - (IBAction)compPlotLongShortIndicatorToggle:(id)sender;
+- (IBAction)simPlotMoveForward:(id)sender;
+
 
 - (IBAction)plotLeftSideExpand:(id)sender;
 - (IBAction)plotBottomExpand:(id)sender;
@@ -219,6 +221,9 @@
 - (IBAction)saveWorkingSimulation:(id)sender;
 - (IBAction)importSimulation:(id)sender;
 - (IBAction)removeWorkingSimulation:(id)sender;
+- (IBAction)sigPlotMoveForward:(id)sender;
+- (IBAction)signalAnalysisLeadTimeFinishedEdit:(id)sender;
+
 
 //- (IBAction)simulationCompareMakePlot:(id)sender;
 - (IBAction)simulationCompareChooseSimTimeSeries:(id)sender;
@@ -259,6 +264,8 @@
 @property (weak) IBOutlet NSButton *setupSheetShowButton;
 @property (weak) IBOutlet NSTextField *setupPositioningTextField;
 @property (weak) IBOutlet NSTextField *setupExtraSeriesTextField;
+@property (weak) IBOutlet NSTextField *setupDataRateAmount;
+@property (weak) IBOutlet NSMatrix *setupDataRateUnit;
 
 @property (weak) IBOutlet NSBox *fullScreenBox;
 @property (weak) IBOutlet NSBox *signalAnalysisPlotBox;

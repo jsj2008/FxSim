@@ -1370,7 +1370,7 @@
 										<object class="NSButton" id="247525679">
 											<reference key="NSNextResponder" ref="807633877"/>
 											<int key="NSvFlags">268</int>
-											<string key="NSFrame">{{16, 235}, {196, 32}}</string>
+											<string key="NSFrame">{{16, 275}, {196, 32}}</string>
 											<reference key="NSSuperview" ref="807633877"/>
 											<reference key="NSNextKeyView" ref="839067544"/>
 											<string key="NSReuseIdentifierKey">_NS:9</string>
@@ -1390,33 +1390,10 @@
 												<int key="NSPeriodicInterval">25</int>
 											</object>
 										</object>
-										<object class="NSButton" id="823663738">
-											<reference key="NSNextResponder" ref="807633877"/>
-											<int key="NSvFlags">268</int>
-											<string key="NSFrame">{{16, 301}, {196, 32}}</string>
-											<reference key="NSSuperview" ref="807633877"/>
-											<reference key="NSNextKeyView" ref="247525679"/>
-											<string key="NSReuseIdentifierKey">_NS:9</string>
-											<bool key="NSEnabled">YES</bool>
-											<object class="NSButtonCell" key="NSCell" id="317082541">
-												<int key="NSCellFlags">604110336</int>
-												<int key="NSCellFlags2">134217728</int>
-												<string key="NSContents">Series View</string>
-												<reference key="NSSupport" ref="1029568978"/>
-												<string key="NSCellIdentifier">_NS:9</string>
-												<reference key="NSControlView" ref="823663738"/>
-												<int key="NSButtonFlags">-1232977665</int>
-												<int key="NSButtonFlags2">130</int>
-												<string key="NSAlternateContents"/>
-												<string key="NSKeyEquivalent"/>
-												<int key="NSPeriodicDelay">200</int>
-												<int key="NSPeriodicInterval">25</int>
-											</object>
-										</object>
 										<object class="NSButton" id="839067544">
 											<reference key="NSNextResponder" ref="807633877"/>
 											<int key="NSvFlags">268</int>
-											<string key="NSFrame">{{16, 169}, {196, 32}}</string>
+											<string key="NSFrame">{{16, 212}, {196, 32}}</string>
 											<reference key="NSSuperview" ref="807633877"/>
 											<reference key="NSNextKeyView" ref="887909531"/>
 											<string key="NSReuseIdentifierKey">_NS:9</string>
@@ -1456,7 +1433,7 @@
 											<int key="NSvFlags">268</int>
 											<string key="NSFrame">{{20, 411}, {188, 42}}</string>
 											<reference key="NSSuperview" ref="807633877"/>
-											<reference key="NSNextKeyView" ref="823663738"/>
+											<reference key="NSNextKeyView"/>
 											<string key="NSReuseIdentifierKey">_NS:1535</string>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="699198759">
@@ -2295,28 +2272,12 @@
 					<int key="connectionID">1375</int>
 				</object>
 				<object class="IBConnectionRecord">
-					<object class="IBOutletConnection" key="connection">
-						<string key="label">InteractiveViewButton</string>
-						<reference key="source" ref="573213185"/>
-						<reference key="destination" ref="823663738"/>
-					</object>
-					<int key="connectionID">1376</int>
-				</object>
-				<object class="IBConnectionRecord">
 					<object class="IBActionConnection" key="connection">
 						<string key="label">changeToSimulationView:</string>
 						<reference key="source" ref="573213185"/>
 						<reference key="destination" ref="247525679"/>
 					</object>
 					<int key="connectionID">1377</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBActionConnection" key="connection">
-						<string key="label">changeToInteractiveView:</string>
-						<reference key="source" ref="573213185"/>
-						<reference key="destination" ref="823663738"/>
-					</object>
-					<int key="connectionID">1378</int>
 				</object>
 				<object class="IBConnectionRecord">
 					<object class="IBOutletConnection" key="connection">
@@ -2333,14 +2294,6 @@
 						<reference key="destination" ref="1000621932"/>
 					</object>
 					<int key="connectionID">1387</int>
-				</object>
-				<object class="IBConnectionRecord">
-					<object class="IBOutletConnection" key="connection">
-						<string key="label">interactiveViewButton</string>
-						<reference key="source" ref="573213185"/>
-						<reference key="destination" ref="823663738"/>
-					</object>
-					<int key="connectionID">1388</int>
 				</object>
 				<object class="IBConnectionRecord">
 					<object class="IBOutletConnection" key="connection">
@@ -3385,7 +3338,6 @@
 						<array class="NSMutableArray" key="children">
 							<reference ref="251659181"/>
 							<reference ref="887909531"/>
-							<reference ref="823663738"/>
 							<reference ref="247525679"/>
 							<reference ref="839067544"/>
 							<reference ref="1000621932"/>
@@ -3423,19 +3375,6 @@
 						<int key="objectID">1372</int>
 						<reference key="object" ref="627262680"/>
 						<reference key="parent" ref="247525679"/>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">1373</int>
-						<reference key="object" ref="823663738"/>
-						<array class="NSMutableArray" key="children">
-							<reference ref="317082541"/>
-						</array>
-						<reference key="parent" ref="573060832"/>
-					</object>
-					<object class="IBObjectRecord">
-						<int key="objectID">1374</int>
-						<reference key="object" ref="317082541"/>
-						<reference key="parent" ref="823663738"/>
 					</object>
 					<object class="IBObjectRecord">
 						<int key="objectID">1381</int>
@@ -3515,9 +3454,6 @@
 				<string key="1371.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
 				<string key="1371.userInterfaceItemIdentifier">SIMANALYSIS</string>
 				<string key="1372.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<string key="1373.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
-				<string key="1373.userInterfaceItemIdentifier">SERIESVIEW</string>
-				<string key="1374.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
 				<string key="1381.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
 				<string key="1384.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
 				<string key="1384.userInterfaceItemIdentifier">REALTIME</string>

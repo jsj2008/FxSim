@@ -33,7 +33,7 @@
         _xData = nil; 
         _yData = [[NSMutableDictionary alloc] init]; 
         _dataViews = [[NSMutableDictionary alloc] init];
-        _sampleRate = 0;
+        _dataRate = 0;
     }    
     return self;    
 }
@@ -45,7 +45,7 @@
     description = [NSString stringWithFormat:@"%@Start   :%@\n",description, [EpochTime stringDateWithTime:[self minDateTime]]];
     description = [NSString stringWithFormat:@"%@End     :%@\n",description, [EpochTime stringDateWithTime:[self maxDateTime]]];
     description = [NSString stringWithFormat:@"%@Length  :%ld\n",description, [self length]];
-    description = [NSString stringWithFormat:@"%@Sampling:%ld",description, [self sampleRate]];
+    description = [NSString stringWithFormat:@"%@Sampling:%ld",description, [self dataRate]];
     return description;
 }
 
@@ -57,7 +57,7 @@
     [aCoder encodeObject:_xData forKey:@"XDATA"];
     [aCoder encodeObject:_yData forKey:@"YDATA"];
     [aCoder encodeObject:_dataViews forKey:@"DATAVIEWS"];
-    [aCoder encodeObject:[NSNumber numberWithInteger:_sampleRate] forKey:@"SAMPLERATE"];
+    [aCoder encodeObject:[NSNumber numberWithInteger:_dataRate] forKey:@"SAMPLERATE"];
  }
 
 - (id) initWithCoder:(NSCoder *)aDecoder
@@ -73,7 +73,7 @@
         _xData = [aDecoder decodeObjectForKey:@"XDATA"];
         _yData = [aDecoder decodeObjectForKey:@"YDATA"]; 
         _dataViews = [aDecoder decodeObjectForKey:@"DATAVIEWS"];
-        _sampleRate = [[aDecoder decodeObjectForKey:@"SAMPLERATE"] intValue]; 
+        _dataRate = [[aDecoder decodeObjectForKey:@"SAMPLERATE"] intValue];
     }
     return self;
 }
@@ -211,141 +211,141 @@
 
 
 
--(DataSeries *) sampleDataAtInterval: (int) numberOfSeconds
-{
-    DataSeries *returnData  = [[DataSeries alloc] initWithName:[self name] 
-                                                      AndDbTag:[self dbId] 
-                                                    AndPipSize:[self pipSize]];
-    long currentSampleDateTime, currentDateTime;
-    NSNumber *datetime = [NSNumber numberWithLong:[[self.xData sampleValue:0] longValue]];
-    long anchorDateTime;
-    NSUInteger originalNumberOfData;
-    originalNumberOfData = [self length];
-    anchorDateTime = [EpochTime epochTimeAtZeroHour:[datetime longValue]];
-    
-    NSArray *fieldnames = [[NSArray alloc] initWithArray:[[self yData] allKeys] copyItems:YES];
-    NSUInteger numberOfFields = [[self yData] count];
-    NSMutableData *intermediateValueData;
-    double *intermediateValues;
-    NSMutableData *intermediateDateTimeData;
-    long *intermediateDateTimes;
-    
-    intermediateDateTimeData = [[NSMutableData alloc] initWithLength:originalNumberOfData *sizeof(long)];
-    intermediateDateTimes = (long *)[intermediateDateTimeData mutableBytes];
-    
-    intermediateValueData = [[NSMutableData alloc] initWithLength:originalNumberOfData *sizeof(double)];
-    intermediateValues = (double *)[intermediateValueData mutableBytes];
-    
-    CPTNumericData *yDataFields[numberOfFields];
-    int fieldIndex;
-    for( fieldIndex= 0; fieldIndex < numberOfFields; fieldIndex++){
-        yDataFields[fieldIndex] = [[self yData] objectForKey:[fieldnames objectAtIndex:fieldIndex]];
-    }
-    
-    double minYvalues[numberOfFields];
-    double maxYvalues[numberOfFields];
-        
-    if(numberOfSeconds >= 2){
-        currentSampleDateTime = anchorDateTime + numberOfSeconds * (([datetime longValue]-anchorDateTime)/numberOfSeconds);
-        long sampleCount = 0;
-        long index = 0;
-        BOOL dataForInterval = NO;
-        while(index < originalNumberOfData)
-        {
-            currentDateTime = [[self.xData sampleValue:index] longValue];
-            if(currentDateTime < currentSampleDateTime)
-            {
-                dataForInterval = YES;
-            }else{
-                if(dataForInterval == YES)
-                {
-                    if(currentDateTime == currentSampleDateTime){
-                        intermediateDateTimes[sampleCount] = currentSampleDateTime;
-                        for( fieldIndex= 0; fieldIndex < numberOfFields; fieldIndex++)
-                        {
-                            intermediateValues[(sampleCount*numberOfFields)+fieldIndex] = [[yDataFields[fieldIndex] sampleValue:index] doubleValue];
-                        }
-                        currentSampleDateTime = currentSampleDateTime + numberOfSeconds;
-                        sampleCount = sampleCount + 1;
-                        dataForInterval = NO;
-                    }
-                    if((currentDateTime > currentSampleDateTime)  & (index > 0)){
-                        intermediateDateTimes[sampleCount] = currentSampleDateTime;
-                        for(fieldIndex= 0; fieldIndex < numberOfFields; fieldIndex++)
-                        {
-                            intermediateValues[(sampleCount*numberOfFields)+fieldIndex] = [[yDataFields[fieldIndex] sampleValue:(index-1)] doubleValue];
-                        }
-                        currentSampleDateTime = currentSampleDateTime + numberOfSeconds;
-                        sampleCount = sampleCount + 1;
-                        dataForInterval = NO;
-                    }
-                }else{
-                    // The new date is greater than the current sample date, so we have to bring the sample date up
-                    // at least this date, and so we can set dataForInterval to true
-                    dataForInterval = YES;
-                    while(currentSampleDateTime < currentDateTime){
-                        currentSampleDateTime = currentSampleDateTime + numberOfSeconds;
-                    }
-                    
-                }
-            }
-            index++;
-        }
-        // Now reduce the arrays by copying into smaller ones
-        NSMutableData *newXData = [[NSMutableData alloc] initWithLength:sampleCount * sizeof(long)]; 
-        long *sampledDateTimes = [newXData mutableBytes];
-        NSMutableDictionary *newYData = [[NSMutableDictionary alloc] initWithCapacity:numberOfFields];
-        double **sampledValues = malloc(numberOfFields * sizeof(double*));
-        for(fieldIndex = 0; fieldIndex < numberOfFields; fieldIndex++){
-            [newYData setObject:[[NSMutableData alloc] initWithLength:sampleCount * sizeof(double)] forKey:[fieldnames objectAtIndex:fieldIndex]];
-            sampledValues[fieldIndex] = [[newYData objectForKey:[fieldnames objectAtIndex:fieldIndex]] mutableBytes];
-        }
-       
-        for(fieldIndex = 0;fieldIndex < numberOfFields; fieldIndex++){
-            minYvalues[fieldIndex] = intermediateValues[fieldIndex];
-            maxYvalues[fieldIndex] = intermediateValues[fieldIndex];
-        }
-        for(index = 0; index < sampleCount; index++)
-        {
-            sampledDateTimes[index] = intermediateDateTimes[index];
-            for(fieldIndex = 0;fieldIndex < numberOfFields; fieldIndex++){
-                sampledValues[fieldIndex][index] = intermediateValues[(index * numberOfFields) + fieldIndex];
-                minYvalues[fieldIndex] = fmin(minYvalues[fieldIndex],intermediateValues[(index * numberOfFields) + fieldIndex]);
-                maxYvalues[fieldIndex] = fmax(maxYvalues[fieldIndex],intermediateValues[(index * numberOfFields) + fieldIndex]);
-            }
-        }
-        free(sampledValues);
-        [returnData setXData:[CPTNumericData numericDataWithData:newXData 
-                                                        dataType:CPTDataType(CPTIntegerDataType, 
-                                                                             sizeof(long), 
-                                                                             CFByteOrderGetCurrent()) 
-                                                           shape:nil]]; 
-        [[returnData yData] removeAllObjects];
-        for(fieldIndex = 0;fieldIndex < numberOfFields; fieldIndex++){
-            [[returnData yData] setObject:[CPTNumericData numericDataWithData:[newYData objectForKey:[fieldnames objectAtIndex:fieldIndex]]
-                                                                      dataType:CPTDataType(CPTFloatingPointDataType, 
-                                                                                           sizeof(double), 
-                                                                                           CFByteOrderGetCurrent()) 
-                                                                         shape:nil]
-                                    forKey:[fieldnames objectAtIndex:fieldIndex]];
-        }
-        NSMutableDictionary *minYDataDictionary = [[NSMutableDictionary alloc] init];
-        NSMutableDictionary *maxYDataDictionary = [[NSMutableDictionary alloc] init];
-        for(fieldIndex = 0;fieldIndex < numberOfFields; fieldIndex++){
-            [minYDataDictionary setObject:[NSNumber numberWithDouble:minYvalues[fieldIndex]] 
-                                   forKey:[fieldnames objectAtIndex:fieldIndex]];
-            [maxYDataDictionary setObject:[NSNumber numberWithDouble:maxYvalues[fieldIndex]] 
-                                    forKey:[fieldnames objectAtIndex:fieldIndex]];
-        }
-        [[returnData dataViews] removeAllObjects];
-        [returnData setDataViewWithName:@"ALL"
-                       AndStartDateTime:sampledDateTimes[0]
-                         AndEndDateTime:sampledDateTimes[sampleCount-1]];
-        
-        [returnData setSampleRate:numberOfSeconds];
-    }
-    return returnData;
-}
+//-(DataSeries *) sampleDataAtInterval: (int) numberOfSeconds
+//{
+//    DataSeries *returnData  = [[DataSeries alloc] initWithName:[self name] 
+//                                                      AndDbTag:[self dbId] 
+//                                                    AndPipSize:[self pipSize]];
+//    long currentSampleDateTime, currentDateTime;
+//    NSNumber *datetime = [NSNumber numberWithLong:[[self.xData sampleValue:0] longValue]];
+//    long anchorDateTime;
+//    NSUInteger originalNumberOfData;
+//    originalNumberOfData = [self length];
+//    anchorDateTime = [EpochTime epochTimeAtZeroHour:[datetime longValue]];
+//    
+//    NSArray *fieldnames = [[NSArray alloc] initWithArray:[[self yData] allKeys] copyItems:YES];
+//    NSUInteger numberOfFields = [[self yData] count];
+//    NSMutableData *intermediateValueData;
+//    double *intermediateValues;
+//    NSMutableData *intermediateDateTimeData;
+//    long *intermediateDateTimes;
+//    
+//    intermediateDateTimeData = [[NSMutableData alloc] initWithLength:originalNumberOfData *sizeof(long)];
+//    intermediateDateTimes = (long *)[intermediateDateTimeData mutableBytes];
+//    
+//    intermediateValueData = [[NSMutableData alloc] initWithLength:originalNumberOfData *sizeof(double)];
+//    intermediateValues = (double *)[intermediateValueData mutableBytes];
+//    
+//    CPTNumericData *yDataFields[numberOfFields];
+//    int fieldIndex;
+//    for( fieldIndex= 0; fieldIndex < numberOfFields; fieldIndex++){
+//        yDataFields[fieldIndex] = [[self yData] objectForKey:[fieldnames objectAtIndex:fieldIndex]];
+//    }
+//    
+//    double minYvalues[numberOfFields];
+//    double maxYvalues[numberOfFields];
+//        
+//    if(numberOfSeconds >= 2){
+//        currentSampleDateTime = anchorDateTime + numberOfSeconds * (([datetime longValue]-anchorDateTime)/numberOfSeconds);
+//        long sampleCount = 0;
+//        long index = 0;
+//        BOOL dataForInterval = NO;
+//        while(index < originalNumberOfData)
+//        {
+//            currentDateTime = [[self.xData sampleValue:index] longValue];
+//            if(currentDateTime < currentSampleDateTime)
+//            {
+//                dataForInterval = YES;
+//            }else{
+//                if(dataForInterval == YES)
+//                {
+//                    if(currentDateTime == currentSampleDateTime){
+//                        intermediateDateTimes[sampleCount] = currentSampleDateTime;
+//                        for( fieldIndex= 0; fieldIndex < numberOfFields; fieldIndex++)
+//                        {
+//                            intermediateValues[(sampleCount*numberOfFields)+fieldIndex] = [[yDataFields[fieldIndex] sampleValue:index] doubleValue];
+//                        }
+//                        currentSampleDateTime = currentSampleDateTime + numberOfSeconds;
+//                        sampleCount = sampleCount + 1;
+//                        dataForInterval = NO;
+//                    }
+//                    if((currentDateTime > currentSampleDateTime)  & (index > 0)){
+//                        intermediateDateTimes[sampleCount] = currentSampleDateTime;
+//                        for(fieldIndex= 0; fieldIndex < numberOfFields; fieldIndex++)
+//                        {
+//                            intermediateValues[(sampleCount*numberOfFields)+fieldIndex] = [[yDataFields[fieldIndex] sampleValue:(index-1)] doubleValue];
+//                        }
+//                        currentSampleDateTime = currentSampleDateTime + numberOfSeconds;
+//                        sampleCount = sampleCount + 1;
+//                        dataForInterval = NO;
+//                    }
+//                }else{
+//                    // The new date is greater than the current sample date, so we have to bring the sample date up
+//                    // at least this date, and so we can set dataForInterval to true
+//                    dataForInterval = YES;
+//                    while(currentSampleDateTime < currentDateTime){
+//                        currentSampleDateTime = currentSampleDateTime + numberOfSeconds;
+//                    }
+//                    
+//                }
+//            }
+//            index++;
+//        }
+//        // Now reduce the arrays by copying into smaller ones
+//        NSMutableData *newXData = [[NSMutableData alloc] initWithLength:sampleCount * sizeof(long)]; 
+//        long *sampledDateTimes = [newXData mutableBytes];
+//        NSMutableDictionary *newYData = [[NSMutableDictionary alloc] initWithCapacity:numberOfFields];
+//        double **sampledValues = malloc(numberOfFields * sizeof(double*));
+//        for(fieldIndex = 0; fieldIndex < numberOfFields; fieldIndex++){
+//            [newYData setObject:[[NSMutableData alloc] initWithLength:sampleCount * sizeof(double)] forKey:[fieldnames objectAtIndex:fieldIndex]];
+//            sampledValues[fieldIndex] = [[newYData objectForKey:[fieldnames objectAtIndex:fieldIndex]] mutableBytes];
+//        }
+//       
+//        for(fieldIndex = 0;fieldIndex < numberOfFields; fieldIndex++){
+//            minYvalues[fieldIndex] = intermediateValues[fieldIndex];
+//            maxYvalues[fieldIndex] = intermediateValues[fieldIndex];
+//        }
+//        for(index = 0; index < sampleCount; index++)
+//        {
+//            sampledDateTimes[index] = intermediateDateTimes[index];
+//            for(fieldIndex = 0;fieldIndex < numberOfFields; fieldIndex++){
+//                sampledValues[fieldIndex][index] = intermediateValues[(index * numberOfFields) + fieldIndex];
+//                minYvalues[fieldIndex] = fmin(minYvalues[fieldIndex],intermediateValues[(index * numberOfFields) + fieldIndex]);
+//                maxYvalues[fieldIndex] = fmax(maxYvalues[fieldIndex],intermediateValues[(index * numberOfFields) + fieldIndex]);
+//            }
+//        }
+//        free(sampledValues);
+//        [returnData setXData:[CPTNumericData numericDataWithData:newXData 
+//                                                        dataType:CPTDataType(CPTIntegerDataType, 
+//                                                                             sizeof(long), 
+//                                                                             CFByteOrderGetCurrent()) 
+//                                                           shape:nil]]; 
+//        [[returnData yData] removeAllObjects];
+//        for(fieldIndex = 0;fieldIndex < numberOfFields; fieldIndex++){
+//            [[returnData yData] setObject:[CPTNumericData numericDataWithData:[newYData objectForKey:[fieldnames objectAtIndex:fieldIndex]]
+//                                                                      dataType:CPTDataType(CPTFloatingPointDataType, 
+//                                                                                           sizeof(double), 
+//                                                                                           CFByteOrderGetCurrent()) 
+//                                                                         shape:nil]
+//                                    forKey:[fieldnames objectAtIndex:fieldIndex]];
+//        }
+//        NSMutableDictionary *minYDataDictionary = [[NSMutableDictionary alloc] init];
+//        NSMutableDictionary *maxYDataDictionary = [[NSMutableDictionary alloc] init];
+//        for(fieldIndex = 0;fieldIndex < numberOfFields; fieldIndex++){
+//            [minYDataDictionary setObject:[NSNumber numberWithDouble:minYvalues[fieldIndex]] 
+//                                   forKey:[fieldnames objectAtIndex:fieldIndex]];
+//            [maxYDataDictionary setObject:[NSNumber numberWithDouble:maxYvalues[fieldIndex]] 
+//                                    forKey:[fieldnames objectAtIndex:fieldIndex]];
+//        }
+//        [[returnData dataViews] removeAllObjects];
+//        [returnData setDataViewWithName:@"ALL"
+//                       AndStartDateTime:sampledDateTimes[0]
+//                         AndEndDateTime:sampledDateTimes[sampleCount-1]];
+//        
+//        [returnData setDataRate:numberOfSeconds];
+//    }
+//    return returnData;
+//}
 
 -(void)reduceDataSeriesToSampledSeconds: (int) numberOfSeconds
 {
@@ -468,7 +468,7 @@
             [[self yData] setObject:newYData forKey:[fieldnames objectAtIndex:i]];
         }        
         
-        [self setSampleRate:numberOfSeconds];
+        [self setDataRate:numberOfSeconds];
     }
 }
 
@@ -635,7 +635,7 @@
                       AndEndDateTime: (long) endDateTime
 {
     long startIndex, endIndex;
-    double minY, maxY;
+    //double minY, maxY;
     NSArray *fieldnames;
     DataView *dataView; 
     NSMutableDictionary *mins = [[NSMutableDictionary alloc] init];
@@ -647,27 +647,46 @@
     //Figure out the minimums and maximums
     fieldnames = [[self yData] allKeys];
     CPTNumericData *dataSeries;
-    double *yDataArray;
-    for (NSString *fieldname in fieldnames) {
+    
+    NSMutableData *minsData = [[NSMutableData alloc] initWithLength:[fieldnames count]*sizeof(double)];
+    NSMutableData *maxsData = [[NSMutableData alloc] initWithLength:[fieldnames count]*sizeof(double)];
+    double *minsArray = [minsData mutableBytes];
+    double *maxsArray = [maxsData mutableBytes];
+    NSMutableData *dataPointersData = [[NSMutableData alloc] initWithLength:[fieldnames count]*sizeof(double*)];
+    double **dataPointersArray = [dataPointersData mutableBytes];
+    
+    //double *yDataArray;
+    NSString *fieldname;
+    for (int i = 0;i < [fieldnames count];i++) {
+        fieldname = [fieldnames objectAtIndex:i];
         dataSeries = [[self yData] objectForKey:fieldname];
-        
-        yDataArray = (double *)[dataSeries bytes];
-        minY = yDataArray[startIndex];
-        maxY = yDataArray[startIndex];
-        for(long i = (startIndex+1); i <= endIndex; i++){
-            if(yDataArray[i] < minY)
+        dataPointersArray[i] = (double *)[dataSeries bytes];
+        dataPointersArray[i] = &(dataPointersArray[i][startIndex]);
+        minsArray[i] = *dataPointersArray[i];
+        maxsArray[i] = *dataPointersArray[i];
+    }
+    
+    for(long j = (startIndex+1); j <= endIndex; j++){
+        for (int k = 0;k < [fieldnames count];k++) {
+            if(*dataPointersArray[k] < minsArray[k])
             {
-                minY = yDataArray[i];
+                minsArray[k] = *dataPointersArray[k];
             }
-            if(yDataArray[i] > maxY)
+            if(*dataPointersArray[k] > maxsArray[k])
             {
-                maxY = yDataArray[i];
+                maxsArray[k] = *dataPointersArray[k];
             }
+            dataPointersArray[k]++;
         }
         
-        [mins setValue:[NSNumber numberWithDouble:minY] forKey:fieldname];
-        [maxs setValue:[NSNumber numberWithDouble:maxY] forKey:fieldname];
+        
     }
+    for (int i = 0;i < [fieldnames count];i++) {
+        fieldname = [fieldnames objectAtIndex:i];
+        [mins setValue:[NSNumber numberWithDouble:minsArray[i]] forKey:fieldname];
+        [maxs setValue:[NSNumber numberWithDouble:maxsArray[i]] forKey:fieldname];
+    }
+
     dataView = [[DataView alloc] initWithDataSeries: self 
                                             AndName: plotViewName
                                       AndStartIndex: startIndex 
@@ -725,7 +744,7 @@
 @synthesize name = _name;
 @synthesize dataViews = _dataViews;
 @synthesize pipSize = _pipSize;
-@synthesize sampleRate = _sampleRate;
+//@synthesize sampleRate = _sampleRate;
 @end 
 
 

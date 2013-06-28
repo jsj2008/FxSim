@@ -28,6 +28,7 @@
     SignalSystem *_signalSystem;
     NSMutableArray *_rulesSystem;
     BOOL _isAnalysed;
+    BOOL _unfunded;
     
     NSTextStorage *_simulationRunOutput;
 }
@@ -47,6 +48,7 @@
 @property (retain) SignalSystem *signalSystem;
 @property (readonly) NSMutableArray *rulesSystem;
 @property BOOL isAnalysed;
+@property BOOL unfunded;
 @property (retain) NSTextStorage *simulationRunOutput;
 
 typedef enum {
@@ -55,17 +57,19 @@ typedef enum {
     INTEREST = 3
 } BalAdjType;
 
--(id)  initWithName: (NSString *) accountName 
-       AndStartDate: (long) accStartDate 
+-(id)  initWithName: (NSString *) accountName
+       AndStartDate: (long) accStartDate
          AndEndDate: (long) accEndDate
-         AndBalance: (double) startingBalance 
+         AndBalance: (double) startingBalance
         AndCurrency: (NSString *) ISOcode
      AndTradingPair: (NSString *) codeForTradingPair
      AndMaxLeverage: (double) maxLeverage
-    AndSamplingRate: (NSUInteger)dataSamplingRate
+        AndDataRate: (long) dataRate
+    AndSamplingRate: (NSUInteger) dataSamplingRate
       AndTradingLag: (NSUInteger) signalToTradeLag
 AndTradingTimeStart: (int) tradingTimeStart
-  AndTradingTimeEnd: (int) tradingTimeEnd;
+  AndTradingTimeEnd: (int) tradingTimeEnd
+  AndWeekendTrading: (BOOL) weekendTrading;
 
 
 
@@ -82,9 +86,11 @@ AndTradingTimeStart: (int) tradingTimeStart
 - (float) maxLeverage;
 - (long) startDate;
 - (long) endDate;
+- (BOOL) weekendTrading;
 - (NSUInteger) tradingDayStart;
 - (NSUInteger) tradingDayEnd;
 - (NSUInteger) samplingRate;
+- (long) dataRate;
 
 - (int) sizeOfPositionAtIndex:(int) positionIndex;
 

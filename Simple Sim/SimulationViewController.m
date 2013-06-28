@@ -27,8 +27,10 @@
 @property (retain) NSMutableArray *simulationCompareSimATimeSeries;
 @property (retain) NSMutableArray *simulationCompareSimBTimeSeries;
 @property (retain) NSMutableDictionary *simulationCompareSelectedTimeSeries;
+@property (retain) NSMutableArray *simulationCompareSelectedTimeSeriesArray;
 @property (retain) NSMutableDictionary *simulationSignalSelectedTimeSeries;
 @property (retain) NSMutableDictionary *simulationSelectedTimeSeries;
+
 @property (retain) NSMutableArray *signalTableViewOrdering;
 @property (retain) NSArray *hideObjectsOnStartup;
 @property (retain) NSArray *importDataArray;
@@ -49,6 +51,7 @@
 @property (retain) SeriesPlotDataWrapper *comparePlotInfo;
 @property (retain) SeriesPlotDataWrapper *simulationPlotInfo;
 @property (retain) SeriesPlotDataWrapper *signalPlotInfo;
+@property int databaseSamplingRate;
 
 - (void) putFieldNamesInCorrectOrdering:(NSMutableArray *) fieldNamesFromData;
 - (void) endSetupSheet;
@@ -96,11 +99,13 @@
         _doingSetup = NO;
         _cancelProcedure = NO;
         _firstTimeSetup = YES;
+        _databaseSamplingRate = 0;
         [self setDoThreads:NO];
         _simulationTimeSeries = [[NSMutableArray alloc] init];
         _simulationCompareSimATimeSeries = [[NSMutableArray alloc] init];
         _simulationCompareSimBTimeSeries = [[NSMutableArray alloc] init];
         _simulationCompareSelectedTimeSeries = [[NSMutableDictionary alloc] init];
+        _simulationCompareSelectedTimeSeriesArray = [[NSMutableArray alloc] init];
         _simulationSignalSelectedTimeSeries = [[NSMutableDictionary alloc] init];
         _simulationSelectedTimeSeries = [[NSMutableDictionary alloc] init];
         _simulationSignalTimeSeries = [[NSMutableArray alloc] init]; 
@@ -203,6 +208,8 @@
     long minDataDateTime = [[self dataControllerForUI] getMinDateTimeForFullData];
     long maxDataDateTime = [[self dataControllerForUI] getMaxDateTimeForFullData];
     
+    [self setDatabaseSamplingRate:[[self dataControllerForUI] databaseSamplingRate]];
+    
     [dataAvailabilityFromLabel setStringValue:[[NSDate dateWithTimeIntervalSince1970:(NSTimeInterval) minDataDateTime] descriptionWithCalendarFormat:@"%Y-%m-%d" timeZone:[NSTimeZone timeZoneWithName:@"GMT"] locale:nil]];
     [dataAvailabilityToLabel setStringValue:[[NSDate dateWithTimeIntervalSince1970:(NSTimeInterval) maxDataDateTime] descriptionWithCalendarFormat:@"%Y-%m-%d" timeZone:[NSTimeZone timeZoneWithName:@"GMT"] locale:nil]];
     
@@ -232,6 +239,8 @@
     [setupTradingEndTimePicker setTimeZone:[NSTimeZone timeZoneWithName:@"GMT"]];
     [setupTradingStartTimePicker setDateValue:[NSDate dateWithTimeIntervalSince1970:(6*60*60)+(30*60)]];
     [setupTradingEndTimePicker setDateValue:[NSDate dateWithTimeIntervalSince1970:(16*60*60)+(30*60)]];
+    
+    [[self setupDataRateUnit] selectCellAtRow:0 column:1];
     
     [zoomFromDatePicker setTimeZone:[NSTimeZone timeZoneWithName:@"GMT"]];
     [zoomFromDatePicker setCalendar:gregorian];
@@ -278,9 +287,9 @@
     }
     
     int nColumns = 7;
-    NSArray *sigTableHeaders = [NSArray arrayWithObjects:@"Entry Time", @"Exit Time", @"Signal", @"Entry Price", @"Exit Price", @"Signal Gain", @"Nav Change", nil];
+    NSArray *sigTableHeaders = [NSArray arrayWithObjects:@"Entry Time", @"Exit Time", @"Signal", @"Entry Price", @"Exit Price", @"Signal Pickup", @"Nav Change", nil];
     
-    NSArray *sigTableIds = [NSArray arrayWithObjects:@"ENTRYTIME", @"EXITTIME",@"SIGNAL" , @"ENTRYPRICE", @"EXITPRICE",  @"SIGNALGAIN", @"PNL", nil];
+    NSArray *sigTableIds = [NSArray arrayWithObjects:@"ENTRYTIME", @"EXITTIME",@"SIGNAL" , @"ENTRYPRICE", @"EXITPRICE",  @"SIGNALPICKUP", @"PNL", nil];
     
     float columnWidths[7] = {150.0, 150.0, 75.0, 75.0, 75.0, 75.0, 75.0};
     
@@ -408,7 +417,7 @@
                                                     AsZoom:NO];
         
         [[self signalAnalysisPlot] setBasicParametersForPlot];
-        [[self signalAnalysisPlot] updateLines:signalPlotDataSource];
+        [[self signalAnalysisPlot] updateLines:signalPlotDataSource AndUpdateYAxes:YES];
         [self setSignalPlotInfo:signalPlotDataSource];
         
         
@@ -490,7 +499,7 @@
                                           AsZoom:NO];
     [self setSimulationPlotInfo:plotDataSource];
     [[self simulationResultsPlot] setBasicParametersForPlot];
-    [[self simulationResultsPlot] updateLines:plotDataSource];
+    [[self simulationResultsPlot] updateLines:plotDataSource AndUpdateYAxes:YES];
     
     [zoomFromDatePicker setMinDate:[NSDate dateWithTimeIntervalSince1970:[analysisDataSeries minDateTime]]];
     [zoomFromDatePicker setMaxDate:[NSDate dateWithTimeIntervalSince1970:[analysisDataSeries maxDateTime]]];
@@ -550,7 +559,7 @@
                                           AsZoom:NO];
     [[self simulationComparePlot] setBasicParametersForPlot];
     [self setComparePlotInfo:plotDataSource];
-    [[self simulationComparePlot] updateLines:[self comparePlotInfo]];
+    [[self simulationComparePlot] updateLines:[self comparePlotInfo] AndUpdateYAxes:YES];
 }
 
 - (void) addSimulationDataToResultsTableView
@@ -612,8 +621,8 @@
         tableColumns = [simulationNumbersTableView tableColumns];
     }
     
-    newTableColumn = [[NSTableColumn alloc] initWithIdentifier:@"DATETIME"];
-    [[newTableColumn headerCell] setStringValue:@"DATETIME"];
+    newTableColumn = [[NSTableColumn alloc] initWithIdentifier:@"TIME"];
+    [[newTableColumn headerCell] setStringValue:@"TIME"];
     [newTableColumn setWidth:150];
     tableViewWidth = [newTableColumn width];
     [simulationNumbersTableView addTableColumn:newTableColumn];
@@ -629,6 +638,12 @@
         [simulationNumbersTableView addTableColumn:newTableColumn];
         
     }
+    newTableColumn = [[NSTableColumn alloc] initWithIdentifier:@"DATETIME"];
+    [[newTableColumn headerCell] setStringValue:@"DATETIME"];
+    [newTableColumn setWidth:150];
+    tableViewWidth = [newTableColumn width];
+    [simulationNumbersTableView addTableColumn:newTableColumn];
+    
     [simulationNumbersTableView widthAdjustLimit];
     [simulationNumbersTableView reloadData];
 }
@@ -848,7 +863,7 @@
                                              AndEndDateTime:endDateTime
                                                      AsZoom:NO];
         [self updateSimulationSignalSelectedTimeSeries];
-        [[self signalAnalysisPlot] updateLines:[self signalPlotInfo]];
+        [[self signalAnalysisPlot] updateLines:[self signalPlotInfo] AndUpdateYAxes:YES];
     }
 }
 
@@ -956,6 +971,7 @@
     long tradingDayStart = [[parameters objectForKey:@"TRADINGDAYSTART"] longValue];
     long tradingDayEnd = [[parameters objectForKey:@"TRADINGDAYEND"] longValue];
     BOOL weekendTrading =   [[parameters objectForKey:@"WEEKENDTRADING"] boolValue];
+    long dataRate = [[parameters objectForKey:@"DATARATE"] longValue];
     
     NSArray *simulationDescriptionComponents = [simDescription componentsSeparatedByString:@";"];
     NSString *simType, *extraSeries;
@@ -1001,6 +1017,23 @@
     }else{
         [setupTradingWeekendYesNo setState:NSOffState];
     }
+    
+    if(dataRate%60 == 0){
+        if(dataRate%3600 ==0){
+            [[self setupDataRateUnit] selectCellAtRow:0
+                                               column:0];
+            [[self setupDataRateAmount] setStringValue:[NSString stringWithFormat:@"%ld",dataRate/3600]];
+        }else{
+            [[self setupDataRateUnit] selectCellAtRow:0
+                                               column:1];
+            [[self setupDataRateAmount] setStringValue:[NSString stringWithFormat:@"%ld",dataRate/60]];
+        }
+    }else{
+        [[self setupDataRateUnit] selectCellAtRow:0
+                                           column:2];
+        [[self setupDataRateAmount] setStringValue:[NSString stringWithFormat:@"%ld",dataRate]];
+    }
+    
 }
 
 - (void) updateSimulationSelectedTimeSeries
@@ -1045,6 +1078,7 @@
 - (void) updateSelectedSimCompareTimeseries
 {
     [[self simulationCompareSelectedTimeSeries] removeAllObjects];
+    [[self simulationCompareSelectedTimeSeriesArray] removeAllObjects];
     TimeSeriesLine *tsl, *newTsl;
     NSString *lineName;
     
@@ -1057,6 +1091,7 @@
                                                        AndSimId:0];
             lineName = [NSString stringWithFormat:@"S%ld_L%d_%@",[tsl simId],[tsl layerIndex],[tsl name]];
             [[self simulationCompareSelectedTimeSeries] setObject:newTsl forKey:lineName];
+            [[self simulationCompareSelectedTimeSeriesArray] addObject:newTsl];
         }
     }
     for(int i = 0; i < [[self simulationCompareSimBTimeSeries] count]; i++){
@@ -1068,9 +1103,13 @@
                                                        AndSimId:1];
             lineName = [NSString stringWithFormat:@"S%ld_L%d_%@",[tsl simId],[tsl layerIndex],[tsl name]];
             [[self simulationCompareSelectedTimeSeries] setObject:newTsl forKey:lineName];
+            [[self simulationCompareSelectedTimeSeriesArray] addObject:newTsl];
         }
     }
 }
+
+
+
 
 #pragma mark -
 #pragma mark IBActions Methods
@@ -1357,7 +1396,7 @@
     [[self simulationPlotInfo] setDataViewWithStartDateTime:zoomStartDateTime
                                              AndEndDateTime:zoomEndDateTime
                                                      AsZoom:YES];
-    [[self simulationResultsPlot] updateLines:[self simulationPlotInfo]];
+    [[self simulationResultsPlot] updateLines:[self simulationPlotInfo] AndUpdateYAxes:YES];
 }
 
 - (IBAction)simCompareDateRangeButtonPress:(id)sender {
@@ -1369,7 +1408,7 @@
                                               AndEndDateTime: maxDateTime
                                                       AsZoom:YES];
     }
-     [[self simulationComparePlot] updateLines:[self comparePlotInfo]];
+     [[self simulationComparePlot] updateLines:[self comparePlotInfo] AndUpdateYAxes:YES];
 }
 
 - (IBAction)accountCurrencyChange:(id)sender {
@@ -1549,8 +1588,42 @@
     }
 }
 
+- (IBAction)sigPlotMoveForward:(id)sender {
+    NSDictionary *sigPlotRange = [[self signalPlotInfo] xyRanges];
+    long simMinX = [[sigPlotRange objectForKey:@"MINX"] longValue];
+    long simMaxX = [[sigPlotRange objectForKey:@"MAXX"] longValue];
+    
+    long zoomStartDateTime, zoomEndDateTime;
+    
+    if (([[NSApp currentEvent] modifierFlags] & NSAlternateKeyMask) != 0){
+        if (([[NSApp currentEvent] modifierFlags] & NSCommandKeyMask) != 0){
+            zoomEndDateTime = simMaxX;
+        }else{
+            zoomEndDateTime = simMaxX - (long)(0.15 * (simMaxX - simMinX));
+        }
+        zoomStartDateTime = simMinX - (long)(0.15 * (simMaxX - simMinX));
+    }else{
+        if (([[NSApp currentEvent] modifierFlags] & NSCommandKeyMask) != 0){
+            zoomStartDateTime = simMinX;
+        }else{
+            zoomStartDateTime = simMinX + (long)(0.15 * (simMaxX - simMinX));
+        }
+        zoomEndDateTime = simMaxX + (long)(0.15 * (simMaxX - simMinX));
+    }
+    
+    [[self signalPlotInfo] setDataViewWithStartDateTime:zoomStartDateTime
+                                         AndEndDateTime:zoomEndDateTime
+                                                 AsZoom:YES];
+    [[self signalAnalysisPlot] updateLines:[self signalPlotInfo] AndUpdateYAxes:YES];
+
+}
+
+- (IBAction)signalAnalysisLeadTimeFinishedEdit:(id)sender {
+    [self makeSignalAnalysisPlot];
+}
+
 //- (IBAction)simulationCompareMakePlot:(id)sender {
-//    
+//
 //    [self plotSimulationCompare];
 //}
 
@@ -1585,7 +1658,7 @@
     if([self simulationComparePlot])
     {
         [[self comparePlotInfo] setDoDotsForSecondPlot:doDots];
-        [[self simulationComparePlot] updateLines:[self comparePlotInfo]];
+        [[self simulationComparePlot] updateLines:[self comparePlotInfo] AndUpdateYAxes:YES];
     }
 }
 
@@ -1667,6 +1740,38 @@
     [[self simulationComparePlot] updatePositionIndicator:[self comparePlotInfo]];
     
  }
+
+- (IBAction)simPlotMoveForward:(id)sender {
+    if([[self simulationPlotInfo] isZoomed]){
+        NSDictionary *simPlotRange = [[self simulationPlotInfo] xyRanges];
+        long simMinX = [[simPlotRange objectForKey:@"MINX"] longValue];
+        long simMaxX = [[simPlotRange objectForKey:@"MAXX"] longValue];
+        
+        long zoomStartDateTime, zoomEndDateTime;
+        
+        if (([[NSApp currentEvent] modifierFlags] & NSAlternateKeyMask) != 0){
+            if (([[NSApp currentEvent] modifierFlags] & NSCommandKeyMask) != 0){
+                zoomEndDateTime = simMaxX;
+            }else{
+                zoomEndDateTime = simMaxX - (long)(0.15 * (simMaxX - simMinX));
+            }
+            zoomStartDateTime = simMinX - (long)(0.15 * (simMaxX - simMinX));
+        }else{
+            if (([[NSApp currentEvent] modifierFlags] & NSCommandKeyMask) != 0){
+                zoomStartDateTime = simMinX;
+            }else{
+                zoomStartDateTime = simMinX + (long)(0.15 * (simMaxX - simMinX));
+            }
+            
+            zoomEndDateTime = simMaxX + (long)(0.15 * (simMaxX - simMinX));
+        }
+        
+        [[self simulationPlotInfo] setDataViewWithStartDateTime:zoomStartDateTime
+                                                 AndEndDateTime:zoomEndDateTime
+                                                         AsZoom:YES];
+        [[self simulationResultsPlot] updateLines:[self simulationPlotInfo] AndUpdateYAxes:YES];
+    }
+}
 
 - (IBAction)performSimulation:(id)sender {
     BOOL basicCheckOk = YES;
@@ -1752,6 +1857,40 @@
         simDescription = [NSString stringWithFormat:@"%@;%@",simDescription,extraSeriesString];
     }
     
+    
+    int tradingLag = [setupTradingLagTextField intValue] * 60;
+    int samplingRate = [setupSamplingMinutesTextField intValue]*60;
+    long dataRate = (long)[[[self setupDataRateAmount] stringValue] intValue];
+    switch ([[self setupDataRateUnit] selectedColumn]) {
+        case 0:
+            dataRate = dataRate * 60 * 60;
+            break;
+        case 1:
+            dataRate = dataRate * 60;
+            break;
+        default:
+            break;
+    }
+    
+    
+    if(dataRate%[self databaseSamplingRate] != 0){
+        userMessage = [NSString stringWithFormat:@"The data rate needs to be a multiple of the database base-rate of %d seconds",[self databaseSamplingRate]];
+        basicCheckOk = NO;
+    }
+    
+    
+    if(tradingLag%dataRate != 0){
+        userMessage = [NSString stringWithFormat:@"The trading Lag should be a multiple of the data rate\nData Rate: %ld seconds\nTrading lag: %d seconds",dataRate, tradingLag];
+        basicCheckOk = NO;
+    }
+   
+    
+    if(samplingRate%dataRate != 0){
+        userMessage = [NSString stringWithFormat:@"The sampling rate should be a multiple of the data rate\nData Rate: %ld seconds\nSampling Rate: %d seconds",dataRate, samplingRate];
+        basicCheckOk = NO;
+    }
+    
+    
     long tradingStartDateTime = [EpochTime epochTimeAtZeroHour:startDateTime] + tradingDayStartTime;
     long tradingEndDateTime = [EpochTime epochTimeAtZeroHour:endDateTime] + tradingDayEndTime;
     BOOL weekendTrading = [setupTradingWeekendYesNo state] == NSOnState;
@@ -1780,7 +1919,7 @@
                        forKey:@"STARTTIME"];
         [parameters setObject:[NSNumber numberWithLong:tradingEndDateTime] 
                        forKey:@"ENDTIME"];
-        [parameters setObject:[NSNumber numberWithInt:[setupSamplingMinutesTextField intValue]*60] 
+        [parameters setObject:[NSNumber numberWithInt:samplingRate] 
                        forKey:@"TIMESTEP"];
         [parameters setObject:[NSNumber numberWithLong:tradingDayStartTime]  
                        forKey:@"TRADINGDAYSTART"];
@@ -1788,11 +1927,13 @@
                        forKey:@"TRADINGDAYEND"];
         [parameters setObject:[NSNumber numberWithBool:weekendTrading] 
                        forKey:@"WEEKENDTRADING"]; 
-        [parameters setObject:[NSNumber numberWithInt:[setupTradingLagTextField intValue]*60] 
+        [parameters setObject:[NSNumber numberWithInt:tradingLag]
                        forKey:@"TRADINGLAG"];
-        [parameters setObject:[NSNumber numberWithLong:[setupDataWarmUpTextField intValue]*DAY_SECONDS] 
+        [parameters setObject:[NSNumber numberWithLong:[setupDataWarmUpTextField intValue]*DAY_SECONDS]
                        forKey:@"WARMUPDATA"];
-        
+        [parameters setObject:[NSNumber numberWithLong:dataRate]
+                       forKey:@"DATARATE"];
+
         
         if([self importDataArray] == Nil){
             [parameters setObject:[NSNumber numberWithBool:NO] 
@@ -1947,7 +2088,7 @@
     }
     if([[tableView identifier] isEqualToString:@"COMPARESELECTEDTSTV"]){
        
-        return [[self simulationCompareSelectedTimeSeries] count];
+        return [[self simulationCompareSelectedTimeSeriesArray] count];
     }
     
     return 0;
@@ -2002,7 +2143,7 @@
                 if(numberSelected == row){
                     if([columnId isEqualToString:@"axis"])
                     {
-                        return [NSNumber numberWithInt:[tsl layerIndex]];
+                        return [NSNumber numberWithInt:[tsl layerIndex]+1];
                     }else{
                         return [tsl valueForKey:columnId];
                     }
@@ -2030,6 +2171,10 @@
     if([[tableView identifier] isEqualToString:@"TRADESTV"]){
         if([[tableColumn identifier] isEqualToString:@"DATETIME"])
         {
+            return [NSString stringWithFormat:@"%ld",[[self workingSimulation] getDateTimeForTradeAtIndex:row]];
+        }
+        if([[tableColumn identifier] isEqualToString:@"TIME"])
+        {
             return [EpochTime stringDateWithTime:[[self workingSimulation] getDateTimeForTradeAtIndex:row]];
         }
         if([[tableColumn identifier] isEqualToString:@"AMOUNT"])
@@ -2048,10 +2193,15 @@
     
     if([[tableView identifier] isEqualToString:@"CASHTRANSTV"])
     {
-        if([[tableColumn identifier] isEqualToString:@"DATETIME"])
+        if([[tableColumn identifier] isEqualToString:@"TIME"])
         {
             return [EpochTime stringDateWithTime:[[self workingSimulation] getDateTimeForBalanceAdjustmentAtIndex:row]];
         }
+        if([[tableColumn identifier] isEqualToString:@"DATETIME"])
+        {
+            return [NSString stringWithFormat:@"%ld",[[self workingSimulation] getDateTimeForBalanceAdjustmentAtIndex:row]];
+        }
+
         if([[tableColumn identifier] isEqualToString:@"AMOUNT"])
         {
             return [NSString stringWithFormat:@"%5.3f",[[self workingSimulation] getAmountForBalanceAdjustmentAtIndex:row]];
@@ -2068,11 +2218,10 @@
      
     if([[tableView identifier] isEqualToString:@"SIMDATATV"]){
         DataSeries* simData = [[self workingSimulation] analysisDataSeries];
-        if([[tableColumn identifier] isEqualToString:@"DATETIME"]){
-            long dateTimeNumber = [[[simData xData] sampleValue:row] longValue];
-            //NSString *dateTime = [EpochTime stringDateWithTime:dateTimeNumber];
-            NSString *dateTime = [NSString stringWithFormat:@"%ld",dateTimeNumber];
-            return dateTime;
+        if([[tableColumn identifier] isEqualToString:@"TIME"]){
+            return [EpochTime stringDateWithTime:[[[simData xData] sampleValue:row] longValue]];
+        }else if([[tableColumn identifier] isEqualToString:@"DATETIME"]){
+            return [NSString stringWithFormat:@"%ld",[[[simData xData] sampleValue:row] longValue]];
         }else{
             NSString *identiferString = [tableColumn identifier];
             if([identiferString isEqualToString:@"POS_PNL"] || [identiferString isEqualToString:@"NAV"] )
@@ -2094,7 +2243,7 @@
             int signalSide =  [UtilityFunctions signOfDouble:[[signalAnalysisDetails objectForKey:@"SIGNAL"] doubleValue]];
             return [NSNumber numberWithFloat:signalSide];
         }
-        if([[tableColumn identifier] isEqualToString:@"SIGNALGAIN"]){
+        if([[tableColumn identifier] isEqualToString:@"SIGNALPICKUP"]){
            
             int signalSide = [UtilityFunctions signOfDouble:[[signalAnalysisDetails objectForKey:@"SIGNAL"] doubleValue]];
                           
@@ -2193,33 +2342,22 @@
     }
     
     if([[tableView identifier] isEqualToString:@"COMPARESELECTEDTSTV"]){
-        int numberSelected = 0;
-        NSArray *lineNames = [[self simulationCompareSelectedTimeSeries] allKeys];
-        for(int tslIndex = 0; tslIndex < [[self simulationCompareSelectedTimeSeries] count]; tslIndex++)
+        tsl = [[self simulationCompareSelectedTimeSeriesArray]  objectAtIndex:row];
+        if([[tableColumn identifier] isEqualToString:@"axis"])
         {
-            tsl = [[self simulationCompareSelectedTimeSeries]  objectForKey:[lineNames objectAtIndex:tslIndex]];
-            if([tsl layerIndex] != -1){
-                if(numberSelected == row){
-                    if([columnId isEqualToString:@"axis"])
-                    {
-                        return [NSNumber numberWithInt:[tsl layerIndex]];
-                    }else if([columnId isEqualToString:@"name"]){
-                        if([tsl simId]==0){
-                            return [NSString stringWithFormat:@"A_%@",[tsl name]];
-                        }else{
-                            return [NSString stringWithFormat:@"B_%@",[tsl name]];
-                        }
-                    }else{
-                        return [tsl valueForKey:columnId];
-                    }
-                }else{
-                    numberSelected++;
-                }
-            }
+            return [NSNumber numberWithInt:[tsl layerIndex]+1];
         }
-        return @"Err";
+        if([[tableColumn identifier] isEqualToString:@"name"]){
+            if([tsl simId]==0){
+                return [NSString stringWithFormat:@"A_%@",[tsl name]];
+            }else{
+                return [NSString stringWithFormat:@"B_%@",[tsl name]];
+            }
+        }else{
+            return [tsl valueForKey:columnId];
+        }
     }
-    
+
     if([[tableView identifier] length] >= 10){
         if([[[tableView identifier] substringToIndex:10] isEqualToString:@"SAVEDSIMTV"])
         {
@@ -2308,15 +2446,15 @@
     
     if([[tableView identifier] isEqualToString:@"SIMTSTV"]){
         [self updateSimulationSelectedTimeSeries];
-        [[self simulationResultsPlot] updateLines:[self simulationPlotInfo]];
+        [[self simulationResultsPlot] updateLines:[self simulationPlotInfo] AndUpdateYAxes:YES];
     }
     if([[tableView identifier] isEqualToString:@"SIGTSTV"]){
         [self updateSimulationSignalSelectedTimeSeries];
-        [[self signalAnalysisPlot] updateLines:[self signalPlotInfo]];
+        [[self signalAnalysisPlot] updateLines:[self signalPlotInfo] AndUpdateYAxes:YES];
     }
     if([[tableView identifier] isEqualToString:@"SIMCOMPARETSTV"]){
         [self updateSelectedSimCompareTimeseries];
-        [[self simulationComparePlot] updateLines:[self comparePlotInfo]];
+        [[self simulationComparePlot] updateLines:[self comparePlotInfo] AndUpdateYAxes:YES];
 //    }else{
 //        if([[tableColumn identifier] isEqualToString:@"colourId"]){
 //            [plot updatePlotWithUpdateAxes:NO];
@@ -2382,6 +2520,7 @@
     if([[tableView identifier] isEqualToString:@"SIMCOMPARETSTV"]){
         NSString *lineName = [NSString stringWithFormat:@"S%ld_L%d_%@",[tsl simId],[tsl layerIndex],[tsl name]];
         [[self simulationCompareSelectedTimeSeries] setObject:tsl forKey:lineName];
+        [[self simulationCompareSelectedTimeSeriesArray] addObject:tsl];
         [[self simulationCompareSelectedTSTableView] reloadData];
     }
     [tableView reloadData];
@@ -2392,6 +2531,22 @@
     if([[[notification object] identifier] isEqualToString:@"SIGANALTV"]){
         [self makeSignalAnalysisPlot];
     }
+    
+    if([[[notification object] identifier] isEqualToString:@"COMPARESELECTEDTSTV"]){
+        if([[self simulationCompareSelectedTSTableView] numberOfSelectedRows] == 1){
+            NSInteger selectedRowIndex = [[self simulationCompareSelectedTSTableView] selectedRow];
+            TimeSeriesLine *tsl = [[self simulationCompareSelectedTimeSeriesArray] objectAtIndex:selectedRowIndex];
+            
+            NSArray *radioCells = [[self simulationCompareSimRadio] cells];
+            if([tsl simId] == 0){
+                 [[self simulationCompareSimRadio] selectCell:[radioCells objectAtIndex:0]];
+                             }else{
+                [[self simulationCompareSimRadio] selectCell:[radioCells objectAtIndex:1]];
+            }
+            [[self simulationCompareTimeSeriesTableView] reloadData];
+        }
+    }
+
     
     if([[[notification object] identifier] length] >= 10){
         if([[[[notification object] identifier] substringToIndex:10] isEqualToString:@"SAVEDSIMTV"]){
@@ -2518,7 +2673,7 @@
         [[self comparePlotInfo] setDataViewWithStartDateTime:minDataTime
                                               AndEndDateTime:maxDateTime
                                                       AsZoom:[[self comparePlotInfo] isZoomed]];
-        [[self simulationComparePlot] updateLines:plotDataSource];
+        [[self simulationComparePlot] updateLines:plotDataSource AndUpdateYAxes:YES];
         
     }
     return;
@@ -2577,7 +2732,7 @@
             sortSwitch = 1;
         }
         [self setSignalTableViewSortColumn:[tableColumn identifier]];
-        if([[self signalTableViewSortColumn] isEqualToString:@"SIGNALGAIN"]){
+        if([[self signalTableViewSortColumn] isEqualToString:@"SIGNALPICKUP"]){
             for(int i = 0; i < numberOfData;i++){
                 signalAnalysisDetails = [[self workingSimulation] detailsOfSignalAtIndex:i];
                 int signalSide = [UtilityFunctions signOfDouble:[[ signalAnalysisDetails objectForKey:@"SIGNAL"] doubleValue]];
@@ -2910,7 +3065,7 @@
 @synthesize simulationCompareSimATimeSeries = _simulationCompareSimATimeSeries;
 @synthesize simulationCompareSimBTimeSeries = _simulationCompareSimBTimeSeries;
 //@synthesize simulationCompareSelectTimeSeries = _simulationCompareSelectTimeSeries;
-@synthesize simulationCompareSelectedTimeSeries = _simulationCompareSelectedTimeSeries;
+//@synthesize simulationCompareSelectedTimeSeries = _simulationCompareSelectedTimeSeries;
 @synthesize signalTableViewSortedAscending = _signalTableViewSortedAscending;
 @synthesize initialSetupComplete = _initialSetupComplete;
 @synthesize doingSetup = _doingSetup;

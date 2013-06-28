@@ -10,13 +10,15 @@
 
 @interface SignalSystem : NSObject
 {
-    NSString *_signalString;
-    NSString *_type;
-    int _fastCode;
-    int _slowCode;
-    int _signalSmooth;
-    NSArray *_extras;
-    NSMutableDictionary *_miscStoredInfoDictionary;
+//    NSString *_signalString;
+//    NSString *_type;
+//    int _fastCode;
+//    int _slowCode;
+//    int _signalSmooth;
+//    NSArray *_extras;
+//    double *upThreshold;
+//    double *downThreshold;
+//    NSMutableDictionary *_miscStoredInfoDictionary;
 }
 
 
@@ -33,7 +35,10 @@
 @property (readonly) int fastCode;
 @property (readonly) int slowCode;
 @property (readonly) int signalSmooth;
+@property (readonly) NSString *pacsString;
 @property (readonly) NSArray *extras;
+@property  double threshold;
+@property  double stepAdjustment;
 @property (readonly) NSMutableDictionary *miscStoredInfoDictionary;
-@property double threshold;
+//@property double threshold;
 @end

@@ -15,7 +15,7 @@
 //- (BOOL) fixUpXAxisLabels;
 - (void) fixUpYAxisForLayerIndex: (int) layerIndex;
 //- (void) zoomInAndFitYAxis:(BOOL) fitYAxis;
-- (void) zoomIn;
+- (void) zoomInAndZoomY: (BOOL) zoomY;;
 - (void) zoomOut;
 - (void) addHorizontalLineAt:(double) yValue 
                 ForPlotspace:(CPTXYPlotSpace *) plotSpace;
@@ -797,6 +797,7 @@
 
 
 - (void) updateLines: (SeriesPlotDataWrapper *) dataSource
+      AndUpdateYAxes: (BOOL) updateYAxis
 {
     //Create a plot that uses the data source method
     CPTScatterPlot *dataSourceLinePlot;
@@ -809,17 +810,19 @@
     
     [self setMinXrangeForPlot: [[xyRanges objectForKey:@"MINX"] longValue]];
     [self setMaxXrangeForPlot: [[xyRanges objectForKey:@"MAXX"] longValue]];
-    if([[xyRanges objectForKey:@"PLOT0"] boolValue]){
-        [self setMinYrangeForPlot0: [[xyRanges objectForKey:@"MINY0"] doubleValue]];
-        [self setMaxYrangeForPlot0: [[xyRanges objectForKey:@"MAXY0"] doubleValue]];
-    }
-    if([[xyRanges objectForKey:@"PLOT1"] boolValue]){
-        [self setMinYrangeForPlot1: [[xyRanges objectForKey:@"MINY1"] doubleValue]];
-        [self setMaxYrangeForPlot1: [[xyRanges objectForKey:@"MAXY1"] doubleValue]];
-    }
-    if([[xyRanges objectForKey:@"PLOT2"] boolValue]){
-        [self setMinYrangeForPlot2: [[xyRanges objectForKey:@"MINY2"] doubleValue]];
-        [self setMaxYrangeForPlot2: [[xyRanges objectForKey:@"MAXY2"] doubleValue]];
+    if(updateYAxis){
+        if([[xyRanges objectForKey:@"PLOT0"] boolValue]){
+            [self setMinYrangeForPlot0: [[xyRanges objectForKey:@"MINY0"] doubleValue]];
+            [self setMaxYrangeForPlot0: [[xyRanges objectForKey:@"MAXY0"] doubleValue]];
+        }
+        if([[xyRanges objectForKey:@"PLOT1"] boolValue]){
+            [self setMinYrangeForPlot1: [[xyRanges objectForKey:@"MINY1"] doubleValue]];
+            [self setMaxYrangeForPlot1: [[xyRanges objectForKey:@"MAXY1"] doubleValue]];
+        }
+        if([[xyRanges objectForKey:@"PLOT2"] boolValue]){
+            [self setMinYrangeForPlot2: [[xyRanges objectForKey:@"MINY2"] doubleValue]];
+            [self setMaxYrangeForPlot2: [[xyRanges objectForKey:@"MAXY2"] doubleValue]];
+        }
     }
    
     while([[self dateAnnotationArray] count] > 0){
@@ -1104,6 +1107,16 @@
     }else{
         while([[[self graph] allPlots] count] > 0){
             [[self graph] removePlot:[[[self graph] allPlots] objectAtIndex:0]];
+        }
+    }
+    if([[self lineAnnotationArray] count] > 0){
+        NSMutableArray *renewLines = [[NSMutableArray alloc] init];
+        for(int i = 0; i < [[self lineAnnotationArray] count]; i++){
+            [renewLines addObject:[[self lineAnnotationLevelArray] objectAtIndex:i]];
+        }
+        [self removeLineAnnotation];
+        for(int i = 0; i < [renewLines count]; i++){
+            [self addHorizontalLineAt:[[renewLines objectAtIndex:i] doubleValue] ForPlotspace:[self plotSpace0]];
         }
     }
 
@@ -1682,10 +1695,8 @@
 -(BOOL)plotSpace:(CPTPlotSpace *)plotSpace shouldHandlePointingDeviceDraggedEvent:(id)event 
          atPoint:(CGPoint)interactionPoint
 {
-//    TimeSeriesLine *tsLine = [[self timeSeriesLines] objectAtIndex:0];
-//    NSString *plotIdentifier = [NSString stringWithFormat:@"P0_%@",[tsLine name]];
-//    CPTScatterPlot *plot = (CPTScatterPlot *)[[self graph] plotWithIdentifier:plotIdentifier];
-    
+    NSUInteger flags = [event modifierFlags] & NSDeviceIndependentModifierFlagsMask;
+
 	// convert the dragStart and dragEnd values to plot coordinates
 	CGPoint dragStartInPlotArea = [[self graph] convertPoint:[self dragStart] toLayer:[self interactionLayer]];
 	CGPoint dragEndInPlotArea	= [[self graph] convertPoint:interactionPoint toLayer:[self interactionLayer]];
@@ -1694,11 +1705,11 @@
     CGRect borderRect;
     
     if([self interactionLayer]){
-//        if([NSEvent modifierFlags] == NSAlternateKeyMask){
-//            borderRect = CGRectMake(dragStartInPlotArea.x, dragStartInPlotArea.y,
-//                                    (dragEndInPlotArea.x - dragStartInPlotArea.x),
-//                                    (dragEndInPlotArea.y - dragStartInPlotArea.y));
-//        }else{
+        if(flags == NSAlternateKeyMask){
+            borderRect = CGRectMake(dragStartInPlotArea.x, dragStartInPlotArea.y,
+                                    (dragEndInPlotArea.x - dragStartInPlotArea.x),
+                                    (dragEndInPlotArea.y - dragStartInPlotArea.y));
+        }else if(flags == 0){
             double getValues[2];
             double minYRange = [[NSDecimalNumber decimalNumberWithDecimal:[[[self plotSpace0] yRange] location]] doubleValue];
             double maxYRange =  minYRange + [[NSDecimalNumber decimalNumberWithDecimal:[[[self plotSpace0] yRange] length]] doubleValue];
@@ -1713,46 +1724,47 @@
                                     (dragEndInPlotArea.x - dragStartInPlotArea.x),
                                     getMaxY.y);
             
-//        }
-        
-        // force the drawing of the zoomRect
-        [[[self zoomAnnotation] contentLayer] setFrame:borderRect];
-        [[[self zoomAnnotation] contentLayer] setNeedsDisplay];
-        
-        // Add a date
-        //CPTXYPlotSpace *plotSpace = (CPTXYPlotSpace *)graph.defaultPlotSpace;
-        CGPoint dragInPlotArea = [[self graph] convertPoint:interactionPoint toLayer:[self interactionLayer]];
-        double dataCoords[2];
-        [[self plotSpace0] doublePrecisionPlotPoint:dataCoords forPlotAreaViewPoint:dragInPlotArea];
-        
-        NSString *currentValue;
-//        if([NSEvent modifierFlags] == NSAlternateKeyMask){
-//            currentValue = [NSString stringWithFormat:@"%5.3f",dataCoords[CPTCoordinateY]];
-//        }else{
-            currentValue = [EpochTime stringOfDateTimeForTime:(long)dataCoords[CPTCoordinateX]
-                                                   WithFormat: @"%a %Y-%m-%d %H:%M:%S"];
-//        }
-        NSNumber *x            = [NSNumber numberWithDouble:dataCoords[CPTCoordinateX]];
-        NSNumber *y            = [NSNumber numberWithDouble:dataCoords[CPTCoordinateY]];
-        NSArray *anchorPoint = [NSArray arrayWithObjects: x,y, nil];
-        //
-        if ([self dragDateAnnotation]) {
-            [[[[self graph] plotAreaFrame] plotArea] removeAnnotation:[self dragDateAnnotation]];
-            [self setDragDateAnnotation:nil];
         }
-        
-        // Setup a style for the annotation
-        CPTMutableTextStyle *hitAnnotationTextStyle = [CPTMutableTextStyle textStyle];
-        hitAnnotationTextStyle.color	= [CPTColor grayColor];
-        hitAnnotationTextStyle.fontSize = 12.0f;
-        hitAnnotationTextStyle.fontName = @"Courier";
-        
-        // Now add the annotation to the plot area
-        CPTTextLayer *textLayer = [[CPTTextLayer alloc] initWithText:currentValue style:hitAnnotationTextStyle];
-        [self setDragDateAnnotation:[[CPTPlotSpaceAnnotation alloc] initWithPlotSpace:[self plotSpace0] anchorPlotPoint:anchorPoint]];
-        [[self dragDateAnnotation] setContentLayer:textLayer];
-        [[self dragDateAnnotation] setDisplacement:CGPointMake(0.0f, 10.0f)];
-        [[[[self graph] plotAreaFrame] plotArea] addAnnotation:[self dragDateAnnotation]];
+        if(flags == 0 || flags == NSAlternateKeyMask){
+            // force the drawing of the zoomRect
+            [[[self zoomAnnotation] contentLayer] setFrame:borderRect];
+            [[[self zoomAnnotation] contentLayer] setNeedsDisplay];
+            
+            // Add a date
+            //CPTXYPlotSpace *plotSpace = (CPTXYPlotSpace *)graph.defaultPlotSpace;
+            CGPoint dragInPlotArea = [[self graph] convertPoint:interactionPoint toLayer:[self interactionLayer]];
+            double dataCoords[2];
+            [[self plotSpace0] doublePrecisionPlotPoint:dataCoords forPlotAreaViewPoint:dragInPlotArea];
+            
+            NSString *currentValue;
+            if(flags == NSAlternateKeyMask){
+                currentValue = [NSString stringWithFormat:@"%5.3f",dataCoords[CPTCoordinateY]];
+            }else{
+                currentValue = [EpochTime stringOfDateTime:(long)dataCoords[CPTCoordinateX]
+                                                WithFormat: @"%a %Y-%m-%d %H:%M:%S"];
+            }
+            NSNumber *x            = [NSNumber numberWithDouble:dataCoords[CPTCoordinateX]];
+            NSNumber *y            = [NSNumber numberWithDouble:dataCoords[CPTCoordinateY]];
+            NSArray *anchorPoint = [NSArray arrayWithObjects: x,y, nil];
+            //
+            if ([self dragDateAnnotation]) {
+                [[[[self graph] plotAreaFrame] plotArea] removeAnnotation:[self dragDateAnnotation]];
+                [self setDragDateAnnotation:nil];
+            }
+            
+            // Setup a style for the annotation
+            CPTMutableTextStyle *hitAnnotationTextStyle = [CPTMutableTextStyle textStyle];
+            hitAnnotationTextStyle.color	= [CPTColor grayColor];
+            hitAnnotationTextStyle.fontSize = 12.0f;
+            hitAnnotationTextStyle.fontName = @"Courier";
+            
+            // Now add the annotation to the plot area
+            CPTTextLayer *textLayer = [[CPTTextLayer alloc] initWithText:currentValue style:hitAnnotationTextStyle];
+            [self setDragDateAnnotation:[[CPTPlotSpaceAnnotation alloc] initWithPlotSpace:[self plotSpace0] anchorPlotPoint:anchorPoint]];
+            [[self dragDateAnnotation] setContentLayer:textLayer];
+            [[self dragDateAnnotation] setDisplacement:CGPointMake(0.0f, 10.0f)];
+            [[[[self graph] plotAreaFrame] plotArea] addAnnotation:[self dragDateAnnotation]];
+        }
     }
 	return NO;
 }
@@ -1760,30 +1772,45 @@
 -(BOOL)plotSpace:(CPTPlotSpace *)plotSpace shouldHandlePointingDeviceDownEvent:(id)event
          atPoint:(CGPoint)interactionPoint
 {
-  	if([self interactionLayer]){
-        if([NSEvent modifierFlags] == NSCommandKeyMask){
-//            TimeSeriesLine *tsLine = [[self timeSeriesLines] objectAtIndex:0];
-//            NSString *plotIdentifier = [NSString stringWithFormat:@"P0_%@",[tsLine name]];
-//            CPTScatterPlot *plot = (CPTScatterPlot *)[[self graph] plotWithIdentifier:plotIdentifier];
+    NSUInteger flags = [event modifierFlags] & NSDeviceIndependentModifierFlagsMask;
+ 	if([self interactionLayer]){
+        if(flags == NSCommandKeyMask){
             CGPoint clickInPlotArea = [[self graph] convertPoint:interactionPoint
                                                          toLayer:[self interactionLayer]];
             double dataCoords[2];
             
             [plotSpace doublePrecisionPlotPoint:dataCoords
                            forPlotAreaViewPoint:clickInPlotArea];
-            [self addHorizontalLineAt:dataCoords[CPTCoordinateY] ForPlotspace:[self plotSpace0]];
+            [self addHorizontalLineAt:dataCoords[CPTCoordinateY]
+                         ForPlotspace:[self plotSpace0]];
+        }else if(flags == NSCommandKeyMask + NSAlternateKeyMask){
+            NSTextField *accessory = [[NSTextField alloc] initWithFrame:NSMakeRect(0,0,200,22)];
+            //NSFont *font = [NSFont systemFontOfSize:[NSFont systemFontSize]];
+            //NSDictionary *textAttributes = [NSDictionary dictionaryWithObject:font forKey:NSFontAttributeName];
+            //[accessory insertText:[[NSAttributedString alloc] initWithString:@""
+            //                                                      attributes:textAttributes]];
+            [accessory setEditable:YES];
+    
+            [accessory setDrawsBackground:YES];
             
-        }else{
+            [self setAlert:[[NSAlert alloc] init]];
+            [[self alert] setMessageText:@"Enter in a Y1 value for horizontal line in the white field below"];
+            [[self alert] setInformativeText:@""];
+            [[self alert] setAccessoryView:accessory];
+            [[self alert] runModal];
+            //NSString *inputString = [[accessory textStorage] string];
+            NSString *inputString = [accessory stringValue];
+            NSArray* words = [inputString componentsSeparatedByCharactersInSet :[NSCharacterSet whitespaceCharacterSet]];
+            NSString* noSpaceString = [words componentsJoinedByString:@""];
+            NSNumberFormatter *numberFormatter = [[NSNumberFormatter alloc] init];
+            if([numberFormatter numberFromString:noSpaceString]){
+                double inputValue = [[numberFormatter numberFromString:noSpaceString] doubleValue];
+                [self addHorizontalLineAt:inputValue
+                             ForPlotspace:[self plotSpace0]];
+            }
+        }else {
             [self setDragStart:interactionPoint];
-            
-            //CPTXYPlotSpace *plotSpace = (CPTXYPlotSpace *)graph.defaultPlotSpace;
-            //        TimeSeriesLine *tsLine = [[self timeSeriesLines] objectAtIndex:0];
-            //        NSString *plotIdentifier = [NSString stringWithFormat:@"P0_%@",[tsLine name]];
-            //        CPTScatterPlot *plot = (CPTScatterPlot *)[[self graph] plotWithIdentifier:plotIdentifier];
-            //CPTPlotSpaceAnnotation *test;
-            
-            
-            CGPoint clickInPlotArea = [[self graph] convertPoint:interactionPoint
+           CGPoint clickInPlotArea = [[self graph] convertPoint:interactionPoint
                                                          toLayer:[self interactionLayer]];
             double dataCoords[2];
             [plotSpace doublePrecisionPlotPoint:dataCoords
@@ -1792,11 +1819,11 @@
             // Add annotation
             // First make a string for the y value
             NSString *currentValue;
-            if([NSEvent modifierFlags] == NSAlternateKeyMask){
+            if(flags == NSAlternateKeyMask){
                 currentValue = [NSString stringWithFormat:@"%5.4f",dataCoords[CPTCoordinateY]];
             }else{
-                currentValue = [EpochTime stringOfDateTimeForTime:(long)dataCoords[CPTCoordinateX]
-                                                       WithFormat: @"%a %Y-%m-%d %H:%M:%S"];
+                currentValue = [EpochTime stringOfDateTime:(long)dataCoords[CPTCoordinateX]
+                                                WithFormat: @"%a %Y-%m-%d %H:%M:%S"];
             }
             //
             NSNumber *x            = [NSNumber numberWithDouble:dataCoords[CPTCoordinateX]];
@@ -1828,8 +1855,9 @@
 -(BOOL)plotSpace:(CPTPlotSpace *)plotSpace shouldHandlePointingDeviceUpEvent:(id)event
          atPoint:(CGPoint)point
 {
+    NSUInteger flags = [NSEvent modifierFlags] & NSDeviceIndependentModifierFlagsMask;
     if([self interactionLayer]){
-        if([NSEvent modifierFlags] == NSCommandKeyMask){
+        if(flags == NSCommandKeyMask){
             if([event clickCount] == 2){
                 [self removeLineAnnotation];
                 //            while([lineAnnotationArray count] > 0){
@@ -1838,37 +1866,35 @@
                 //                [lineAnnotationLevelArray removeObjectAtIndex:0];
                 //            }
             }
-        }else{
-            
+        }else if(flags == 0 || flags == NSAlternateKeyMask){
             if ( [self clickDateAnnotation] ) {
                 [[[[self graph] plotAreaFrame] plotArea] removeAnnotation:[self clickDateAnnotation]];
                 [self setClickDateAnnotation:nil];
             }
-            
-            if ( [self dragDateAnnotation] ) {
-                [[[[self graph] plotAreaFrame] plotArea] removeAnnotation:[self dragDateAnnotation]];
-                [self setDragDateAnnotation:nil];
-            }
-            
-            [self setDragEnd:point];
-            
             // double-click to completely zoom out
             if ( [event clickCount] == 2 ) {
                 [self zoomOut];
                 
             }
-            else if ( !CGPointEqualToPoint([self dragStart], [self dragEnd]) ) {
+            
+            if ( [self dragDateAnnotation] ) {
+                [[[[self graph] plotAreaFrame] plotArea] removeAnnotation:[self dragDateAnnotation]];
+                [self setDragDateAnnotation:nil];
+                [self setDragEnd:point];
                 
-                // no accidental drag, so zoom in
-//                if([NSEvent modifierFlags] == NSAlternateKeyMask){
-//                    [self zoomIn];
-//                }else{
-                    [self zoomIn];
-//                }
+                if ( !CGPointEqualToPoint([self dragStart], [self dragEnd]) ) {
+                    // no accidental drag, so zoom in
+                    if(flags == NSAlternateKeyMask){
+                        [self zoomInAndZoomY:YES];
+                    }else{
+                        [self zoomInAndZoomY:NO];
+                    }
+                    
+                    // and we're done with the drag
+                    [[[self zoomAnnotation] contentLayer] setFrame:CGRectNull];
+                    [[[self zoomAnnotation] contentLayer] setNeedsDisplay];
+                }
                 
-                // and we're done with the drag
-                [[[self zoomAnnotation] contentLayer] setFrame:CGRectNull];
-                [[[self zoomAnnotation] contentLayer] setNeedsDisplay];
             }
         }
     }
@@ -1953,7 +1979,7 @@
 //}
 
 
--(void)zoomIn;
+-(void)zoomInAndZoomY: (BOOL) zoomY;
 {
 	//CPTXYPlotSpace *plotSpace = (CPTXYPlotSpace *)graph.defaultPlotSpace;
 //    TimeSeriesLine *tsLine = [[self timeSeriesLines] objectAtIndex:0];
@@ -1962,28 +1988,28 @@
 //    
     double minXzoomForPlot;
 	double maxXzoomForPlot;
-//	double minYzoomForPlot0;
-//	double maxYzoomForPlot0;
-//    double minYzoomForPlot1;
-//	double maxYzoomForPlot1;
-//    double minYzoomForPlot2;
-//	double maxYzoomForPlot2;
+	double minYzoomForPlot0;
+	double maxYzoomForPlot0;
+    double minYzoomForPlot1;
+	double maxYzoomForPlot1;
+    double minYzoomForPlot2;
+	double maxYzoomForPlot2;
     
 	// convert the dragStart and dragEnd values to plot coordinates
 	CGPoint dragStartInPlotArea = [[self graph] convertPoint:[self dragStart] toLayer:[self interactionLayer]];
 	CGPoint dragEndInPlotArea	= [[self graph] convertPoint:[self dragEnd] toLayer:[self interactionLayer]];
     
-	double start0[2], end0[2]; //, start1[2], end1[2], start2[2], end2[2];
+	double start0[2], end0[2], start1[2], end1[2], start2[2], end2[2];
     
 	// obtain the datapoints for the drag start and end
 	[[self plotSpace0] doublePrecisionPlotPoint:start0 forPlotAreaViewPoint:dragStartInPlotArea];
 	[[self plotSpace0] doublePrecisionPlotPoint:end0 forPlotAreaViewPoint:dragEndInPlotArea];
     
-//    [[self plotSpace1] doublePrecisionPlotPoint:start1 forPlotAreaViewPoint:dragStartInPlotArea];
-//    [[self plotSpace1] doublePrecisionPlotPoint:end1 forPlotAreaViewPoint:dragEndInPlotArea];
-//    
-//    [[self plotSpace2] doublePrecisionPlotPoint:start2 forPlotAreaViewPoint:dragStartInPlotArea];
-//    [[self plotSpace2] doublePrecisionPlotPoint:end2 forPlotAreaViewPoint:dragEndInPlotArea];
+    [[self plotSpace1] doublePrecisionPlotPoint:start1 forPlotAreaViewPoint:dragStartInPlotArea];
+    [[self plotSpace1] doublePrecisionPlotPoint:end1 forPlotAreaViewPoint:dragEndInPlotArea];
+    
+    [[self plotSpace2] doublePrecisionPlotPoint:start2 forPlotAreaViewPoint:dragStartInPlotArea];
+    [[self plotSpace2] doublePrecisionPlotPoint:end2 forPlotAreaViewPoint:dragEndInPlotArea];
     
 	// recalculate the min and max values
 	minXzoomForPlot = MIN(start0[CPTCoordinateX], end0[CPTCoordinateX]);
@@ -1992,15 +2018,53 @@
     [[self dataSource] setDataViewWithStartDateTime:(long)minXzoomForPlot
                                      AndEndDateTime:(long)maxXzoomForPlot
                                              AsZoom:YES];
-    [self updateLines:[self dataSource]];
- 
+        
+    
+    if(zoomY){
+        minYzoomForPlot0 = MIN(start0[CPTCoordinateY], end0[CPTCoordinateY]);
+        maxYzoomForPlot0 = MAX(start0[CPTCoordinateY], end0[CPTCoordinateY]);
+        [[self plotSpace0] setYRange:[CPTPlotRange plotRangeWithLocation:CPTDecimalFromDouble(minYzoomForPlot0)
+                                                                  length:CPTDecimalFromDouble(maxYzoomForPlot0 - minYzoomForPlot0)]];
+        [self setMinYrangeForPlot0: minYzoomForPlot0];
+        [self setMaxYrangeForPlot0: maxYzoomForPlot0];
+        
+        minYzoomForPlot1 = MIN(start1[CPTCoordinateY], end1[CPTCoordinateY]);
+        maxYzoomForPlot1 = MAX(start1[CPTCoordinateY], end1[CPTCoordinateY]);
+        [[self plotSpace1] setYRange:[CPTPlotRange plotRangeWithLocation:CPTDecimalFromDouble(minYzoomForPlot1)
+                                                                  length:CPTDecimalFromDouble(maxYzoomForPlot1 - minYzoomForPlot1)]];
+        [self setMinYrangeForPlot1: minYzoomForPlot1];
+        [self setMaxYrangeForPlot1: maxYzoomForPlot1];
+        
+        minYzoomForPlot2 = MIN(start2[CPTCoordinateY], end2[CPTCoordinateY]);
+        maxYzoomForPlot2 = MAX(start2[CPTCoordinateY], end2[CPTCoordinateY]);
+        [[self plotSpace2] setYRange:[CPTPlotRange plotRangeWithLocation:CPTDecimalFromDouble(minYzoomForPlot2)
+                                                                  length:CPTDecimalFromDouble(maxYzoomForPlot2 - minYzoomForPlot2)]];
+        
+        [self setMinYrangeForPlot2: minYzoomForPlot2];
+        [self setMaxYrangeForPlot2: maxYzoomForPlot2];
+        
+        
+        [self updateLines:[self dataSource]
+           AndUpdateYAxes:NO];
+    }else{
+        [self updateLines:[self dataSource]
+           AndUpdateYAxes:YES];
+    }
+
 }
 
 -(void)zoomOut
 {
     [[self dataSource] unZoomDataView];
-    [self updateLines:[self dataSource]];
+    [self updateLines:[self dataSource]
+       AndUpdateYAxes:YES];
 }
+
+
+
+
+
+
 //-(void)zoomInAndFitYAxis:(BOOL) fitYAxis;
 //{
 //	//CPTXYPlotSpace *plotSpace = (CPTXYPlotSpace *)graph.defaultPlotSpace;

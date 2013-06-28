@@ -19,16 +19,16 @@
     CPTNumericData *_xData; 
     NSMutableDictionary *_yData; 
     NSMutableDictionary *_dataViews;
-    long _sampleRate;
+    
 }
 
 @property (retain) NSString *name;
-@property (assign) NSUInteger dbId;
-@property (assign) double pipSize; 
+@property  NSUInteger dbId;
+@property  double pipSize; 
 @property (nonatomic, retain) CPTNumericData *xData;
 @property (atomic, retain) NSMutableDictionary *yData;
 @property (atomic, retain) NSMutableDictionary *dataViews;
-@property (assign) long sampleRate;
+@property  long dataRate;
  
 
 
@@ -49,7 +49,7 @@
 
 - (void) reduceDataSeriesToSampledSeconds: (int) numberOfSeconds;
 
-- (DataSeries *) sampleDataAtInterval: (int) numberOfSeconds;
+//- (DataSeries *) sampleDataAtInterval: (int) numberOfSeconds;
 
 - (NSDictionary *) getValues: (NSArray *) fieldNames 
                   AtDateTime: (long) dateTime;

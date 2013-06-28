@@ -11,21 +11,25 @@
 
 @implementation BasicParameters
  
--(id)initWithName: (NSString *)name 
+
+
+-(id)initWithName: (NSString *)name
        AndAccCode: (NSString *) accCode
       AndBaseCode: (NSString *) baseCode
      AndQuoteCode: (NSString *) quoteCode
      AndStartDate: (long) startDate
        AndEndDate: (long) endDate
+      AndDataRate: (long) dataRate
    AndMaxLeverage: (float) maxLeverage
   AndSamplingRate: (NSUInteger) samplingRate
     AndTradingLag: (NSUInteger) tradingLag
 AndTradingDayStart: (NSUInteger) tradingDayStart
  AndTradingDayEnd: (NSUInteger) tradingDayEnd
+AndWeekendTrading: (BOOL) weekendTrading
 {
     self = [super init];
     if(self){
-        _name = name;   
+        _name = name;
         _accCode = accCode;
         _baseCode = baseCode;
         _quoteCode = quoteCode;
@@ -36,9 +40,18 @@ AndTradingDayStart: (NSUInteger) tradingDayStart
         _tradingLag = tradingLag;
         _tradingDayStart = tradingDayStart;
         _tradingDayEnd = tradingDayEnd;
+        _dataRate = dataRate;
+        _weekendTrading = weekendTrading;
     }
     return self;
 }
+
+
+
+
+
+
+
 
 - (void) encodeWithCoder:(NSCoder*)encoder{
     [encoder encodeObject:_name forKey:@"NAME"];
@@ -52,6 +65,8 @@ AndTradingDayStart: (NSUInteger) tradingDayStart
     [encoder encodeObject:[NSNumber numberWithLong:_tradingLag]  forKey:@"TRADINGLAG"];
     [encoder encodeObject:[NSNumber numberWithLong:_tradingDayStart]  forKey:@"TRADINGDAYSTART"];
     [encoder encodeObject:[NSNumber numberWithLong:_tradingDayEnd]  forKey:@"TRADINGDAYEND"];
+    [encoder encodeObject:[NSNumber numberWithLong:_dataRate]  forKey:@"DATARATE"];
+    [encoder encodeObject:[NSNumber numberWithBool:_weekendTrading]  forKey:@"WEEKENDTRADING"];
 }
 
 - (id) initWithCoder:(NSCoder*)decoder{
@@ -68,7 +83,8 @@ AndTradingDayStart: (NSUInteger) tradingDayStart
         _tradingLag = [[decoder decodeObjectForKey:@"TRADINGLAG"] longValue];
         _tradingDayStart = [[decoder decodeObjectForKey:@"TRADINGDAYSTART"] longValue];
         _tradingDayEnd = [[decoder decodeObjectForKey:@"TRADINGDAYEND"] longValue];
-
+        _dataRate = [[decoder decodeObjectForKey:@"DATARATE"] longValue];
+        _weekendTrading = [[decoder decodeObjectForKey:@"WEEKENDTRADING"] boolValue];
     }
     return self;
 }
@@ -76,23 +92,9 @@ AndTradingDayStart: (NSUInteger) tradingDayStart
 - (NSString *)description
 {
     NSString *descriptionString;
-    descriptionString = [NSString stringWithFormat:@"Name: %@\n Account Code: %@\n BaseCode: %@\nQuoteCode: %@\n StartDate: %@\n EndDate: %@\n Max Leverage: %5.2f\nSampling Rate: %lu \nTrading Lag: %lu \nTrading Day Start: %@ \nTrading Day End:%@\n",[self name],[self accCode],[self baseCode],[self quoteCode],[EpochTime stringDate:[self startDate]],[EpochTime stringDate:[self endDate]], [self maxLeverage], [self samplingRate], [self tradingLag], [EpochTime stringOfDateTimeForTime:[self tradingDayStart] WithFormat:@"%H:%M"], [EpochTime stringOfDateTimeForTime:[self tradingDayEnd] WithFormat:@"%H:%M"]];
+    descriptionString = [NSString stringWithFormat:@"Name: %@\n Account Code: %@\n BaseCode: %@\nQuoteCode: %@\n StartDate: %@\n EndDate: %@\n Max Leverage: %5.2f\nSampling Rate: %lu \nTrading Lag: %lu \nTrading Day Start: %@ \nTrading Day End:%@\n",[self name],[self accCode],[self baseCode],[self quoteCode],[EpochTime stringDate:[self startDate]],[EpochTime stringDate:[self endDate]], [self maxLeverage], [self samplingRate], [self tradingLag], [EpochTime stringOfDateTime:[self tradingDayStart] WithFormat:@"%H:%M"], [EpochTime stringOfDateTime:[self tradingDayEnd] WithFormat:@"%H:%M"]];
     return descriptionString;
     
 }
-
-@synthesize name = _name;
-@synthesize accCode = _accCode;
-@synthesize baseCode = _baseCode;
-@synthesize quoteCode = _quoteCode;
-@synthesize startDate = _startDate;
-@synthesize endDate = _endDate;
-@synthesize maxLeverage = _maxLeverage;
-@synthesize samplingRate = _samplingRate;
-@synthesize tradingLag = _tradingLag;
-@synthesize tradingDayStart = _tradingDayStart;
-@synthesize tradingDayEnd = _tradingDayEnd;
-
-
 
 @end

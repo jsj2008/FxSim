@@ -71,13 +71,24 @@
     return returnString;
 }
 
-+ (NSString *) stringOfDateTimeForTime:(long) epochDate
-                            WithFormat:(NSString *)formatString
++ (NSString *) stringOfDateTime:(long) epochDate
+                     WithFormat:(NSString *)formatString
 {
     NSString *returnString;
     returnString = [[NSDate dateWithTimeIntervalSince1970:(NSTimeInterval) epochDate] descriptionWithCalendarFormat:formatString timeZone:[NSTimeZone timeZoneWithName:@"GMT"] locale:nil];
     return returnString;
 }
+
++ (int) monthNumberOfDateTime:(long) epochDate
+{
+    NSString *returnString;
+    returnString = [[NSDate dateWithTimeIntervalSince1970:(NSTimeInterval) epochDate] descriptionWithCalendarFormat:@"%m" timeZone:[NSTimeZone timeZoneWithName:@"GMT"] locale:nil];
+    return [returnString intValue];
+}
+
+
+
+
 
 + (int) daysSinceEpoch:(long) epochDate
 {

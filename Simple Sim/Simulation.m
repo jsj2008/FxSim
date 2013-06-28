@@ -33,10 +33,12 @@
         AndCurrency: (NSString *) ISOcode
      AndTradingPair: (NSString *) codeForTradingPair
      AndMaxLeverage: (double) maxLeverage
+        AndDataRate: (long) dataRate
     AndSamplingRate: (NSUInteger) dataSamplingRate
       AndTradingLag: (NSUInteger) signalToTradeLag
 AndTradingTimeStart: (int) tradingTimeStart
   AndTradingTimeEnd: (int) tradingTimeEnd
+  AndWeekendTrading: (BOOL) weekendTrading
 {
     self = [super init];
     if(self){
@@ -45,12 +47,14 @@ AndTradingTimeStart: (int) tradingTimeStart
                                                      AndBaseCode: [codeForTradingPair substringToIndex:3]
                                                     AndQuoteCode: [codeForTradingPair substringFromIndex:3]
                                                     AndStartDate: accStartDate
-                                                      AndEndDate: accEndDate      
+                                                      AndEndDate: accEndDate
+                                                     AndDataRate: dataRate
                                                   AndMaxLeverage: maxLeverage
                                                  AndSamplingRate: dataSamplingRate
                                                    AndTradingLag: signalToTradeLag
                                               AndTradingDayStart: tradingTimeStart
-                                                AndTradingDayEnd: tradingTimeEnd];
+                                                AndTradingDayEnd: tradingTimeEnd
+                                               AndWeekendTrading: weekendTrading];
         
         _accBalanceArray = [[NSMutableArray alloc] init];
         _tradesArray = [[NSMutableArray alloc] init];
@@ -66,6 +70,9 @@ AndTradingTimeStart: (int) tradingTimeStart
         
         if(startingBalance > 0){
             [self addBalanceAdjustmentWithAmount:startingBalance AndDateTime:accStartDate AndReason:TRANSFER];
+            _unfunded = NO;
+        }else{
+            _unfunded = YES;
         }
         _reportDataFieldsArray = [Simulation getReportFields];
         _isAnalysed = NO;
@@ -142,7 +149,7 @@ AndTradingTimeStart: (int) tradingTimeStart
 
 +(NSArray *)getReportFields
 {
-    NSArray *reportFields = [NSArray arrayWithObjects:@"NAME", @"TRADINGPAIR",@"ACCOUNTCURRENCY",@"BLANK",@"--RESULTS--", @"CASHTRANSFERS", @"FINALNAV", @"TRADE PNL", @"INTEREST",  @"BIGGESTDRAWDOWN", @"DRAWDOWNTIME", @"NUMBEROFTRADES", @"SPREADCOST", @"BLANK",@"EXP NUMBER", @"EXP N LOSS", @"EXP N WIN", @"EXP MIN LEN", @"EXP MAX LEN", @"EXP MED LEN", @"EXP LOSS MED LEN", @"EXP WIN MED LEN", @"EXP BIG LOSS", @"EXP BIG WIN", @"BLANK", @"--PARAMETERS--",@"STARTTIME", @"ENDTIME", @"STRATEGY",@"EXTRASERIES",@"POSITIONING", @"RULES", @"MAXLEVERAGE", @"TIMESTEP", @"TRADINGLAG", @"TRADINGDAYSTART", @"TRADINGDAYEND", @"USERADDEDDATA", nil];
+    NSArray *reportFields = [NSArray arrayWithObjects:@"NAME", @"TRADINGPAIR",@"ACCOUNTCURRENCY",@"BLANK",@"--RESULTS--", @"CASHTRANSFERS", @"FINALNAV", @"TRADE PNL", @"INTEREST",  @"BIGGESTDRAWDOWN", @"DRAWDOWNTIME", @"NUMBEROFTRADES", @"SPREADCOST", @"BLANK",@"EXP NUMBER", @"EXP N LOSS", @"EXP N WIN", @"EXP MIN LEN", @"EXP MAX LEN", @"EXP MED LEN", @"EXP LOSS MED LEN", @"EXP WIN MED LEN", @"EXP BIG LOSS", @"EXP BIG WIN", @"SHARPE RATIO", @"SORTINO RATIO", @"BLANK", @"--PARAMETERS--",@"STARTTIME", @"ENDTIME", @"STRATEGY",@"EXTRASERIES",@"POSITIONING", @"RULES", @"MAXLEVERAGE", @"TIMESTEP", @"TRADINGLAG", @"TRADINGDAYSTART", @"TRADINGDAYEND", @"DATARATE", @"USERADDEDDATA", nil];
     
     
     
@@ -715,15 +722,18 @@ AndTradingTimeStart: (int) tradingTimeStart
     
     if([dataFieldIdentifier isEqualToString:@"MAXLEVERAGE"]){
         return [NSString stringWithFormat:@"%5.0f",[self maxLeverage]];    
-    } 
+    }
+    if([dataFieldIdentifier isEqualToString:@"DATARATE"]){
+        return [NSString stringWithFormat:@"%ld",[self dataRate]];
+    }
     if([dataFieldIdentifier isEqualToString:@"TIMESTEP"]){
         return [NSString stringWithFormat:@"%ld seconds",[self samplingRate]];
     }
     if([dataFieldIdentifier isEqualToString:@"TRADINGDAYSTART"]){
-        return [EpochTime stringOfDateTimeForTime:[self tradingDayStart] WithFormat:@"%H:%M"];    
+        return [EpochTime stringOfDateTime:[self tradingDayStart] WithFormat:@"%H:%M"];    
     }
     if([dataFieldIdentifier isEqualToString:@"TRADINGDAYEND"]){
-        return [EpochTime stringOfDateTimeForTime:[self tradingDayEnd] WithFormat:@"%H:%M"];    
+        return [EpochTime stringOfDateTime:[self tradingDayEnd] WithFormat:@"%H:%M"];    
     }
     if([dataFieldIdentifier isEqualToString:@"TRADINGLAG"]){
         return [NSString stringWithFormat:@"%ld seconds",[self tradingLag]];
@@ -966,10 +976,21 @@ AndTradingTimeStart: (int) tradingTimeStart
     return [[self basicParameters] endDate];
 }
 
+- (BOOL) weekendTrading
+{
+    return [[self basicParameters] weekendTrading];
+}
+
 - (NSUInteger) samplingRate
 {
     return [[self basicParameters] samplingRate];
 }
+
+- (long) dataRate
+{
+    return [[self basicParameters] dataRate];
+}
+
 
 - (void) setSimName:(NSString *)name
 {

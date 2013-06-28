@@ -12,28 +12,30 @@
 @class SignalSystem;
 
 @interface DataController : NSObject{
-    BOOL _connected;
-    BOOL doThreads;
-    BOOL cancelProcedure;
-    BOOL _adhocDataAdded;
-    id _delegate;
-    
-    BOOL _fileDataAdded;
-    NSString *fileDataFileName;
-    NSArray *fileData;
-    DataSeries *_dataSeries;
+//    BOOL _connected;
+    BOOL _doThreads;
+//    BOOL cancelProcedure;
+//    BOOL _adhocDataAdded;
+//    id _delegate;
+//    BOOL _fileDataAdded;
+//    NSString *fileDataFileName;
+//    NSArray *fileData;
+//    DataSeries *_dataSeries;
     
 }
 @property (retain) NSMutableDictionary *archive;
 @property(readonly) BOOL connected;
 @property DataSeries *dataSeries;
-@property(readonly, retain) NSDictionary *fxPairs;
-@property(readonly, retain) NSDictionary *dataFields;
-@property(readonly, retain) NSDictionary *minDateTimes;
-@property(readonly, retain) NSDictionary *maxDateTimes;
-@property(readonly) NSString *fileDataFileName;
-@property(readonly) NSArray *fileData;
+@property(retain) NSDictionary *fxPairs;
+@property(retain) NSDictionary *dataFields;
+@property(retain) NSDictionary *minDateTimes;
+@property(retain) NSDictionary *maxDateTimes;
+@property(retain) NSString *fileDataFileName;
+@property(retain) NSArray *fileData;
+@property BOOL doThreads;
+@property BOOL cancelProcedure;
 @property BOOL fileDataAdded;
+@property BOOL adhocDataAdded;
 @property(retain) NSArray *signalStats;
 @property id delegate;
 
@@ -42,6 +44,17 @@
 - (void) setDelegate:(id)del;
 - (BOOL) doThreads;
 - (void) setDoThreads:(BOOL)doThreadedProcedures;
+- (void) clearDataStore;
+- (void) removeDerivedFromDataStore;
+- (int) databaseSamplingRate;
+- (NSString *) dataStoreCode;
+- (long) dataStoreStart;
+- (long) dataStoreEnd;
+- (BOOL) okToUseDataStoreFrom: (long) startDateTime
+                           To: (long) endDateTime
+                 WithDataRate: (long) dataRate
+                      ForCode: (NSString *) dataCode;
+- (NSMutableDictionary *) getDataFromStoreForCode: (long) archiveCode;
 - (BOOL) setupDataSeriesForName: (NSString *) dataSeriesName; 
 - (long) getMinDateTimeForLoadedData;
 - (long) getMaxDateTimeForLoadedData;
@@ -51,30 +64,15 @@
 - (void) setData: (NSArray *) adhocDataToAdd 
         FromFile: (NSString *) filename;
 
-- (DataSeries *) retrieveDataForStartDateTime: (long) requestedStartDate 
-                               AndEndDateTime: (long) requestedEndDate 
-                            AndExtraVariables: (NSArray *) extraVariables
-                              AndSignalSystem: (SignalSystem *) signalSystem
-                              AndSamplingRate: (long) samplingRate
-                                  WithSuccess: (int *) successAsInt
-                                  AndUpdateUI: (BOOL) doUpdateUI;
 
--(BOOL) getMoreDataForStartDateTime: (long) requestedStartDate 
-                     AndEndDateTime: (long) requestedEndDate
-                  AndExtraVariables: (NSArray *) extraVariables
-                    AndSignalSystem: (SignalSystem *) signalSystem
-             AndReturningStatsArray: (NSMutableArray *) statsArray
-           WithRequestTruncatedFlag: (int *) requestTrucated;
+-(BOOL) getDataForStartDateTime: (long) requestedStartDate
+                 AndEndDateTime: (long) requestedEndDate
+              AndExtraVariables: (NSArray *) extraVariables
+                AndSignalSystem: (SignalSystem *) signalSystem
+                    AndDataRate: (long) dataRate
+                  WithStoreCode: (long) archiveCode
+       WithRequestTruncatedFlag: (int *) requestTrucated;
 
-- (void) setDataForStartDateTime: (long) requestedStartDate 
-                  AndEndDateTime: (long) requestedEndDate 
-               AndExtraVariables: (NSArray *) extraVariables
-                 AndSignalSystem: (SignalSystem *) signalSystem
-                 AndSamplingRate: (long) samplingRate
-                     WithSuccess: (int *) successAsInt
-                     AndUpdateUI: (BOOL) doUpdateUI;
-
-- (int) dataGranularity;
 - (long) getMinDataDateTimeForPair:(NSString *) fxPairName;
 - (long) getMaxDataDateTimeForPair:(NSString *) fxPairName;
 - (NSDictionary *) getValues:(NSArray *) fieldNames 
@@ -82,9 +80,7 @@
 - (NSDictionary *) getValues:(NSArray *) fieldNames 
                   AtDateTime: (long) dateTime 
                WithTicOffset: (long) numberOfTics;
-- (DataSeriesValue *) valueFromDataBaseForFxPair: (NSString *) name 
-                                     AndDateTime: (long) dateTime 
-                                        AndField: (NSString *) field;
+
 - (NSArray *) getAllInterestRatesForCurrency: (NSString *) currencyCode
                                    AndField: (NSString *) bidOrAsk;
 - (DataSeries *) createNewDataSeriesWithXData: (NSMutableData *) dateTimes

@@ -81,7 +81,8 @@
 - (void) toggleAxisLabelsForLayer: (int) layerIndex;
 - (void) removeLineAnnotation;
 - (void) setBasicParametersForPlot;
-- (void) updateLines: (SeriesPlotDataWrapper *) dataSource;
+- (void) updateLines: (SeriesPlotDataWrapper *) dataSource
+      AndUpdateYAxes: (BOOL) updateYAxis;
 @property (retain) CPTGraphHostingView *hostingView;
 @property (readonly, retain) NSString *identifier;
 @property (retain) SeriesPlotDataWrapper *dataSource;
@@ -89,6 +90,7 @@
 @property (retain) NSArray *timeSeriesLines;
 @property long minXrangeForPlot;
 @property long maxXrangeForPlot;
+@property (retain) NSAlert *alert;
 
 @end
 

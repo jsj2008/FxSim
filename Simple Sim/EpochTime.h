@@ -15,7 +15,8 @@
 + (NSString *) stringDateWithDayOfWeek:(long) epochDate;
 + (NSString *) stringDateWithTime:(long) epochDate;
 + (NSString *) stringHoursMinutesSeconds:(long) epochDate;
-+ (NSString *) stringOfDateTimeForTime:(long) epochDate WithFormat:(NSString *)formatString;
++ (NSString *) stringOfDateTime:(long) epochDate WithFormat:(NSString *)formatString;
++ (int) monthNumberOfDateTime:(long) epochDate;
 
 + (NSString *) stringDate:(long) epochDate;
 + (int) daysSinceEpoch:(long) epochDate;
