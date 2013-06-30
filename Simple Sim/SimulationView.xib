@@ -1244,7 +1244,6 @@
 													<int key="NSvFlags">-2147483392</int>
 													<string key="NSFrame">{{224, 17}, {15, 102}}</string>
 													<reference key="NSSuperview" ref="399195253"/>
-													<reference key="NSNextKeyView" ref="948729384"/>
 													<string key="NSReuseIdentifierKey">_NS:58</string>
 													<reference key="NSTarget" ref="399195253"/>
 													<string key="NSAction">_doScroller:</string>
@@ -1357,7 +1356,7 @@
 														<object class="NSTableView" id="314263641">
 															<reference key="NSNextResponder" ref="346638047"/>
 															<int key="NSvFlags">256</int>
-															<string key="NSFrameSize">{648, 441}</string>
+															<string key="NSFrameSize">{651, 441}</string>
 															<reference key="NSSuperview" ref="346638047"/>
 															<reference key="NSWindow"/>
 															<reference key="NSNextKeyView" ref="694683259"/>
@@ -1366,7 +1365,7 @@
 															<object class="NSTableHeaderView" key="NSHeaderView" id="761794269">
 																<reference key="NSNextResponder" ref="859349607"/>
 																<int key="NSvFlags">256</int>
-																<string key="NSFrameSize">{648, 17}</string>
+																<string key="NSFrameSize">{651, 17}</string>
 																<reference key="NSSuperview" ref="859349607"/>
 																<reference key="NSWindow"/>
 																<reference key="NSNextKeyView" ref="346638047"/>
@@ -1383,7 +1382,7 @@
 															<array class="NSMutableArray" key="NSTableColumns">
 																<object class="NSTableColumn" id="191486113">
 																	<string key="NSIdentifier">NAME</string>
-																	<double key="NSWidth">300</double>
+																	<double key="NSWidth">200</double>
 																	<double key="NSMinWidth">40</double>
 																	<double key="NSMaxWidth">1000</double>
 																	<object class="NSTableHeaderCell" key="NSHeaderCell">
@@ -1412,18 +1411,45 @@
 																</object>
 																<object class="NSTableColumn" id="839014762">
 																	<string key="NSIdentifier">DATA1</string>
-																	<double key="NSWidth">342</double>
+																	<double key="NSWidth">221</double>
 																	<double key="NSMinWidth">40</double>
 																	<double key="NSMaxWidth">1000</double>
 																	<object class="NSTableHeaderCell" key="NSHeaderCell">
 																		<int key="NSCellFlags">75628096</int>
 																		<int key="NSCellFlags2">67110912</int>
-																		<string key="NSContents">Data</string>
+																		<string key="NSContents">Working Sim</string>
 																		<reference key="NSSupport" ref="26"/>
 																		<reference key="NSBackgroundColor" ref="884726175"/>
 																		<reference key="NSTextColor" ref="450505584"/>
 																	</object>
 																	<object class="NSTextFieldCell" key="NSDataCell" id="64346206">
+																		<int key="NSCellFlags">337772096</int>
+																		<int key="NSCellFlags2">67110912</int>
+																		<string key="NSContents">Text Cell</string>
+																		<reference key="NSSupport" ref="862919065"/>
+																		<reference key="NSControlView" ref="314263641"/>
+																		<reference key="NSBackgroundColor" ref="745235248"/>
+																		<reference key="NSTextColor" ref="789484196"/>
+																	</object>
+																	<int key="NSResizingMask">3</int>
+																	<bool key="NSIsResizeable">YES</bool>
+																	<bool key="NSIsEditable">YES</bool>
+																	<reference key="NSTableView" ref="314263641"/>
+																</object>
+																<object class="NSTableColumn" id="490526105">
+																	<string key="NSIdentifier">DATA2</string>
+																	<double key="NSWidth">221</double>
+																	<double key="NSMinWidth">10</double>
+																	<double key="NSMaxWidth">3.4028234663852886e+38</double>
+																	<object class="NSTableHeaderCell" key="NSHeaderCell">
+																		<int key="NSCellFlags">75628096</int>
+																		<int key="NSCellFlags2">67110912</int>
+																		<string key="NSContents">Compare Sim</string>
+																		<reference key="NSSupport" ref="26"/>
+																		<reference key="NSBackgroundColor" ref="885771124"/>
+																		<reference key="NSTextColor" ref="450505584"/>
+																	</object>
+																	<object class="NSTextFieldCell" key="NSDataCell" id="506594030">
 																		<int key="NSCellFlags">337772096</int>
 																		<int key="NSCellFlags2">67110912</int>
 																		<string key="NSContents">Text Cell</string>
@@ -1484,10 +1510,11 @@
 													<reference key="NSWindow"/>
 													<reference key="NSNextKeyView" ref="669220234"/>
 													<string key="NSReuseIdentifierKey">_NS:60</string>
+													<bool key="NSEnabled">YES</bool>
 													<int key="NSsFlags">1</int>
 													<reference key="NSTarget" ref="11876583"/>
 													<string key="NSAction">_doScroller:</string>
-													<double key="NSPercent">0.9893129770992366</double>
+													<double key="NSPercent">0.99539170506912444</double>
 												</object>
 												<object class="NSClipView" id="859349607">
 													<reference key="NSNextResponder" ref="11876583"/>
@@ -1510,7 +1537,7 @@
 											<reference key="NSWindow"/>
 											<reference key="NSNextKeyView" ref="859349607"/>
 											<string key="NSReuseIdentifierKey">_NS:9</string>
-											<int key="NSsFlags">133170</int>
+											<int key="NSsFlags">133298</int>
 											<reference key="NSVScroller" ref="669220234"/>
 											<reference key="NSHScroller" ref="694683259"/>
 											<reference key="NSContentView" ref="346638047"/>
@@ -8999,6 +9026,7 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 						<array class="NSMutableArray" key="children">
 							<reference ref="191486113"/>
 							<reference ref="839014762"/>
+							<reference ref="490526105"/>
 						</array>
 						<reference key="parent" ref="11876583"/>
 					</object>
@@ -11233,6 +11261,19 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 						<reference key="object" ref="480132397"/>
 						<reference key="parent" ref="321253286"/>
 					</object>
+					<object class="IBObjectRecord">
+						<int key="objectID">1033</int>
+						<reference key="object" ref="490526105"/>
+						<array class="NSMutableArray" key="children">
+							<reference ref="506594030"/>
+						</array>
+						<reference key="parent" ref="314263641"/>
+					</object>
+					<object class="IBObjectRecord">
+						<int key="objectID">1034</int>
+						<reference key="object" ref="506594030"/>
+						<reference key="parent" ref="490526105"/>
+					</object>
 				</array>
 			</object>
 			<dictionary class="NSMutableDictionary" key="flattenedProperties">
@@ -11265,6 +11306,8 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 				<string key="1030.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
 				<string key="1031.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
 				<string key="1032.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
+				<string key="1033.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
+				<string key="1034.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
 				<string key="104.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
 				<string key="105.IBPluginDependency">com.apple.InterfaceBuilder.CocoaPlugin</string>
 				<string key="105.userInterfaceItemIdentifier">SIMDATATV</string>
@@ -11758,7 +11801,7 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 			<nil key="activeLocalization"/>
 			<dictionary class="NSMutableDictionary" key="localizations"/>
 			<nil key="sourceID"/>
-			<int key="maxID">1032</int>
+			<int key="maxID">1034</int>
 		</object>
 		<object class="IBClassDescriber" key="IBDocument.Classes">
 			<array class="NSMutableArray" key="referencedPartialClassDescriptions">
@@ -11788,6 +11831,7 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 						<string key="makeSimulationReport:">id</string>
 						<string key="performSimulation:">id</string>
 						<string key="plotBottomExpand:">id</string>
+						<string key="plotLeftSideContract:">id</string>
 						<string key="plotLeftSideExpand:">id</string>
 						<string key="removeWorkingSimulation:">id</string>
 						<string key="saveWorkingSimulation:">id</string>
@@ -11864,6 +11908,10 @@ AAMAAAABAAEAAAFTAAMAAAAEAAAFwgAAAAAACAAIAAgACAABAAEAAQABA</bytes>
 						</object>
 						<object class="IBActionInfo" key="plotBottomExpand:">
 							<string key="name">plotBottomExpand:</string>
+							<string key="candidateClassName">id</string>
+						</object>
+						<object class="IBActionInfo" key="plotLeftSideContract:">
+							<string key="name">plotLeftSideContract:</string>
 							<string key="candidateClassName">id</string>
 						</object>
 						<object class="IBActionInfo" key="plotLeftSideExpand:">

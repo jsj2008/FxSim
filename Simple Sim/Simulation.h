@@ -122,7 +122,7 @@ AndTradingTimeStart: (int) tradingTimeStart
                   EstimatedPnl: (double) pnl;
 
 
-- (long) timeDateOfEarliestPosition;
+- (long) dateTimeOfEarliestPosition;
 - (double) wgtAverageCostOfPosition;
 
 - (NSString *) getBalanceDetailToPrint:(int) balAdjIndex;

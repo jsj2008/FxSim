@@ -26,11 +26,11 @@
 @property (retain) NSMutableArray *simulationSignalTimeSeries;
 @property (retain) NSMutableArray *simulationCompareSimATimeSeries;
 @property (retain) NSMutableArray *simulationCompareSimBTimeSeries;
+//@property (retain) NSMutableArray *mainPlotSelectedTimeSeries;
 @property (retain) NSMutableDictionary *simulationCompareSelectedTimeSeries;
 @property (retain) NSMutableArray *simulationCompareSelectedTimeSeriesArray;
 @property (retain) NSMutableDictionary *simulationSignalSelectedTimeSeries;
 @property (retain) NSMutableDictionary *simulationSelectedTimeSeries;
-
 @property (retain) NSMutableArray *signalTableViewOrdering;
 @property (retain) NSArray *hideObjectsOnStartup;
 @property (retain) NSArray *importDataArray;
@@ -108,12 +108,14 @@
         _simulationCompareSelectedTimeSeriesArray = [[NSMutableArray alloc] init];
         _simulationSignalSelectedTimeSeries = [[NSMutableDictionary alloc] init];
         _simulationSelectedTimeSeries = [[NSMutableDictionary alloc] init];
-        _simulationSignalTimeSeries = [[NSMutableArray alloc] init]; 
+        _simulationSignalTimeSeries = [[NSMutableArray alloc] init];
+        //_mainPlotSelectedTimeSeries = [[NSMutableArray alloc] init];
         _signalTableViewSortedAscending = YES;
         _allSimulations = [[NSMutableArray alloc] init];
         _simulationController = [[SimulationController alloc] init];
         [_simulationController setDelegate:self];
         [_simulationController setDoThreads:_doThreads];
+        
         _compareSimulationLoaded = NO;
         _workingSimulation = nil;
         
@@ -325,7 +327,8 @@
     _simulationComparePlot = [[SeriesPlot alloc] initWithIdentifier:@"SIMCOMPARE"];
     [_simulationComparePlot setHostingView:_simulationCompareGraphHostingView];
     [_simulationComparePlot initialGraphAndAddAnnotation:NO];
-   
+ 
+    [reportTableView setDelegate:self];
 }
 
 - (void) setDelegate:(id)del
@@ -386,27 +389,50 @@
         }
       
         [self putFieldNamesInCorrectOrdering:fieldNames];
+        
+        NSMutableArray *oldSignalPlotTimeSeries = [[NSMutableArray alloc] init];
+        TimeSeriesLine * newTsl;
+        for(int i = 0; i < [[self simulationSignalTimeSeries] count];i++){
+            tsl = [[self simulationSignalTimeSeries] objectAtIndex:i];
+            if([tsl layerIndex] != -1){
+                newTsl = [[TimeSeriesLine alloc] initWithLayerIndex:[tsl layerIndex]
+                                                            AndName:[tsl name]
+                                                          AndColour:[tsl colour]];
+                [oldSignalPlotTimeSeries addObject:newTsl];
+            }
+        }
+        
+        BOOL oldShortLongIndictorPosition = [[self signalPlotInfo] shortLongIndicatorA];
+        
         [self clearTSTableView:simulationSignalTimeSeriesTableView];
         int plotLayerIndex;
+        NSString *fieldName;
         NSString *lineColour;
         for(int i = 0; i < [fieldNames count]; i++){
-            switch (i) {
-                case 0:
-                    plotLayerIndex = 0;
-                    break;
-                default:
-                    plotLayerIndex = -1;
-                    break;
-            }
+            fieldName = [fieldNames objectAtIndex:i];
             lineColour = [[self coloursForPlots] objectAtIndex:i%[[self coloursForPlots] count]];
-            tsl = [[TimeSeriesLine alloc] initWithLayerIndex:plotLayerIndex 
-                                                     AndName:[fieldNames objectAtIndex:i] 
+            plotLayerIndex = -1;
+            if([oldSignalPlotTimeSeries count] ==0 && i == 0){
+                plotLayerIndex = 0;
+            }else{
+                for(int j = 0; j < [oldSignalPlotTimeSeries count]; j++){
+                    tsl = [oldSignalPlotTimeSeries objectAtIndex:j];
+                    if([fieldName isEqualToString:[tsl name]]){
+                        plotLayerIndex = [tsl layerIndex];
+                        lineColour = [tsl colour];
+                    }
+                }
+
+            }
+            
+            newTsl = [[TimeSeriesLine alloc] initWithLayerIndex:plotLayerIndex
+                                                     AndName:fieldName 
                                                    AndColour:lineColour];
             [self addToTableView:simulationSignalTimeSeriesTableView 
-                  TimeSeriesLine:tsl];
+                  TimeSeriesLine:newTsl];
         }
         startDateTime = startDateTime - ([signalAnalysisPlotLeadHours intValue] * 60*60);
-        [self setLongShortIndicatorOn:YES];
+        
         [self updateSimulationSignalSelectedTimeSeries];
         SeriesPlotDataWrapper *signalPlotDataSource = [[SeriesPlotDataWrapper alloc] initWithTargetPlotName: @"SIG"
                                                                                               AndSimulation:[self workingSimulation]
@@ -419,8 +445,10 @@
         [[self signalAnalysisPlot] setBasicParametersForPlot];
         [[self signalAnalysisPlot] updateLines:signalPlotDataSource AndUpdateYAxes:YES];
         [self setSignalPlotInfo:signalPlotDataSource];
-        
-        
+        if(oldShortLongIndictorPosition){
+            [[self signalPlotInfo] setShortLongIndicatorA:YES];
+            [[self signalAnalysisPlot] updatePositionIndicator:[self signalPlotInfo]];
+        }
         [simulationSignalSelectedTimeSeriesTableView reloadData];
         [simulationSignalTableView reloadData];
     }
@@ -466,24 +494,58 @@
     
     [self putFieldNamesInCorrectOrdering:fieldNames];
     
+    NSMutableArray *oldSimulationTimeSeries = [[NSMutableArray alloc] init];
+    TimeSeriesLine * newTsl;
+    for(int i = 0; i < [[self simulationTimeSeries] count];i++){
+        tsl = [[self simulationTimeSeries] objectAtIndex:i];
+        if([tsl layerIndex] != -1){
+            newTsl = [[TimeSeriesLine alloc] initWithLayerIndex:[tsl layerIndex]
+                                                        AndName:[tsl name]
+                                                      AndColour:[tsl colour]];
+            [oldSimulationTimeSeries addObject:newTsl];
+        }
+    }
+    BOOL oldShortLongIndictorPosition = [[self simulationPlotInfo] shortLongIndicatorA];
+    
     // Simulation results plot
     [self clearTSTableView:simulationTimeSeriesTableView];
     int plotLayerIndex;
     NSString *lineColour;
+    NSString *fieldName;
     for(int i = 0; i < [fieldNames count]; i++){
-        switch (i) {
-            case 0:
-                plotLayerIndex = 0;
-                break;
-            default:
-                plotLayerIndex = -1;
-                break;
-        }
+        fieldName = [fieldNames objectAtIndex:i];
         lineColour = [[self coloursForPlots] objectAtIndex:i%[[self coloursForPlots] count]];
-        tsl = [[TimeSeriesLine alloc] initWithLayerIndex:plotLayerIndex
-                                                 AndName:[fieldNames objectAtIndex:i] 
-                                               AndColour:lineColour];
-        [self addToTableView:simulationTimeSeriesTableView   TimeSeriesLine:tsl];
+        plotLayerIndex = -1;
+        if([oldSimulationTimeSeries count] == 0)
+        {
+            if([fieldName isEqualToString:@"MID"])
+            {
+                plotLayerIndex = 2;
+            }else{
+                if([fieldName isEqualToString:@"NAV"])
+                {
+                    plotLayerIndex = 1;
+                }else{
+                    if([fieldName isEqualToString:@"SIGNAL"]){
+                        plotLayerIndex = 0;
+                    }
+                }
+            }
+        }else{
+            for(int j = 0; j < [oldSimulationTimeSeries count]; j++){
+                tsl = [oldSimulationTimeSeries objectAtIndex:j];
+                if([fieldName isEqualToString:[tsl name]]){
+                    plotLayerIndex = [tsl layerIndex];
+                    lineColour = [tsl colour];
+                }
+            }
+            
+        }
+        
+        newTsl = [[TimeSeriesLine alloc] initWithLayerIndex:plotLayerIndex
+                                                    AndName:fieldName 
+                                                  AndColour:lineColour];
+        [self addToTableView:simulationTimeSeriesTableView   TimeSeriesLine:newTsl];
     }
     [self updateSimulationSelectedTimeSeries];
     [simulationTimeSeriesTableView reloadData];
@@ -506,6 +568,11 @@
     [zoomFromDatePicker setDateValue:[NSDate dateWithTimeIntervalSince1970:[analysisDataSeries minDateTime]]];
     [zoomToDatePicker setMinDate:[NSDate dateWithTimeIntervalSince1970:[analysisDataSeries minDateTime]]];
     [zoomToDatePicker setMaxDate:[NSDate dateWithTimeIntervalSince1970:[analysisDataSeries maxDateTime]]];
+    
+    if(oldShortLongIndictorPosition){
+        [[self simulationPlotInfo] setShortLongIndicatorA:YES];
+        [[self simulationResultsPlot] updatePositionIndicator:[self simulationPlotInfo]];
+    }
 }
 
 -(void) prepareSimCompareSheet
@@ -915,7 +982,7 @@
         [[self delegate] showAlertPanelWithInfo:alertInfo];
     }else{
         NSLog(@"Delegate not responding to \'showAlertPanelWithInfo\'"); 
-    } 
+    }
 }
 
 -(void) registerSimulation: (Simulation *) sim
@@ -935,6 +1002,11 @@
     [registeredSimsTableView selectRowIndexes:indexSet byExtendingSelection:NO];
     [registeredSimsTableView5 selectRowIndexes:indexSet byExtendingSelection:NO];
     [[self simulationCompareOtherSimTableView] selectRowIndexes:indexSet byExtendingSelection:NO];
+    
+    NSTableColumn *tableColumn = [[self reportTableView] tableColumnWithIdentifier:@"DATA1"];
+    [tableColumn setWidth:342];
+    tableColumn = [[self reportTableView] tableColumnWithIdentifier:@"NAME"];
+    [tableColumn setWidth:300];
     
     [removeSimulationButton setEnabled:YES];
     [exportSimulationButton setEnabled:YES];
@@ -2280,6 +2352,12 @@
         {
             returnValue = [[self workingSimulation] getReportDataFieldAtIndex:row];
         }
+        if([[tableColumn identifier] isEqualToString:@"DATA2"])
+        {
+            if([self compareSimulation]){
+                returnValue = [[self compareSimulation] getReportDataFieldAtIndex:row];
+            }
+        }
 //        if([returnValue isKindOfClass:[NSString class]]){
 //            if([returnValue length] > 25){
 //                NSString *truncated =    [returnValue substringWithRange:NSMakeRange([returnValue length]-37, 37)];
@@ -2544,6 +2622,7 @@
                 [[self simulationCompareSimRadio] selectCell:[radioCells objectAtIndex:1]];
             }
             [[self simulationCompareTimeSeriesTableView] reloadData];
+
         }
     }
 
@@ -2555,6 +2634,27 @@
                 
                 Simulation *selectedSim=[[self allSimulations] objectAtIndex:[registeredSimsTableView selectedRow]];
                 if(selectedSim != [self workingSimulation] && [notification object] == registeredSimsTableView){
+                    
+//                    //keep a record of what was selected to try to reselect in the next simulation
+//                    BOOL doRememberSelected = NO;
+//                    if([[self simulationTimeSeries] count] > 0){
+//                        doRememberSelected = YES;
+//                    }
+//                    TimeSeriesLine *tsl, *newTsl;
+//                    if(doRememberSelected){
+//                        [[self mainPlotSelectedTimeSeries] removeAllObjects];
+//                        for(int i = 0; i < [[self simulationTimeSeries] count];i++){
+//                            tsl = [[self simulationTimeSeries] objectAtIndex:i];
+//                            if([tsl layerIndex] != -1){
+//                                newTsl = [[TimeSeriesLine alloc] initWithLayerIndex:[tsl layerIndex]
+//                                                                            AndName:[tsl name]
+//                                                                          AndColour:[tsl colour]];
+//                                [[self mainPlotSelectedTimeSeries] addObject:newTsl];
+//                            }
+//                            
+//                        }
+//                    }
+                    
                     [self setWorkingSimulation:selectedSim];
                     [self displayWorkingSim];
                     NSMutableString *outputTextField = [[simulationMessagesTextView textStorage] mutableString];
@@ -2562,6 +2662,21 @@
                     [outputTextField appendString:[[[selectedSim simulationRunOutput] string] mutableCopy]];
                     [simulationTradesTableView reloadData];
                     [simulationCashFlowsTableView reloadData];
+                    
+//                    if(doRememberSelected){
+//                        for(int i = 0; i < [[self simulationTimeSeries] count];i++){
+//                            newTsl = [[self simulationTimeSeries] objectAtIndex:i];
+//                            for(int j = 0; j < [[self mainPlotSelectedTimeSeries] count]; j++){
+//                                tsl = [[self mainPlotSelectedTimeSeries] objectAtIndex:j];
+//                                if([[newTsl name] isEqualToString:[tsl name]]){
+//                                    [newTsl setLayerIndex:[tsl layerIndex]];
+//                                    [newTsl setColourId:[tsl colourId]];
+//                                }else{
+//                                    [newTsl setLayerIndex:-1];
+//                                }
+//                            }
+//                        }
+//                    }
                 }
             }
             NSInteger selectedRow = [[notification object] selectedRow];
@@ -2649,6 +2764,14 @@
             [[self simulationCompareToDatePicker] setMinDate:[NSDate dateWithTimeIntervalSince1970:minDataTime]];
             [[self simulationCompareToDatePicker] setMaxDate:[NSDate dateWithTimeIntervalSince1970:maxDateTime]];
             [[self simulationCompareToDatePicker] setDateValue:[NSDate dateWithTimeIntervalSince1970:maxDateTime]];
+            
+            [[self simulationCompareTimeSeriesTableView] reloadData];
+            NSTableColumn *tableColumn = [[self reportTableView] tableColumnWithIdentifier:@"DATA1"];
+            [tableColumn setWidth:221];
+            tableColumn = [[self reportTableView] tableColumnWithIdentifier:@"DATA2"];
+            [tableColumn setWidth:221];
+            tableColumn = [[self reportTableView] tableColumnWithIdentifier:@"NAME"];
+            [tableColumn setWidth:200];
         }
         [self updateSelectedSimCompareTimeseries];
         [[self simulationCompareTimeSeriesTableView] reloadData];
@@ -2761,9 +2884,26 @@
         free(columnData);
         free(sortOrderIndex);
     }
+    if([[tableView identifier] isEqualToString:@"SIMREPORTTV"]){
+        if([[tableColumn identifier] isEqualToString:@"NAME"]){
+            NSTableColumn *tableColumn = [[self reportTableView] tableColumnWithIdentifier:@"DATA1"];
+            [tableColumn setWidth:221];
+            tableColumn = [[self reportTableView] tableColumnWithIdentifier:@"DATA2"];
+            [tableColumn setWidth:221];
+            tableColumn = [[self reportTableView] tableColumnWithIdentifier:@"NAME"];
+            [tableColumn setWidth:200];
+        }
+        if([[tableColumn identifier] isEqualToString:@"DATA1"]){
+            NSTableColumn *tableColumn = [[self reportTableView] tableColumnWithIdentifier:@"DATA1"];
+            [tableColumn setWidth:342];
+            tableColumn = [[self reportTableView] tableColumnWithIdentifier:@"NAME"];
+            [tableColumn setWidth:300];
+        }
+    
+    }
 }
 
-- (void)tableView:(NSTableView *)aTableView 
+- (void)tableView:(NSTableView *)aTableView
   willDisplayCell:(id)aCell 
    forTableColumn:(NSTableColumn *)aTableColumn 
               row:(NSInteger)rowIndex {

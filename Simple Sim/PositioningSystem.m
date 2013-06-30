@@ -40,7 +40,10 @@ static NSArray *positionSystemNames;
         _stopEntryOnWeakeningPriceLagTime = 0;
         _stopEntryOnWeakeningSignalLagTime = 0;
         _exitOnWeakeningPrice = NO;
+        _exitOnBrem = NO;
         _exitOnWeakeningPriceThreshold = 0.0;
+        _exitOnBremThreshold = 0;
+        _bremString = @"";
         _stopEntryOnWeakeningPriceThreshold = 0.0;
         _stopEntryOnWeakeningSignalThreshold = 0;
         _staticThreshold = YES;
@@ -53,6 +56,7 @@ static NSArray *positionSystemNames;
         _signalThreshold = 0.0;
         _signalInThreshold = 0.0;
         _signalOutThreshold = 0.0;
+        
 
         NSArray *positioningInstructions = [initString componentsSeparatedByString:@";"];
         //Hack for backward compatibility
@@ -129,11 +133,13 @@ static NSArray *positionSystemNames;
         //WPE weak Price Exit
         BOOL extrasUnderstood = YES;
         for(int i = 1; i < [positioningInstructions count]; i++){
-            NSArray *instructionDetails = [[positioningInstructions objectAtIndex:i] componentsSeparatedByString:@"/"];
+            NSString *instruction = [positioningInstructions objectAtIndex:i];
+            NSArray *instructionDetails = [instruction componentsSeparatedByString:@"/"];
             
             if(!([[instructionDetails objectAtIndex:0] isEqualToString:@"WSO"] ||
                [[instructionDetails objectAtIndex:0] isEqualToString:@"WPO"] ||
-               [[instructionDetails objectAtIndex:0] isEqualToString:@"WPE"])){
+                 [[instructionDetails objectAtIndex:0] isEqualToString:@"WPE"] ||
+                 [[instructionDetails objectAtIndex:0] isEqualToString:@"BREM"])){
                 extrasUnderstood = NO;
             }
             if([[instructionDetails objectAtIndex:0] isEqualToString:@"WSO"]){
@@ -161,6 +167,19 @@ static NSArray *positionSystemNames;
             if([[instructionDetails objectAtIndex:0] isEqualToString:@"WPE"]){
                 _exitOnWeakeningPrice = YES;
                 _exitOnWeakeningPriceThreshold = [[instructionDetails objectAtIndex:1] doubleValue];
+            }
+            if([[instructionDetails objectAtIndex:0] isEqualToString:@"BREM"]){
+                _exitOnBrem = YES;
+                //_exitOnBremThreshold = [[instructionDetails objectAtIndex:1] intValue];
+                //NSRange firstBracket = [instruction rangeOfString:@"/"];
+                //NSString *bremString = [instruction substringFromIndex:firstBracket.location+1];
+                NSRange lastBracket = [instruction rangeOfString:@"/"
+                                                        options:NSBackwardsSearch];
+                
+                _exitOnBremThreshold  = [[instruction substringFromIndex:lastBracket.location+1] intValue];
+                _bremString = [instruction substringToIndex:lastBracket.location];
+                
+                 
             }
         }
         
@@ -242,23 +261,4 @@ static NSArray *positionSystemNames;
     return varsNeeded;
 }
 
-
-//@synthesize positioningString = _positioningString;
-//@synthesize type = _type;
-//@synthesize signalThreshold = _signalThreshold;
-//@synthesize stepProportion = _stepProportion;
-//@synthesize stepLength = _stepLength;
-//@synthesize stepUnit = _stepUnit;
-//@synthesize perfSmoothParam = _perfSmoothParam;
-//@synthesize maxPos = _maxPos;
-//@synthesize stopEntryOnWeakeningSignal = _stopEntryOnWeakeningSignal;
-//@synthesize stopEntryOnWeakeningPrice = _stopEntryOnWeakeningPrice;
-////@synthesize laggedSignalInterval = _laggedSignalInterval;
-////@synthesize laggedPriceInterval = _laggedPriceInterval;
-//@synthesize exitOnWeakeningPrice = _exitOnWeakeningPrice;
-//@synthesize exitOnWeakeningPriceThreshold = _exitOnWeakeningPriceThreshold;
-//@synthesize stopEntryOnWeakeningPriceThreshold = _stopEntryOnWeakeningPriceThreshold;
-//@synthesize stopEntryOnWeakeningPriceLagTime = _stopEntryOnWeakeningPriceLagTime;
-//@synthesize stopEntryOnWeakeningSignalLagTime = _stopEntryOnWeakeningSignalLagTime;
-//@synthesize stopEntryOnWeakeningSignalThreshold = _stopEntryOnWeakeningSignalThreshold;
 @end

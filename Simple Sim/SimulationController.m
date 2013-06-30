@@ -635,7 +635,7 @@
     [self simulationEnded];
     
     NSDate *calculationEndTime = [NSDate date];
-    userMessage = [NSString stringWithFormat:@"This calculation took %lf seconds \n",[calculationEndTime timeIntervalSinceDate:calculationStartTime]];
+    userMessage = [NSString stringWithFormat:@"Simulation took %3.0lf seconds \n",[calculationEndTime timeIntervalSinceDate:calculationStartTime]];
     [[[newSimulation simulationRunOutput] mutableString] appendString:userMessage];
     if([self doThreads]){
         [self performSelectorOnMainThread:@selector(outputSimulationMessage:) withObject:userMessage waitUntilDone:NO];
@@ -1467,6 +1467,7 @@
     int nextDateTimeMonth = [EpochTime monthNumberOfDateTime:nextDateTime];
     int currentDateTimeMonth;
     long numberOfDates = [dateTimesOfAnalysis count];
+    long longestDrawdown = 0, drawDownStartTime = 0, longestDrawdownDateTime;
     
     for(int dateIndex = 0; dateIndex < (numberOfDates -1); dateIndex++)
     {
@@ -1492,9 +1493,25 @@
             }
             oldNav = navArray[dateIndex];
         }
+        if(drawDownArray[dateIndex] < 0){
+            if(dateIndex == 0){
+                drawDownStartTime = drawDownArray[0];
+            }else{
+                if(drawDownArray[dateIndex-1]>=0){
+                    drawDownStartTime = dateTimesArray[dateIndex];
+                }
+            }
+        }else{
+            if(dateIndex > 0 && drawDownStartTime > 0){
+                if(drawDownArray[dateIndex-1] < 0){
+                    if( dateTimesArray[dateIndex-1] - drawDownStartTime > longestDrawdown){
+                        longestDrawdown = dateTimesArray[dateIndex-1] - drawDownStartTime;
+                        longestDrawdownDateTime = dateTimesArray[dateIndex-1];
+                    }
+                }
+            }
+        }
     }
-    
-    
     
     double returnsSD = 0.0, downsideSD = 0.0;
     long returnsCount, downsideCount = 0;
@@ -1579,9 +1596,14 @@
         [simulation addObjectToSimulationResults:[NSNumber numberWithDouble:spreadCost]
                                           ForKey:@"SPREADCOST"];
         [simulation addObjectToSimulationResults:[NSNumber numberWithDouble:largestDrawdown]
-                                          ForKey:@"BIGGESTDRAWDOWN"];
+                                          ForKey:@"DEEPESTDRAWDOWN"];
         [simulation addObjectToSimulationResults:[NSNumber numberWithLong:largestDrawdownDateTime]
-                                          ForKey:@"DRAWDOWNTIME"];
+                                          ForKey:@"DEEPESTDRAWDOWNTIME"];
+        [simulation addObjectToSimulationResults:[NSNumber numberWithLong:longestDrawdown]
+                                          ForKey:@"LONGESTDRAWDOWN"];
+        [simulation addObjectToSimulationResults:[NSNumber numberWithLong:longestDrawdownDateTime]
+                                          ForKey:@"LONGESTDRAWDOWNTIME"];
+        
         if(returnsCount > 2){
             [simulation addObjectToSimulationResults:[NSNumber numberWithDouble:sharpeRatio]
                                              ForKey:@"SHARPE RATIO"];
@@ -1806,6 +1828,29 @@
     mid =  [[values objectForKey:@"MID"] doubleValue];
     dataSignal = [[values objectForKey:@"SIGNAL"] doubleValue];
     BOOL zeroPositionRequired = NO;
+    
+    
+    if([posSys exitOnBrem]){
+        if([simulation currentExposure] != 0){
+            double threshold =[posSys exitOnBremThreshold] * [[[self dataController] dataSeries] pipSize];
+            long entryTime = [simulation dateTimeOfEarliestPosition];
+            NSDictionary *trailingValues = [[self dataController] getValues: fieldNames
+                                                                 AtDateTime: entryTime];
+            
+            double startOfExposureBrem = [[trailingValues objectForKey:[posSys bremString]] doubleValue];
+            double currentBrem = [[values objectForKey:[posSys bremString]] doubleValue];
+            if([simulation currentExposure] > 0 && currentBrem-startOfExposureBrem < -threshold){
+                requiredExposure = 0;
+                zeroPositionRequired = YES;
+            }
+            if([simulation currentExposure] < 0 && currentBrem-startOfExposureBrem > threshold){
+                requiredExposure = 0;
+                zeroPositionRequired = YES;
+            }
+        
+        }
+    }
+    
     
     if([posSys exitOnWeakeningPrice]){
         if([simulation currentExposure] != 0){
@@ -2032,10 +2077,7 @@
             
             int targetAbsolutePositionSize;
             BOOL accountCurrencyIsQuoteCurrency;
-//            bid = [[values objectForKey:@"BID"] doubleValue];
-//            ask =  [[values objectForKey:@"ASK"] doubleValue];
-//            dataSignal = [[values objectForKey:@"SIGNAL"] doubleValue];
-//            
+
             fieldNames = [NSArray arrayWithObjects:signalPerfField, nil];
             NSDictionary *trailingValues = [[self dataController] getValues: fieldNames
                                                                  AtDateTime: currentDateTime - dateOffset

@@ -149,7 +149,7 @@ AndTradingTimeStart: (int) tradingTimeStart
 
 +(NSArray *)getReportFields
 {
-    NSArray *reportFields = [NSArray arrayWithObjects:@"NAME", @"TRADINGPAIR",@"ACCOUNTCURRENCY",@"BLANK",@"--RESULTS--", @"CASHTRANSFERS", @"FINALNAV", @"TRADE PNL", @"INTEREST",  @"BIGGESTDRAWDOWN", @"DRAWDOWNTIME", @"NUMBEROFTRADES", @"SPREADCOST", @"BLANK",@"EXP NUMBER", @"EXP N LOSS", @"EXP N WIN", @"EXP MIN LEN", @"EXP MAX LEN", @"EXP MED LEN", @"EXP LOSS MED LEN", @"EXP WIN MED LEN", @"EXP BIG LOSS", @"EXP BIG WIN", @"SHARPE RATIO", @"SORTINO RATIO", @"BLANK", @"--PARAMETERS--",@"STARTTIME", @"ENDTIME", @"STRATEGY",@"EXTRASERIES",@"POSITIONING", @"RULES", @"MAXLEVERAGE", @"TIMESTEP", @"TRADINGLAG", @"TRADINGDAYSTART", @"TRADINGDAYEND", @"DATARATE", @"USERADDEDDATA", nil];
+    NSArray *reportFields = [NSArray arrayWithObjects:@"NAME", @"TRADINGPAIR",@"ACCOUNTCURRENCY",@"BLANK",@"--RESULTS--", @"CASHTRANSFERS", @"FINALNAV", @"TRADE PNL", @"INTEREST",  @"DEEPESTDRAWDOWN", @"DEEPESTDRAWDOWNTIME", @"LONGESTDRAWDOWN", @"LONGESTDRAWDOWNTIME", @"NUMBEROFTRADES", @"SPREADCOST", @"BLANK",@"EXP NUMBER", @"EXP N LOSS", @"EXP N WIN", @"EXP MIN LEN", @"EXP MAX LEN", @"EXP MED LEN", @"EXP LOSS MED LEN", @"EXP WIN MED LEN", @"EXP BIG LOSS", @"EXP BIG WIN", @"SHARPE RATIO", @"SORTINO RATIO", @"BLANK", @"--PARAMETERS--",@"STARTTIME", @"ENDTIME", @"STRATEGY",@"EXTRASERIES",@"POSITIONING", @"RULES", @"MAXLEVERAGE", @"TIMESTEP", @"TRADINGLAG", @"TRADINGDAYSTART", @"TRADINGDAYEND", @"DATARATE", @"USERADDEDDATA", nil];
     
     
     
@@ -313,7 +313,7 @@ AndTradingTimeStart: (int) tradingTimeStart
     return [openPosition interestAccruedDateTime];
 }
 
-- (long) timeDateOfEarliestPosition
+- (long) dateTimeOfEarliestPosition
 {
     if([[self openPositionsArray] count] >0)
     {
@@ -745,8 +745,17 @@ AndTradingTimeStart: (int) tradingTimeStart
     
     id returnData = [[self simulationResults] objectForKey:dataFieldIdentifier];
     if(returnData != nil){
-        if([dataFieldIdentifier isEqualToString:@"DRAWDOWNTIME"]){
+        if([dataFieldIdentifier isEqualToString:@"DEEPESTDRAWDOWNTIME"]){
             returnData = [EpochTime stringDateWithTime:[returnData longValue]];
+            return returnData;
+        }
+        if([dataFieldIdentifier isEqualToString:@"LONGESTDRAWDOWNTIME"]){
+            returnData = [EpochTime stringDateWithTime:[returnData longValue]];
+            return returnData;
+        }
+
+        if([dataFieldIdentifier isEqualToString:@"LONGESTDRAWDOWN"]){
+            returnData = [NSString stringWithFormat:@"%5.1f days",(double)[returnData longValue]/(24*60*60)];
             return returnData;
         }
         

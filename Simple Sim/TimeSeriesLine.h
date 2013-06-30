@@ -24,7 +24,7 @@
 @property (retain) NSString *name;
 @property int layerIndex;
 @property NSUInteger colourId;
-@property (retain) NSString *colour;
+@property (retain, readonly) NSString *colour;
 @property (retain) CPTColor *cpColour;
 @property (retain) NSColor *nsColour;
 @property (retain) NSArray *allColourNames;

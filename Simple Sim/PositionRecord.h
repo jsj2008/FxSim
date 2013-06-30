@@ -9,11 +9,11 @@
 #import <Foundation/Foundation.h>
 
 @interface PositionRecord : NSObject<NSCoding>{
-    int     _amount;        
-    long    _dateTime;
-    double  _price;
-    long    _interestAccruedDateTime;
-    double  _interestAccrued;
+//    int     _amount;        
+//    long    _dateTime;
+//    double  _price;
+//    long    _interestAccruedDateTime;
+//    double  _interestAccrued;
 }
 
 - (id) initWithAmount: (int) amount
@@ -24,12 +24,12 @@
 
 - (void) encodeWithCoder:(NSCoder*)encoder;
 - (id) initWithCoder:(NSCoder*)decoder;
+//- (id) valueStoredForKey: (NSString *) key;
 
-
-@property int    amount;        
-@property long   dateTime;
-@property double price;
-@property long   interestAccruedDateTime;
-@property double interestAccrued;
-
+@property  int    amount;
+@property (readonly) long   dateTime;
+@property (readonly) double price;
+@property  long   interestAccruedDateTime;
+@property  double interestAccrued;
+ 
 @end

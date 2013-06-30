@@ -9,6 +9,10 @@
 #import "PositionRecord.h"
 #import "EpochTime.h"
 
+//@interface PositionRecord()
+//    @property NSMutableDictionary *adhocInfoArray;
+//@end
+
 @implementation PositionRecord
 
 - (id) initWithAmount: (int) amount
@@ -24,6 +28,7 @@
         _price = price;
         _interestAccruedDateTime = interestDateTime;
         _interestAccrued = interestAccrued;
+//        _adhocInfoArray = [[NSMutableDictionary alloc] init];
     }
     return self;
 }
@@ -35,7 +40,7 @@
     [encoder encodeObject:[NSNumber numberWithDouble:_price] forKey:@"PRICE"];
     [encoder encodeObject:[NSNumber numberWithLong:_interestAccruedDateTime] forKey:@"INTERESTACCRUEDDATETIME"];
     [encoder encodeObject:[NSNumber numberWithDouble:_interestAccrued] forKey:@"INTERESTACCRUED"];
-    
+//    [encoder encodeObject:_adhocInfoArray forKey:@"ADHOCINFOARRAY"];
     
 }
 - (id) initWithCoder:(NSCoder*)decoder
@@ -50,6 +55,7 @@
         _price = [[decoder decodeObjectForKey:@"PRICE"] doubleValue];
         _interestAccruedDateTime = [[decoder decodeObjectForKey:@"INTERESTACCRUEDDATETIME"] longValue];
         _interestAccrued = [[decoder decodeObjectForKey:@"INTERESTACCRUED"] doubleValue];
+//        _adhocInfoArray = [decoder decodeObjectForKey:@"ADHOCINFOARRAY"];
     }
     return self;   
 }
@@ -63,12 +69,14 @@
     return description;
 }
 
+//-(id) valueStoredForKey: (NSString *) key
+//{
+//    if([[self adhocInfoArray] objectForKey:key] != nil){
+//        return [[self adhocInfoArray] objectForKey:key];
+//    }else{
+//        return nil;
+//    }
+//    return nil;
+//}
 
-
-
-@synthesize amount = _amount;        
-@synthesize dateTime = _dateTime;
-@synthesize price = _price;
-@synthesize interestAccruedDateTime = _interestAccruedDateTime;
-@synthesize interestAccrued = _interestAccrued;
 @end
