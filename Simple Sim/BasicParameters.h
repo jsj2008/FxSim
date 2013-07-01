@@ -10,17 +10,6 @@
 
 @interface BasicParameters : NSObject<NSCoding>
 {
-//    NSString *_name;    
-//    NSString *_accCode;
-//    NSString *_baseCode;
-//    NSString *_quoteCode;
-//    float _maxLeverage;
-//    long _startDate;
-//    long _endDate;
-//    NSUInteger _samplingRate;
-//    NSUInteger _tradingLag;
-//    NSUInteger _tradingDayStart;
-//    NSUInteger _tradingDayEnd;
 }
 
 -(id)initWithName: (NSString *)name
@@ -35,7 +24,8 @@
     AndTradingLag: (NSUInteger) tradingLag
 AndTradingDayStart: (NSUInteger) tradingDayStart
  AndTradingDayEnd: (NSUInteger) tradingDayEnd
-AndWeekendTrading: (BOOL) weekendTrading;
+AndWeekendTrading: (BOOL) weekendTrading
+    AndWarmupTime: (long) warmupInSeconds;
 
 - (void) encodeWithCoder:(NSCoder*)encoder;
 - (id) initWithCoder:(NSCoder*)decoder;
@@ -55,4 +45,5 @@ AndWeekendTrading: (BOOL) weekendTrading;
 @property NSUInteger tradingDayStart;
 @property NSUInteger tradingDayEnd;
 @property BOOL weekendTrading;
+@property long warmupTime;
 @end

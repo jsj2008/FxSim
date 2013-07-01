@@ -168,7 +168,7 @@
     long endDateTime = [[parameters objectForKey:@"ENDTIME"] longValue];
     int maxLeverage = (int)[[parameters objectForKey:@"MAXLEVERAGE"] doubleValue];
     double startingBalance = [[parameters objectForKey:@"STARTBALANCE"] doubleValue];  
-    long initialDataBeforeStart = [[parameters objectForKey:@"WARMUPDATA"] longValue]; 
+    long initialDataBeforeStart = [[parameters objectForKey:@"WARMUPTIME"] longValue]; 
     int timeStep = [[parameters objectForKey:@"TIMESTEP"] intValue];
     int tradingLag = [[parameters objectForKey:@"TRADINGLAG"] intValue];
     long dataRate = [[parameters objectForKey:@"DATARATE"] longValue];
@@ -251,7 +251,8 @@
                                            AndTradingLag:tradingLag
                                      AndTradingTimeStart:tradingDayStartSeconds
                                        AndTradingTimeEnd:tradingDayEndSeconds
-                                       AndWeekendTrading:weekendTrading];
+                                       AndWeekendTrading:weekendTrading
+                                           AndWarmupTime:initialDataBeforeStart];
         
         if(userData){
             [newSimulation setUserAddedData:userDataFilename];
@@ -874,15 +875,6 @@
         [simulation addObjectToSimulationResults:[NSNumber numberWithDouble:bestWinner]
                                           ForKey:@"EXP BIG WIN"];
         
-        //@"EXP NUMBER",@"EXP N LOSE",@"EXP N WIN",@"EXP MIN LEN",@"EXP MAX LEN",@"EXP MED LEN",@"EXP BIG LOSE",@"EXP BIG WIN"
-        
-//        [tradeDetails setObject:[NSNumber numberWithInt:[trade amount] ] forKey:@"AMOUNT"];
-//        [tradeDetails setObject:[NSNumber numberWithLong:[trade dateTime]] forKey:@"DATETIME"];
-//        [tradeDetails setObject:[NSNumber numberWithDouble:[trade price]] forKey:@"PRICE"];
-//        [tradeDetails setObject:[NSNumber numberWithInt:[trade resultingMarketExposure]] forKey:@"ENDEXP"];
-//        [tradeDetails setObject:[NSNumber numberWithDouble:[trade spread]] forKey:@"SPREAD"];
-//        [tradeDetails setObject:[NSNumber numberWithLong:[trade signalDateTime]] forKey:@"SIGDATETIME"];
-        
         cashMoveIndex = 0;
         allCashMovesFinished = NO;
         nextCashMoveDateTime = [simulation getDateTimeForBalanceAdjustmentAtIndex:cashMoveIndex];
@@ -968,21 +960,6 @@
     }else{
         allActivityFinished = YES;
     }
-    
-//    BOOL weekendTrading =   [simulation weekendTrading];
-//    BOOL isTradingDay, isTradingTime;
-//    long timeOfDayInSeconds;
-//    
-//    long tradingDayStart = [simulation tradingDayStart];
-//    long tradingDayEnd = [simulation tradingDayEnd];
-//    
-//    long tradingDayStartHour = tradingDayStart/(60*60) ;
-//    long tradingDayEndHour = tradingDayEnd/(60*60) ;
-//    long tradingDayStartMinute = (tradingDayStart-(tradingDayStartHour*60*60))%60;
-//    long tradingDayEndMinute = (tradingDayEnd-(tradingDayEndHour*60*60))%60;
-//    
-//    long tradingDayStartSeconds = (tradingDayStartMinute*60) + (tradingDayStartHour * 60 * 60);
-//    long tradingDayEndSeconds = (tradingDayEndMinute*60) + (tradingDayEndHour * 60 * 60);
     
     BOOL isTradingTime;
     NSString *dayOfWeek;

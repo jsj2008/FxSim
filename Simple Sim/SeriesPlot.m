@@ -9,6 +9,9 @@
 #import "TimeSeriesLine.h"
 #import "SeriesPlotDataWrapper.h"
 
+#define X_RANGE_XPAN_FACTOR 1.1
+#define Y_RANGE_XPAN_FACTOR 1.1
+
 @interface SeriesPlot() 
 - (BOOL) fixUpXAxisLabelsFrom: (long) minX
                            To: (long) maxX;
@@ -1023,7 +1026,7 @@
             
         }
         
-        [xRange expandRangeByFactor:CPTDecimalFromDouble(1.1)];
+        [xRange expandRangeByFactor:CPTDecimalFromDouble(X_RANGE_XPAN_FACTOR)];
         [[self plotSpace0] setXRange:xRange];
         [[self plotSpace1] setXRange:[[[self plotSpace0] xRange] copy]];
         [[self plotSpace2] setXRange:[[[self plotSpace0] xRange] copy]];
@@ -1430,7 +1433,7 @@
         yAxis.labelFormatter = numberFormatter;
         CPTMutablePlotRange *yRange = [CPTMutablePlotRange plotRangeWithLocation:CPTDecimalFromDouble(axisMin)
                                                                           length:CPTDecimalFromDouble((axisMax-axisMin)+(0.5*d))];
-        [yRange expandRangeByFactor:CPTDecimalFromDouble(1.2)];
+        [yRange expandRangeByFactor:CPTDecimalFromDouble(Y_RANGE_XPAN_FACTOR)];
         
         [plotSpace setYRange:yRange];
         
@@ -1785,20 +1788,15 @@
                          ForPlotspace:[self plotSpace0]];
         }else if(flags == NSCommandKeyMask + NSAlternateKeyMask){
             NSTextField *accessory = [[NSTextField alloc] initWithFrame:NSMakeRect(0,0,200,22)];
-            //NSFont *font = [NSFont systemFontOfSize:[NSFont systemFontSize]];
-            //NSDictionary *textAttributes = [NSDictionary dictionaryWithObject:font forKey:NSFontAttributeName];
-            //[accessory insertText:[[NSAttributedString alloc] initWithString:@""
-            //                                                      attributes:textAttributes]];
             [accessory setEditable:YES];
     
             [accessory setDrawsBackground:YES];
             
             [self setAlert:[[NSAlert alloc] init]];
-            [[self alert] setMessageText:@"Enter in a Y1 value for horizontal line in the white field below"];
+            [[self alert] setMessageText:@"Enter a (left-most axis) value for horizontal line"];
             [[self alert] setInformativeText:@""];
             [[self alert] setAccessoryView:accessory];
             [[self alert] runModal];
-            //NSString *inputString = [[accessory textStorage] string];
             NSString *inputString = [accessory stringValue];
             NSArray* words = [inputString componentsSeparatedByCharactersInSet :[NSCharacterSet whitespaceCharacterSet]];
             NSString* noSpaceString = [words componentsJoinedByString:@""];

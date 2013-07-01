@@ -39,6 +39,7 @@
 AndTradingTimeStart: (int) tradingTimeStart
   AndTradingTimeEnd: (int) tradingTimeEnd
   AndWeekendTrading: (BOOL) weekendTrading
+      AndWarmupTime: (long) warmupTime;
 {
     self = [super init];
     if(self){
@@ -54,7 +55,8 @@ AndTradingTimeStart: (int) tradingTimeStart
                                                    AndTradingLag: signalToTradeLag
                                               AndTradingDayStart: tradingTimeStart
                                                 AndTradingDayEnd: tradingTimeEnd
-                                               AndWeekendTrading: weekendTrading];
+                                               AndWeekendTrading: weekendTrading
+                                                   AndWarmupTime: warmupTime];
         
         _accBalanceArray = [[NSMutableArray alloc] init];
         _tradesArray = [[NSMutableArray alloc] init];
@@ -76,7 +78,7 @@ AndTradingTimeStart: (int) tradingTimeStart
         }
         _reportDataFieldsArray = [Simulation getReportFields];
         _isAnalysed = NO;
-         
+        
     }
     
     return self;
@@ -149,7 +151,7 @@ AndTradingTimeStart: (int) tradingTimeStart
 
 +(NSArray *)getReportFields
 {
-    NSArray *reportFields = [NSArray arrayWithObjects:@"NAME", @"TRADINGPAIR",@"ACCOUNTCURRENCY",@"BLANK",@"--RESULTS--", @"CASHTRANSFERS", @"FINALNAV", @"TRADE PNL", @"INTEREST",  @"DEEPESTDRAWDOWN", @"DEEPESTDRAWDOWNTIME", @"LONGESTDRAWDOWN", @"LONGESTDRAWDOWNTIME", @"NUMBEROFTRADES", @"SPREADCOST", @"BLANK",@"EXP NUMBER", @"EXP N LOSS", @"EXP N WIN", @"EXP MIN LEN", @"EXP MAX LEN", @"EXP MED LEN", @"EXP LOSS MED LEN", @"EXP WIN MED LEN", @"EXP BIG LOSS", @"EXP BIG WIN", @"SHARPE RATIO", @"SORTINO RATIO", @"BLANK", @"--PARAMETERS--",@"STARTTIME", @"ENDTIME", @"STRATEGY",@"EXTRASERIES",@"POSITIONING", @"RULES", @"MAXLEVERAGE", @"TIMESTEP", @"TRADINGLAG", @"TRADINGDAYSTART", @"TRADINGDAYEND", @"DATARATE", @"USERADDEDDATA", nil];
+    NSArray *reportFields = [NSArray arrayWithObjects:@"NAME", @"TRADINGPAIR",@"ACCOUNTCURRENCY",@"BLANK",@"--RESULTS--", @"CASHTRANSFERS", @"FINALNAV", @"TRADE PNL", @"INTEREST",  @"DEEPESTDRAWDOWN", @"DEEPESTDRAWDOWNTIME", @"LONGESTDRAWDOWN", @"LONGESTDRAWDOWNTIME", @"NUMBEROFTRADES", @"SPREADCOST", @"BLANK",@"EXP NUMBER", @"EXP N LOSS", @"EXP N WIN", @"EXP MIN LEN", @"EXP MAX LEN", @"EXP MED LEN", @"EXP LOSS MED LEN", @"EXP WIN MED LEN", @"EXP BIG LOSS", @"EXP BIG WIN", @"SHARPE RATIO", @"SORTINO RATIO", @"BLANK", @"--PARAMETERS--",@"STARTTIME", @"ENDTIME", @"STRATEGY",@"EXTRASERIES",@"POSITIONING", @"RULES", @"MAXLEVERAGE", @"TIMESTEP", @"TRADINGLAG", @"TRADINGDAYSTART", @"TRADINGDAYEND", @"WARMUPTIME", @"DATARATE", @"USERADDEDDATA", nil];
     
     
     
@@ -741,7 +743,11 @@ AndTradingTimeStart: (int) tradingTimeStart
     if([dataFieldIdentifier isEqualToString:@"USERADDEDDATA"]){
         return [self userAddedData];
     }
-    
+    if([dataFieldIdentifier isEqualToString:@"WARMUPTIME"]){
+        
+        return [NSString stringWithFormat:@"%5.1f days",[self warmupTime]/(24.0*60*60)];
+    }
+
     
     id returnData = [[self simulationResults] objectForKey:dataFieldIdentifier];
     if(returnData != nil){
@@ -783,6 +789,7 @@ AndTradingTimeStart: (int) tradingTimeStart
             returnData = [NSString stringWithFormat:@"%5.2f",[returnData doubleValue]];
             return returnData;
         }
+                
         
         returnData = [NSString stringWithFormat:@"%5.2f",[returnData floatValue]];
         
@@ -998,6 +1005,11 @@ AndTradingTimeStart: (int) tradingTimeStart
 - (long) dataRate
 {
     return [[self basicParameters] dataRate];
+}
+
+- (long) warmupTime
+{
+    return [[self basicParameters] warmupTime];
 }
 
 

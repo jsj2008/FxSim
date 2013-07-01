@@ -1005,6 +1005,8 @@
     
     NSTableColumn *tableColumn = [[self reportTableView] tableColumnWithIdentifier:@"DATA1"];
     [tableColumn setWidth:342];
+    tableColumn = [[self reportTableView] tableColumnWithIdentifier:@"DATA2"];
+    [tableColumn setWidth:0];
     tableColumn = [[self reportTableView] tableColumnWithIdentifier:@"NAME"];
     [tableColumn setWidth:300];
     
@@ -1034,7 +1036,7 @@
     long endDateTime = [[parameters objectForKey:@"ENDTIME"] longValue];
     int maxLeverage = (int)[[parameters objectForKey:@"MAXLEVERAGE"] doubleValue];
     double startingBalance = [[parameters objectForKey:@"STARTBALANCE"] doubleValue];
-    long initialDataBeforeStart = [[parameters objectForKey:@"WARMUPDATA"] longValue];
+    long initialDataBeforeStart = [[parameters objectForKey:@"WARMUPTIME"] longValue];
     int timeStep = [[parameters objectForKey:@"TIMESTEP"] intValue];
     int tradingLag = [[parameters objectForKey:@"TRADINGLAG"] intValue];
     NSString *simDescription = [parameters objectForKey:@"SIMTYPE"];
@@ -2002,10 +2004,9 @@
         [parameters setObject:[NSNumber numberWithInt:tradingLag]
                        forKey:@"TRADINGLAG"];
         [parameters setObject:[NSNumber numberWithLong:[setupDataWarmUpTextField intValue]*DAY_SECONDS]
-                       forKey:@"WARMUPDATA"];
+                       forKey:@"WARMUPTIME"];
         [parameters setObject:[NSNumber numberWithLong:dataRate]
                        forKey:@"DATARATE"];
-
         
         if([self importDataArray] == Nil){
             [parameters setObject:[NSNumber numberWithBool:NO] 
@@ -2183,7 +2184,6 @@
             return [tsl valueForKey:columnId];
         }
     }
-    
     
     if([[tableView identifier] isEqualToString:@"SIMSELTSTV"]){
         int numberSelected = 0;
@@ -2482,12 +2482,10 @@
     
     if([[tableView identifier] isEqualToString:@"SIMTSTV"]){
         tsl = [[self simulationTimeSeries] objectAtIndex:row];
-        //plot = [self simulationResultsPlot];
     }
     
     if([[tableView identifier] isEqualToString:@"SIGTSTV"]){
         tsl = [[self simulationSignalTimeSeries] objectAtIndex:row];
-        //plot = [self signalAnalysisPlot];
     }
     
     if([[tableView identifier] isEqualToString:@"SIMCOMPARETSTV"]){
@@ -2497,7 +2495,6 @@
         }else{
             tsl = [[self simulationCompareSimBTimeSeries] objectAtIndex:row];
                    }
-        //plot = [self simulationComparePlot];
     }
     
     if([[tableColumn identifier] isEqualToString:@"plot0"]){
@@ -2635,26 +2632,6 @@
                 Simulation *selectedSim=[[self allSimulations] objectAtIndex:[registeredSimsTableView selectedRow]];
                 if(selectedSim != [self workingSimulation] && [notification object] == registeredSimsTableView){
                     
-//                    //keep a record of what was selected to try to reselect in the next simulation
-//                    BOOL doRememberSelected = NO;
-//                    if([[self simulationTimeSeries] count] > 0){
-//                        doRememberSelected = YES;
-//                    }
-//                    TimeSeriesLine *tsl, *newTsl;
-//                    if(doRememberSelected){
-//                        [[self mainPlotSelectedTimeSeries] removeAllObjects];
-//                        for(int i = 0; i < [[self simulationTimeSeries] count];i++){
-//                            tsl = [[self simulationTimeSeries] objectAtIndex:i];
-//                            if([tsl layerIndex] != -1){
-//                                newTsl = [[TimeSeriesLine alloc] initWithLayerIndex:[tsl layerIndex]
-//                                                                            AndName:[tsl name]
-//                                                                          AndColour:[tsl colour]];
-//                                [[self mainPlotSelectedTimeSeries] addObject:newTsl];
-//                            }
-//                            
-//                        }
-//                    }
-                    
                     [self setWorkingSimulation:selectedSim];
                     [self displayWorkingSim];
                     NSMutableString *outputTextField = [[simulationMessagesTextView textStorage] mutableString];
@@ -2663,20 +2640,6 @@
                     [simulationTradesTableView reloadData];
                     [simulationCashFlowsTableView reloadData];
                     
-//                    if(doRememberSelected){
-//                        for(int i = 0; i < [[self simulationTimeSeries] count];i++){
-//                            newTsl = [[self simulationTimeSeries] objectAtIndex:i];
-//                            for(int j = 0; j < [[self mainPlotSelectedTimeSeries] count]; j++){
-//                                tsl = [[self mainPlotSelectedTimeSeries] objectAtIndex:j];
-//                                if([[newTsl name] isEqualToString:[tsl name]]){
-//                                    [newTsl setLayerIndex:[tsl layerIndex]];
-//                                    [newTsl setColourId:[tsl colourId]];
-//                                }else{
-//                                    [newTsl setLayerIndex:-1];
-//                                }
-//                            }
-//                        }
-//                    }
                 }
             }
             NSInteger selectedRow = [[notification object] selectedRow];
@@ -2769,6 +2732,7 @@
             NSTableColumn *tableColumn = [[self reportTableView] tableColumnWithIdentifier:@"DATA1"];
             [tableColumn setWidth:221];
             tableColumn = [[self reportTableView] tableColumnWithIdentifier:@"DATA2"];
+            //[tableColumn setHidden:NO];
             [tableColumn setWidth:221];
             tableColumn = [[self reportTableView] tableColumnWithIdentifier:@"NAME"];
             [tableColumn setWidth:200];
@@ -2889,6 +2853,7 @@
             NSTableColumn *tableColumn = [[self reportTableView] tableColumnWithIdentifier:@"DATA1"];
             [tableColumn setWidth:221];
             tableColumn = [[self reportTableView] tableColumnWithIdentifier:@"DATA2"];
+            //[tableColumn setHidden:NO];
             [tableColumn setWidth:221];
             tableColumn = [[self reportTableView] tableColumnWithIdentifier:@"NAME"];
             [tableColumn setWidth:200];
@@ -2896,6 +2861,8 @@
         if([[tableColumn identifier] isEqualToString:@"DATA1"]){
             NSTableColumn *tableColumn = [[self reportTableView] tableColumnWithIdentifier:@"DATA1"];
             [tableColumn setWidth:342];
+            tableColumn = [[self reportTableView] tableColumnWithIdentifier:@"DATA2"];
+            [tableColumn setWidth:0];
             tableColumn = [[self reportTableView] tableColumnWithIdentifier:@"NAME"];
             [tableColumn setWidth:300];
         }

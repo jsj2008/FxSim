@@ -26,6 +26,7 @@
 AndTradingDayStart: (NSUInteger) tradingDayStart
  AndTradingDayEnd: (NSUInteger) tradingDayEnd
 AndWeekendTrading: (BOOL) weekendTrading
+    AndWarmupTime: (long) warmupInSeconds;
 {
     self = [super init];
     if(self){
@@ -42,16 +43,10 @@ AndWeekendTrading: (BOOL) weekendTrading
         _tradingDayEnd = tradingDayEnd;
         _dataRate = dataRate;
         _weekendTrading = weekendTrading;
+        _warmupTime = warmupInSeconds;
     }
     return self;
 }
-
-
-
-
-
-
-
 
 - (void) encodeWithCoder:(NSCoder*)encoder{
     [encoder encodeObject:_name forKey:@"NAME"];
@@ -67,6 +62,8 @@ AndWeekendTrading: (BOOL) weekendTrading
     [encoder encodeObject:[NSNumber numberWithLong:_tradingDayEnd]  forKey:@"TRADINGDAYEND"];
     [encoder encodeObject:[NSNumber numberWithLong:_dataRate]  forKey:@"DATARATE"];
     [encoder encodeObject:[NSNumber numberWithBool:_weekendTrading]  forKey:@"WEEKENDTRADING"];
+    [encoder encodeObject:[NSNumber numberWithLong:_warmupTime]  forKey:@"WARMUPTIME"];
+    
 }
 
 - (id) initWithCoder:(NSCoder*)decoder{
@@ -85,6 +82,7 @@ AndWeekendTrading: (BOOL) weekendTrading
         _tradingDayEnd = [[decoder decodeObjectForKey:@"TRADINGDAYEND"] longValue];
         _dataRate = [[decoder decodeObjectForKey:@"DATARATE"] longValue];
         _weekendTrading = [[decoder decodeObjectForKey:@"WEEKENDTRADING"] boolValue];
+        _warmupTime = [[decoder decodeObjectForKey:@"WARMUPTIME"] longValue];
     }
     return self;
 }
@@ -92,7 +90,7 @@ AndWeekendTrading: (BOOL) weekendTrading
 - (NSString *)description
 {
     NSString *descriptionString;
-    descriptionString = [NSString stringWithFormat:@"Name: %@\n Account Code: %@\n BaseCode: %@\nQuoteCode: %@\n StartDate: %@\n EndDate: %@\n Max Leverage: %5.2f\nSampling Rate: %lu \nTrading Lag: %lu \nTrading Day Start: %@ \nTrading Day End:%@\n",[self name],[self accCode],[self baseCode],[self quoteCode],[EpochTime stringDate:[self startDate]],[EpochTime stringDate:[self endDate]], [self maxLeverage], [self samplingRate], [self tradingLag], [EpochTime stringOfDateTime:[self tradingDayStart] WithFormat:@"%H:%M"], [EpochTime stringOfDateTime:[self tradingDayEnd] WithFormat:@"%H:%M"]];
+    descriptionString = [NSString stringWithFormat:@"Name: %@\n Account Code: %@\n BaseCode: %@\nQuoteCode: %@\n StartDate: %@\n EndDate: %@\n Max Leverage: %5.2f\nSampling Rate: %lu \nTrading Lag: %lu \nTrading Day Start: %@ \nTrading Day End:%@\nWarm up Time %ld\n",[self name],[self accCode],[self baseCode],[self quoteCode],[EpochTime stringDate:[self startDate]],[EpochTime stringDate:[self endDate]], [self maxLeverage], [self samplingRate], [self tradingLag], [EpochTime stringOfDateTime:[self tradingDayStart] WithFormat:@"%H:%M"], [EpochTime stringOfDateTime:[self tradingDayEnd] WithFormat:@"%H:%M"], [self warmupTime]];
     return descriptionString;
     
 }
