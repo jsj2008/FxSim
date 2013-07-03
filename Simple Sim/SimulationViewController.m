@@ -288,12 +288,13 @@
         [[[self hideObjectsOnStartup] objectAtIndex:i] setHidden:YES];
     }
     
-    int nColumns = 7;
-    NSArray *sigTableHeaders = [NSArray arrayWithObjects:@"Entry Time", @"Exit Time", @"Signal", @"Entry Price", @"Exit Price", @"Signal Pickup", @"Nav Change", nil];
+
+    NSArray *sigTableHeaders = [NSArray arrayWithObjects:@"Entry Time", @"Exit Time", @"Signal", @"Entry Price", @"Exit Price", @"Signal Pickup", @"Nav Change", @"Duration", nil];
     
-    NSArray *sigTableIds = [NSArray arrayWithObjects:@"ENTRYTIME", @"EXITTIME",@"SIGNAL" , @"ENTRYPRICE", @"EXITPRICE",  @"SIGNALPICKUP", @"PNL", nil];
+    NSArray *sigTableIds = [NSArray arrayWithObjects:@"ENTRYTIME", @"EXITTIME",@"SIGNAL" , @"ENTRYPRICE", @"EXITPRICE",  @"SIGNALPICKUP", @"PNL", @"DURATION", nil];
     
-    float columnWidths[7] = {150.0, 150.0, 75.0, 75.0, 75.0, 75.0, 75.0};
+    int nColumns = 8;
+    float columnWidths[8] = {150.0, 150.0, 75.0, 75.0, 75.0, 75.0, 75.0, 75.0};
     
     for (int i = 0; i < nColumns; i++)
     {
@@ -2331,14 +2332,14 @@
         if([[tableColumn identifier] isEqualToString:@"ENTRYTIME"] || [[tableColumn identifier] isEqualToString:@"EXITTIME"]){
             long dateTime = [[signalAnalysisDetails objectForKey:[tableColumn identifier]] longValue];
             return [EpochTime stringDateWithTime:dateTime];
-        }else{
-            if([[tableColumn identifier] isEqualToString:@"UPTIME"]){
-                float upTime = [[signalAnalysisDetails objectForKey:[tableColumn identifier]] floatValue];
-                return [NSString stringWithFormat:@"%5.2f",upTime];
-            }else{
-                return [signalAnalysisDetails objectForKey:[tableColumn identifier]];
-            }
         }
+        if([[tableColumn identifier] isEqualToString:@"DURATION"]){
+            long durationSeconds = [[signalAnalysisDetails objectForKey:@"EXITTIME"] longValue] - [[signalAnalysisDetails objectForKey:@"ENTRYTIME"] longValue];
+            return [NSNumber numberWithDouble:(double)durationSeconds/(60*60)];
+        }
+        
+        return [signalAnalysisDetails objectForKey:[tableColumn identifier]];
+        
     }
     
     if([[tableView identifier] isEqualToString:@"SIMREPORTTV"])
@@ -2823,16 +2824,24 @@
             for(int i = 0; i < numberOfData;i++){
                 signalAnalysisDetails = [[self workingSimulation] detailsOfSignalAtIndex:i];
                 int signalSide = [UtilityFunctions signOfDouble:[[ signalAnalysisDetails objectForKey:@"SIGNAL"] doubleValue]];
-                float priceChange = ([[signalAnalysisDetails objectForKey:@"EXITPRICE"] floatValue] - [[signalAnalysisDetails objectForKey:@"ENTRYPRICE"] floatValue]);
+                double priceChange = ([[signalAnalysisDetails objectForKey:@"EXITPRICE"] doubleValue] - [[signalAnalysisDetails objectForKey:@"ENTRYPRICE"] doubleValue]);
                 columnData[i] = sortSwitch * signalSide * priceChange;
                 sortOrderIndex[i] = i;
             }
         }else{
-            for(int i = 0; i < numberOfData;i++){
-                signalAnalysisDetails = [[self workingSimulation] detailsOfSignalAtIndex:i];
-                NSNumber *dataValue = [signalAnalysisDetails objectForKey:[tableColumn identifier]]; 
-                columnData[i] = sortSwitch*[dataValue doubleValue];
-                sortOrderIndex[i] = i;
+            if([[self signalTableViewSortColumn] isEqualToString:@"DURATION"]){
+                for(int i = 0; i < numberOfData;i++){
+                    signalAnalysisDetails = [[self workingSimulation] detailsOfSignalAtIndex:i];
+                    columnData[i] = sortSwitch*(double)([[signalAnalysisDetails objectForKey:@"EXITTIME"] longValue] - [[signalAnalysisDetails objectForKey:@"ENTRYTIME"] longValue]);
+                    sortOrderIndex[i] = i;
+                }
+            }else{
+                for(int i = 0; i < numberOfData;i++){
+                    signalAnalysisDetails = [[self workingSimulation] detailsOfSignalAtIndex:i];
+                    NSNumber *dataValue = [signalAnalysisDetails objectForKey:[tableColumn identifier]];
+                    columnData[i] = sortSwitch*[dataValue doubleValue];
+                    sortOrderIndex[i] = i;
+                }
             }
         }
         

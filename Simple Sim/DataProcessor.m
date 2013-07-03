@@ -2830,19 +2830,22 @@ return returnData;
     NSString *bmidString = [NSString stringWithFormat:@"BMID%@",subString];
     NSString *bremString = [NSString stringWithFormat:@"BREM%@",subString];
     
-    NSMutableArray *pacsSeriesNames = [[NSMutableArray alloc] initWithCapacity:numberOfSeries];
+    //NSMutableArray *pacsSeriesNames = [[NSMutableArray alloc] initWithCapacity:numberOfSeries];
+    NSMutableArray *pathSeriesNames = [[NSMutableArray alloc] initWithCapacity:numberOfSeries];
     for(int i = minimumStep; i <= maximumStep; i++){
-        [pacsSeriesNames addObject:[NSString stringWithFormat:@"PACS%d",i]];
+        //[pacsSeriesNames addObject:[NSString stringWithFormat:@"PACS%d",i]];
+        [pathSeriesNames addObject:[NSString stringWithFormat:@"PATH%d",i]];
     }
     
     BOOL includeOldData = NO;
     includeOldData = ![[oldDataDictionary objectForKey:@"ALLNEWDATA"] boolValue];
     
-    NSMutableData *pacsGridData, *newPacsGridData, *pacsGridUseData;
-    long *pacsGridArray, *pacsGridUseArray;
+    NSMutableData *pacsGridData, *newPacsGridData;
+    long *pacsGridArray; 
+    
     long gridWidth, newGridWidth;
     long *newPacsGridArray;
-    long countOfSmallerMoves;
+    //long countOfSmallerMoves;
     long midAbsMove, midMove, newMidMove, seriesIndex, moveCount, newDataIndex = 0, moveSign;
     
     // This is an array of data totals we need for calculation
@@ -2851,16 +2854,26 @@ return returnData;
     long *pacsDivisorArray = (long *)[pacsDivisorData bytes];
     
     //Create the data series structures for which we will need to calculate data
-    NSMutableArray *pacsSeriesTempHolder = [[NSMutableArray alloc] initWithCapacity:numberOfSeries];
-    NSMutableData *pacsSeriesTempHolderData  = [[NSMutableData alloc] initWithLength:sizeof(double *) * numberOfSeries];
-    double **pacsSeriesTempHolderArray = (double **)[pacsSeriesTempHolderData bytes];
-    NSMutableData *pacsSeriesData;
+    //NSMutableArray *pacsSeriesTempHolder = [[NSMutableArray alloc] initWithCapacity:numberOfSeries];
+    NSMutableArray *pathSeriesTempHolder = [[NSMutableArray alloc] initWithCapacity:numberOfSeries];
+    
+    //NSMutableData *pacsSeriesTempHolderData  = [[NSMutableData alloc] initWithLength:sizeof(double *) * numberOfSeries];
+    NSMutableData *pathSeriesTempHolderData  = [[NSMutableData alloc] initWithLength:sizeof(double *) * numberOfSeries];
+    //double **pacsSeriesTempHolderArray = (double **)[pacsSeriesTempHolderData bytes];
+     double **pathSeriesTempHolderArray = (double **)[pathSeriesTempHolderData bytes];
+    //NSMutableData *pacsSeriesData;
+    NSMutableData *pathSeriesData;
     
     for(int i = minimumStep; i <= maximumStep; i++){
         seriesIndex = i - minimumStep;
-        pacsSeriesData = [[NSMutableData alloc] initWithLength:sizeof(double) * dataLength];
-        [pacsSeriesTempHolder addObject:pacsSeriesData];
-        pacsSeriesTempHolderArray[seriesIndex] = (double *)[pacsSeriesData bytes];
+        
+//        pacsSeriesData = [[NSMutableData alloc] initWithLength:sizeof(double) * dataLength];
+//        [pacsSeriesTempHolder addObject:pacsSeriesData];
+//        pacsSeriesTempHolderArray[seriesIndex] = (double *)[pacsSeriesData bytes];
+        
+        pathSeriesData = [[NSMutableData alloc] initWithLength:sizeof(double) * dataLength];
+        [pathSeriesTempHolder addObject:pathSeriesData];
+        pathSeriesTempHolderArray[seriesIndex] = (double *)[pathSeriesData bytes];
     }
     NSMutableData *bmidData = [[NSMutableData alloc] initWithLength:sizeof(double) * dataLength];
     double *bmidArray = (double *)[bmidData bytes];
@@ -2881,21 +2894,28 @@ return returnData;
         double *oldBremArray = (double *)[oldBremData bytes];
         
         
-        NSMutableArray *oldPacsSeriesTempHolder;
-        NSData *oldPacsSeriesTempHolderData;
-        double **oldPacsSeriesTempHolderArray;
+        //NSMutableArray *oldPacsSeriesTempHolder;
+        NSMutableArray *oldPathSeriesTempHolder;
+        //NSData *oldPacsSeriesTempHolderData;
+        NSData *oldPathSeriesTempHolderData;
+        //double **oldPacsSeriesTempHolderArray;
+        double **oldPathSeriesTempHolderArray;
         
         for(int i = 0; i < numberOfSeries; i++){
-            oldPacsSeriesTempHolderData = [trailingSeriesDictionary objectForKey:[pacsSeriesNames objectAtIndex:i]];
-            [oldPacsSeriesTempHolder addObject:oldPacsSeriesTempHolderData];
-            oldPacsSeriesTempHolderArray[seriesIndex] = (double *)[oldPacsSeriesTempHolderData bytes];
+            //oldPacsSeriesTempHolderData = [trailingSeriesDictionary objectForKey:[pacsSeriesNames objectAtIndex:i]];
+            oldPathSeriesTempHolderData = [trailingSeriesDictionary objectForKey:[pathSeriesNames objectAtIndex:i]];
+            //[oldPacsSeriesTempHolder addObject:oldPacsSeriesTempHolderData];
+            [oldPathSeriesTempHolder addObject:oldPathSeriesTempHolderData];
+            //oldPacsSeriesTempHolderArray[seriesIndex] = (double *)[oldPacsSeriesTempHolderData bytes];
+            oldPathSeriesTempHolderArray[seriesIndex] = (double *)[oldPathSeriesTempHolderData bytes];
         }
         
         int oldDataIndex = dataOverlapIndex;
         
         if(oldDateTimeArray[oldDataIndex] == dateTimeArray[newDataIndex]){
             for(int i = 0; i < numberOfSeries; i++){
-                pacsSeriesTempHolderArray[i][newDataIndex] = oldPacsSeriesTempHolderArray[i][oldDataIndex];
+                //pacsSeriesTempHolderArray[i][newDataIndex] = oldPacsSeriesTempHolderArray[i][oldDataIndex];
+                pathSeriesTempHolderArray[i][newDataIndex] = oldPathSeriesTempHolderArray[i][oldDataIndex];
                 oldDataIndex++;
                 newDataIndex++;
             }
@@ -2910,8 +2930,8 @@ return returnData;
         
         pacsGridData = [[signalSystem miscStoredInfoDictionary] objectForKey:@"PACSGRID"];
         pacsGridArray = (long *)[pacsGridData mutableBytes];
-        pacsGridUseData = [[signalSystem miscStoredInfoDictionary] objectForKey:@"PACSGRIDUSE"];
-        pacsGridUseArray = (long *)[pacsGridUseData mutableBytes];
+        //pacsGridUseData = [[signalSystem miscStoredInfoDictionary] objectForKey:@"PACSGRIDUSE"];
+        //pacsGridUseArray = (long *)[pacsGridUseData mutableBytes];
         
         gridWidth = [[[signalSystem miscStoredInfoDictionary] objectForKey:@"PACSGRIDWIDTH"] longValue];
          
@@ -2951,18 +2971,20 @@ return returnData;
                 }
                 if(newMidMove>0)newMidMove--;
                 
+                pathSeriesTempHolderArray[seriesIndex][newDataIndex] = newMidMove;
+                
                 if((double)moveCount/pacsDivisorArray[seriesIndex] >= quantile)
                 {
                     if(fabs(bmidArray[newDataIndex]-bmidArray[newDataIndex-iLookback])/pipSize > newMidMove){
                         bmidArray[newDataIndex] = bmidArray[newDataIndex-iLookback] + newMidMove*pipSize*moveSign;
                         //NSLog(@"Adjusting lookback %ld %@, %d from %ld to %ld", dateTimeArray[newDataIndex], [EpochTime stringDateWithTime:dateTimeArray[newDataIndex]], iLookback,midMove,newMidMove);
                         bremArray[newDataIndex] = midArray[newDataIndex] - bmidArray[newDataIndex];
-                        pacsGridUseArray[seriesIndex]++;
+                        //pacsGridUseArray[seriesIndex]++;
                     }
                 }
                 
                 if(midAbsMove >= gridWidth){
-                    pacsSeriesTempHolderArray[seriesIndex][newDataIndex] = 1.0;
+                    //pacsSeriesTempHolderArray[seriesIndex][newDataIndex] = 1.0;
                     
                     //Expand the grid width
                     newGridWidth = gridWidth + MAX(20,midAbsMove-gridWidth+1);
@@ -2977,31 +2999,29 @@ return returnData;
                     pacsGridData = newPacsGridData;
                     pacsGridArray = newPacsGridArray;
                     gridWidth = newGridWidth;
-                    newPacsGridArray[(seriesIndex*gridWidth)+midAbsMove]++;
-                }else{
-                    countOfSmallerMoves = 0;
-                    for(int iLower = 0;iLower <midAbsMove; iLower++){
-                        countOfSmallerMoves = countOfSmallerMoves +  pacsGridArray[(seriesIndex*gridWidth) + iLower];
-                    }
-                    if(pacsDivisorArray[seriesIndex] > 0){
-                        pacsSeriesTempHolderArray[seriesIndex][newDataIndex] = (double)countOfSmallerMoves/pacsDivisorArray[seriesIndex];
-                        
-                    }else{
-                        pacsSeriesTempHolderArray[seriesIndex][newDataIndex] = 0.0;
-                    }
-                    pacsGridArray[(seriesIndex*gridWidth)+midAbsMove]++;
-                    
                 }
-                pacsDivisorArray[seriesIndex]++;
-           }
+                newPacsGridArray[(seriesIndex*gridWidth)+midAbsMove]++;
+                ///else{
+                //                    countOfSmallerMoves = 0;
+                //                    for(int iLower = 0;iLower <midAbsMove; iLower++){
+                //                        countOfSmallerMoves = countOfSmallerMoves +  pacsGridArray[(seriesIndex*gridWidth) + iLower];
+                //                    }
+                //                    if(pacsDivisorArray[seriesIndex] > 0){
+                //                        pacsSeriesTempHolderArray[seriesIndex][newDataIndex] = (double)countOfSmallerMoves/pacsDivisorArray[seriesIndex];
+                //
+                //                    }else{
+                //                        pacsSeriesTempHolderArray[seriesIndex][newDataIndex] = 0.0;
+                //                    }
+                 pacsDivisorArray[seriesIndex]++;
+            }
             newDataIndex++;
         }
     }else{
         gridWidth = 20;
         pacsGridData = [NSMutableData dataWithLength:sizeof(long) * numberOfSeries * gridWidth];
         pacsGridArray = (long *)[pacsGridData mutableBytes];
-        pacsGridUseData = [NSMutableData dataWithLength:sizeof(long) * numberOfSeries];
-        pacsGridUseArray = (long *)[pacsGridUseData mutableBytes];
+        //pacsGridUseData = [NSMutableData dataWithLength:sizeof(long) * numberOfSeries];
+        //pacsGridUseArray = (long *)[pacsGridUseData mutableBytes];
         
         for(newDataIndex = 0; newDataIndex < maximumStep; newDataIndex++){
             bmidArray[newDataIndex] = midArray[newDataIndex];
@@ -3013,7 +3033,7 @@ return returnData;
                         midMove = (int)((bmidArray[newDataIndex] - bmidArray[newDataIndex-iLookback])/pipSize);
                         midAbsMove = labs(midMove);
                         if(midAbsMove >= gridWidth){
-                            pacsSeriesTempHolderArray[seriesIndex][newDataIndex] = 1.0;
+                            //pacsSeriesTempHolderArray[seriesIndex][newDataIndex] = 1.0;
                             
                             //Expand the grid width
                             newGridWidth = gridWidth + MAX(20,midAbsMove-gridWidth+1);
@@ -3060,19 +3080,21 @@ return returnData;
                 }
                 if(newMidMove>0)newMidMove--;
                 
+                pathSeriesTempHolderArray[seriesIndex][newDataIndex] = newMidMove;
+                
                 if((double)moveCount/pacsDivisorArray[seriesIndex] >= quantile)
                 {
                     if(fabs(bmidArray[newDataIndex]-bmidArray[newDataIndex-iLookback])/pipSize > newMidMove){
                         bmidArray[newDataIndex] = bmidArray[newDataIndex-iLookback] + newMidMove*pipSize*moveSign;
                         //NSLog(@"Adjusting lookback %ld %@, %d from %ld to %ld", dateTimeArray[newDataIndex], [EpochTime stringDateWithTime:dateTimeArray[newDataIndex]], iLookback,midMove,newMidMove);
                         bremArray[newDataIndex] = midArray[newDataIndex] - bmidArray[newDataIndex];
-                        pacsGridUseArray[seriesIndex]++;
+                        //pacsGridUseArray[seriesIndex]++;
                     }
                 }
             }
             
             if(midAbsMove >= gridWidth){
-                pacsSeriesTempHolderArray[seriesIndex][newDataIndex] = 1.0;
+                //pacsSeriesTempHolderArray[seriesIndex][newDataIndex] = 1.0;
                 
                 //Expand the grid width
                 newGridWidth = gridWidth + MAX(20,midAbsMove-gridWidth+1);
@@ -3087,30 +3109,33 @@ return returnData;
                 pacsGridData = newPacsGridData;
                 pacsGridArray = newPacsGridArray;
                 gridWidth = newGridWidth;
-                newPacsGridArray[(seriesIndex*gridWidth)+midAbsMove]++;
-            }else{
-                countOfSmallerMoves = 0;
-                for(int iLower = 0;iLower <midAbsMove; iLower++){
-                    countOfSmallerMoves = countOfSmallerMoves +  pacsGridArray[(seriesIndex*gridWidth) + iLower];
-                }
-                if(pacsDivisorArray[seriesIndex]>0){
-                    pacsSeriesTempHolderArray[seriesIndex][newDataIndex] = (double)countOfSmallerMoves/pacsDivisorArray[seriesIndex];
-                }else{
-                    pacsSeriesTempHolderArray[seriesIndex][newDataIndex] = 0.0;
-                }
-                pacsGridArray[(seriesIndex*gridWidth)+midAbsMove]++;
+                
             }
+            //            else{
+            //                countOfSmallerMoves = 0;
+            //                for(int iLower = 0;iLower <midAbsMove; iLower++){
+            //                    countOfSmallerMoves = countOfSmallerMoves +  pacsGridArray[(seriesIndex*gridWidth) + iLower];
+            //                }
+            //                if(pacsDivisorArray[seriesIndex]>0){
+            //                    pacsSeriesTempHolderArray[seriesIndex][newDataIndex] = (double)countOfSmallerMoves/pacsDivisorArray[seriesIndex];
+            //                }else{
+            //                    pacsSeriesTempHolderArray[seriesIndex][newDataIndex] = 0.0;
+            //                }
+            //pacsGridArray[(seriesIndex*gridWidth)+midAbsMove]++;
+            //            }
+            newPacsGridArray[(seriesIndex*gridWidth)+midAbsMove]++;
             pacsDivisorArray[seriesIndex]++;
         }
         newDataIndex++;
     }
-    [[signalSystem miscStoredInfoDictionary] setObject:pacsGridData forKey:@"PACSGRID"];
-    [[signalSystem miscStoredInfoDictionary] setObject:pacsGridUseData forKey:@"PACSGRIDUSE"];
-    [[signalSystem miscStoredInfoDictionary] setObject:[NSNumber numberWithLong:gridWidth]  forKey:@"PACSGRIDWIDTH"];
+//    [[signalSystem miscStoredInfoDictionary] setObject:pacsGridData forKey:@"PACSGRID"];
+//    [[signalSystem miscStoredInfoDictionary] setObject:pacsGridUseData forKey:@"PACSGRIDUSE"];
+//    [[signalSystem miscStoredInfoDictionary] setObject:[NSNumber numberWithLong:gridWidth]  forKey:@"PACSGRIDWIDTH"];
     
     for(int i = minimumStep; i <= maximumStep; i++){
         seriesIndex = i - minimumStep;
-        [returnData setObject:[pacsSeriesTempHolder objectAtIndex:seriesIndex] forKey:[pacsSeriesNames objectAtIndex:seriesIndex]];
+        //[returnData setObject:[pacsSeriesTempHolder objectAtIndex:seriesIndex] forKey:[pacsSeriesNames objectAtIndex:seriesIndex]];
+        [returnData setObject:[pathSeriesTempHolder objectAtIndex:seriesIndex] forKey:[pathSeriesNames objectAtIndex:seriesIndex]];
     }
     [returnData setObject:bmidData
                    forKey:bmidString];
