@@ -9,10 +9,10 @@
 #import <Foundation/Foundation.h>
 
 @interface CashFlowRecord : NSObject<NSCoding>{
-    double _amount;
-    double _resultingBalance;
-    long  _dateTime;
-    int _reason;    
+//    double _amount;
+//    double _resultingBalance;
+//    long  _dateTime;
+//    int _reason;    
 }
 
 - (id) initWithAmount: (double) amount

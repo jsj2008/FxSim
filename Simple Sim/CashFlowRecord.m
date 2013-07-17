@@ -54,9 +54,9 @@
     return [NSString stringWithFormat:@"Time:%@ \nAmount:%5.2f \nReason:%d \nResulting:%5.2f",[EpochTime stringDateWithTime:[self dateTime]],[self amount],[self reason],[self resultingBalance]];
 }
 
-@synthesize  amount = _amount;
-@synthesize  resultingBalance = _resultingBalance;
-@synthesize  dateTime = _dateTime;
-@synthesize  reason = _reason;
+//@synthesize  amount = _amount;
+//@synthesize  resultingBalance = _resultingBalance;
+//@synthesize  dateTime = _dateTime;
+//@synthesize  reason = _reason;
 
 @end

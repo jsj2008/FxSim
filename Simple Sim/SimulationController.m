@@ -2146,15 +2146,29 @@
     NSDictionary *performanceAttribution;
     NSArray *perfAttribKeys;
     NSString *perfAttribMessage;
+    double amount;
+    NSString *reason;
     performanceAttribution = [simulation getPerformanceAttribution];
-    perfAttribKeys = [performanceAttribution allKeys];
-    for(int i = 0; i < [perfAttribKeys count]; i++){
-        double amount = [[performanceAttribution objectForKey:[perfAttribKeys objectAtIndex:i]] doubleValue];
-        NSString *reason = [perfAttribKeys objectAtIndex:i]; 
-        perfAttribMessage = [NSString stringWithFormat:@"Final balance component: %5.2f     due to: %@ \n",amount,reason];
+    if([performanceAttribution objectForKey:@"LASTBALANCE"] != nil){
+        amount = [[performanceAttribution objectForKey:@"LASTBALANCE"] doubleValue];
+        perfAttribMessage = [NSString stringWithFormat:@"Final balance is: %5.2f     \n",amount];
         [[[simulation simulationRunOutput] mutableString] appendString:perfAttribMessage];
         if([self doThreads]){
             [self performSelectorOnMainThread:@selector(outputSimulationMessage:) withObject:perfAttribMessage waitUntilDone:NO];
+        }
+
+    }
+    
+    perfAttribKeys = [performanceAttribution allKeys];
+    for(int i = 0; i < [perfAttribKeys count]; i++){
+        if(![[perfAttribKeys objectAtIndex:i] isEqualToString:@"LASTBALANCE"]){
+            amount = [[performanceAttribution objectForKey:[perfAttribKeys objectAtIndex:i]] doubleValue];
+            reason = [perfAttribKeys objectAtIndex:i];
+            perfAttribMessage = [NSString stringWithFormat:@"Final balance component: %5.2f     due to: %@ \n",amount,reason];
+            [[[simulation simulationRunOutput] mutableString] appendString:perfAttribMessage];
+            if([self doThreads]){
+                [self performSelectorOnMainThread:@selector(outputSimulationMessage:) withObject:perfAttribMessage waitUntilDone:NO];
+            }
         }
     }
 }

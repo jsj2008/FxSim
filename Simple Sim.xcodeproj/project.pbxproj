@@ -10,6 +10,7 @@
 		5B01B0C914C026C10032A301 /* SeriesPlot.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B01B0C814C026C00032A301 /* SeriesPlot.m */; };
 		5B01B0D514C130150032A301 /* DataController.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B01B0D414C130150032A301 /* DataController.m */; };
 		5B147E74160AB59B0016C04A /* RulesSystem.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B147E73160AB59B0016C04A /* RulesSystem.m */; };
+		5B1F09CA178F0D3D00BC4C7F /* HistogramPlot.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B1F09C9178F0D3D00BC4C7F /* HistogramPlot.m */; };
 		5B22D0C01729C7AF00A55E32 /* SeriesPlotDataWrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B22D0BF1729C7AE00A55E32 /* SeriesPlotDataWrapper.m */; };
 		5B2EDCC014CD979600EC26B8 /* OCR2.icns in Resources */ = {isa = PBXBuildFile; fileRef = 5B2EDCBF14CD979600EC26B8 /* OCR2.icns */; };
 		5B5A07DA1632AE1A00DBB2E8 /* CorePlot.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5B5A07D71632AD9700DBB2E8 /* CorePlot.framework */; };
@@ -86,6 +87,8 @@
 		5B01B0D414C130150032A301 /* DataController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DataController.m; sourceTree = "<group>"; };
 		5B147E72160AB59B0016C04A /* RulesSystem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RulesSystem.h; sourceTree = "<group>"; };
 		5B147E73160AB59B0016C04A /* RulesSystem.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RulesSystem.m; sourceTree = "<group>"; };
+		5B1F09C8178F0D3D00BC4C7F /* HistogramPlot.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HistogramPlot.h; sourceTree = "<group>"; };
+		5B1F09C9178F0D3D00BC4C7F /* HistogramPlot.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = HistogramPlot.m; sourceTree = "<group>"; };
 		5B22D0BE1729C7AE00A55E32 /* SeriesPlotDataWrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SeriesPlotDataWrapper.h; sourceTree = "<group>"; };
 		5B22D0BF1729C7AE00A55E32 /* SeriesPlotDataWrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SeriesPlotDataWrapper.m; sourceTree = "<group>"; };
 		5B2EDCBF14CD979600EC26B8 /* OCR2.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = OCR2.icns; path = ../OCR2.icns; sourceTree = "<group>"; };
@@ -195,6 +198,8 @@
 				5BFF896014D81F7B00F68453 /* TimeSeriesLine.m */,
 				5B22D0BE1729C7AE00A55E32 /* SeriesPlotDataWrapper.h */,
 				5B22D0BF1729C7AE00A55E32 /* SeriesPlotDataWrapper.m */,
+				5B1F09C8178F0D3D00BC4C7F /* HistogramPlot.h */,
+				5B1F09C9178F0D3D00BC4C7F /* HistogramPlot.m */,
 			);
 			name = Plots;
 			sourceTree = "<group>";
@@ -465,6 +470,7 @@
 				5B147E74160AB59B0016C04A /* RulesSystem.m in Sources */,
 				5BA3C23516193C7C00FCCC24 /* BasicParameters.m in Sources */,
 				5B22D0C01729C7AF00A55E32 /* SeriesPlotDataWrapper.m in Sources */,
+				5B1F09CA178F0D3D00BC4C7F /* HistogramPlot.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

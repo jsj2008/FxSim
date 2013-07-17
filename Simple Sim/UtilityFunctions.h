@@ -23,4 +23,7 @@
                         AndEndIndex: (long) endIndex
               AndReturningSortIndex: (int *) sortIndexArray;
 
++ (double) niceNumber: (double) x
+         withRounding: (BOOL) doRounding;
+
 @end

@@ -224,6 +224,7 @@ AndTradingTimeStart: (int) tradingTimeStart
     double tradePnl = 0.0;
     double interestAccrued = 0.0;
     double other = 0.0;
+    double lastBalance = 0.0;
     BOOL unIdentified = NO;
     CashFlowRecord *balAdj;
     
@@ -247,9 +248,15 @@ AndTradingTimeStart: (int) tradingTimeStart
             break;
         }
     }
+    if([[self accBalanceArray] count] > 0){
+        balAdj = [[self accBalanceArray] objectAtIndex:[[self accBalanceArray] count]-1];
+        lastBalance = [balAdj resultingBalance];
+    }
     [perfAttrib  setValue:[NSNumber numberWithDouble:transferAmounts] forKey:@"TRANSFER"];  
     [perfAttrib setValue:[NSNumber numberWithDouble:tradePnl] forKey:@"TRADEPNL"];
     [perfAttrib setValue:[NSNumber numberWithDouble:interestAccrued] forKey:@"INTEREST"];
+    [perfAttrib setValue:[NSNumber numberWithDouble:interestAccrued] forKey:@"INTEREST"];
+    [perfAttrib setValue:[NSNumber numberWithDouble:lastBalance] forKey:@"LASTBALANCE"];
     if(unIdentified){
         [perfAttrib setValue:[NSNumber numberWithDouble:other] forKey:@"UNKNOWN"];
     }
@@ -804,10 +811,10 @@ AndTradingTimeStart: (int) tradingTimeStart
 #pragma mark General Methods, About Signals
 
 - (NSUInteger) addSignalStatisticsWithSignal: (double) signal
-                         AndEntryTime: (long) entryTime
-                          AndExitTime: (long) exitTime
-                        AndEntryPrice: (double)entryPrice
-                         AndExitPrice: (double) exitPrice
+                                AndEntryTime: (long) entryTime
+                                 AndExitTime: (long) exitTime
+                               AndEntryPrice: (double)entryPrice
+                                AndExitPrice: (double) exitPrice
 {
     SignalRecord *signalRecord;
     signalRecord = [[SignalRecord alloc] initWithSignal:signal 

@@ -28,7 +28,8 @@
     NSTabViewItem *reportTab;
     NSTabViewItem *signalsTab;
     NSTabViewItem *compareTab;
-       
+    NSTabViewItem *histTab;
+    
     __weak NSScrollView *simulationRunScrollView;
     __weak NSButton *performSimulationButton;
     __weak NSTableView *simulationTimeSeriesTableView;
@@ -182,10 +183,15 @@
 @property (weak) IBOutlet NSTableView *registeredSimsTableView2;
 @property (weak) IBOutlet NSTableView *registeredSimsTableView3;
 @property (weak) IBOutlet NSTableView *registeredSimsTableView5;
+@property (weak) IBOutlet NSTableView *registeredSimsTableView6;
+
 @property (weak) IBOutlet NSButton *importSimulationButton;
 @property (weak) IBOutlet NSButton *removeSimulationButton;
 @property (weak) IBOutlet NSScrollView *registeredSimsScrollView1;
 @property (weak) IBOutlet NSButton *exportSimulationButton;
+@property (weak) IBOutlet NSTextField *returnsHistogramNBins;
+@property (weak) IBOutlet NSStepper *returnsHistogramBinsStepper;
+@property (weak) IBOutlet NSButtonCell *returnsHistogramZeroCheck;
 
 
 - (IBAction)changeSelectedTradingPair:(id)sender;
@@ -232,6 +238,10 @@
 - (IBAction)simulationCompareToggleDashed:(id)sender;
 - (IBAction)simulationCompareGetRangeFromSigPlot:(id)sender;
 
+- (IBAction)returnsHistogramStepperPressed:(id)sender;
+//- (IBAction)returnsHistogramZeroCheckPressed:(id)sender;
+- (IBAction)returnsHistogramNBinsTextEdit:(id)sender;
+- (IBAction)returnsHistogramFullScreen:(id)sender;
 
 
 @property (weak) IBOutlet NSProgressIndicator *performSimulationProgressBar;
@@ -270,10 +280,13 @@
 @property (weak) IBOutlet NSBox *fullScreenBox;
 @property (weak) IBOutlet NSBox *signalAnalysisPlotBox;
 @property (weak) IBOutlet NSBox *simPlotBox;
+@property (weak) IBOutlet NSBox *returnsHistogramPlotBox;
+
 @property (weak) IBOutlet NSTextField *setupDataWarmUpTextField;
 @property (weak) IBOutlet NSTextField *setupRulesTextField;
 @property (weak) IBOutlet NSTableView *simulationTimeSeriesSelectedTableView;
 @property (weak) IBOutlet NSTableView *simulationSignalSelectedTimeSeriesTableView;
+@property (weak) IBOutlet CPTGraphHostingView *returnsHistogramGraphHostingView;
 
 @property (weak) IBOutlet CPTGraphHostingView *simulationCompareGraphHostingView;
 @property (weak) IBOutlet NSBox *simCompareBox;
@@ -287,4 +300,5 @@
 
 @property (weak) IBOutlet NSButton *comparePlotDotsCheck;
 @property (weak) IBOutlet NSMatrix *simulationCompareLSIndicatorRadio;
+
 @end
