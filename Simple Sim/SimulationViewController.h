@@ -192,6 +192,8 @@
 @property (weak) IBOutlet NSTextField *returnsHistogramNBins;
 @property (weak) IBOutlet NSStepper *returnsHistogramBinsStepper;
 @property (weak) IBOutlet NSButtonCell *returnsHistogramZeroCheck;
+@property (weak) IBOutlet NSTextField *returnsHistogramCompareSimName;
+@property (weak) IBOutlet NSButton *returnsHistogramCompareToggleButton;
 
 
 - (IBAction)changeSelectedTradingPair:(id)sender;
@@ -242,6 +244,7 @@
 //- (IBAction)returnsHistogramZeroCheckPressed:(id)sender;
 - (IBAction)returnsHistogramNBinsTextEdit:(id)sender;
 - (IBAction)returnsHistogramFullScreen:(id)sender;
+- (IBAction)returnsHistogramCompareToggle:(id)sender;
 
 
 @property (weak) IBOutlet NSProgressIndicator *performSimulationProgressBar;

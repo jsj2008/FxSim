@@ -797,7 +797,9 @@ AndTradingTimeStart: (int) tradingTimeStart
             return returnData;
         }
                 
-        
+        if([dataFieldIdentifier isEqualToString:@"NUMBEROFTRADES"]){
+            return [NSString stringWithFormat:@"%d",[returnData intValue]];
+        }
         returnData = [NSString stringWithFormat:@"%5.2f",[returnData floatValue]];
         
         return returnData;

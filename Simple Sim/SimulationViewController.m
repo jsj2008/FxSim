@@ -50,6 +50,7 @@
 @property (retain) Simulation *workingSimulation;
 @property (retain) Simulation *compareSimulation;
 @property BOOL compareSimulationLoaded;
+@property BOOL compareSimulationHistogramDouble;
 @property (retain) SeriesPlotDataWrapper *comparePlotInfo;
 @property (retain) SeriesPlotDataWrapper *simulationPlotInfo;
 @property (retain) SeriesPlotDataWrapper *signalPlotInfo;
@@ -88,6 +89,7 @@
 - (void) leftPanelTopMessage:(NSString *) message;
 - (void) adjustReportForTwoSims;
 - (void) adjustReportForOneSim;
+- (void) showHistogram;
 @end
 
 @implementation SimulationViewController
@@ -118,7 +120,7 @@
         _simulationController = [[SimulationController alloc] init];
         [_simulationController setDelegate:self];
         [_simulationController setDoThreads:_doThreads];
-        
+        _compareSimulationHistogramDouble = NO;
         _compareSimulationLoaded = NO;
         _workingSimulation = nil;
         
@@ -348,6 +350,8 @@
     [_returnsHistogramNBins setStringValue: [NSString stringWithFormat:@"%d",HISTOGRAM_BINS]];
     [_simulationReturnsHistogram setNumberOfBins:HISTOGRAM_BINS];
     
+    [_returnsHistogramCompareSimName setHidden:YES];
+    [_returnsHistogramCompareToggleButton setHidden:YES];
     
     [reportTableView setDelegate:self];
 }
@@ -595,11 +599,9 @@
         [[self simulationResultsPlot] updatePositionIndicator:[self simulationPlotInfo]];
     }
     
-    
+    [self showHistogram];
 
-    [[self simulationReturnsHistogram] createHistogramDataForSim:  [self workingSimulation]
-                                                  andOptionalSim:  [self compareSimulation]];
-   
+    
 }
 
 
@@ -863,8 +865,7 @@
     [[self simulationComparePlot] updateLines:plotDataSource AndUpdateYAxes:YES];
     
     //Histogram stuff
-    [[self simulationReturnsHistogram] createHistogramDataForSim:  [self workingSimulation]
-                                                  andOptionalSim:  [self compareSimulation]];
+    [self showHistogram];
     
 }
 
@@ -1336,6 +1337,25 @@
     [tableColumn setWidth:300];
 }
 
+-(void) showHistogram
+{
+    [[self simulationReturnsHistogram] createHistogramDataForSim:  [self workingSimulation]
+                                                  andOptionalSim:  [self compareSimulation]];
+    
+    if([self  compareSimulation] == nil){
+        [[self returnsHistogramCompareSimName] setStringValue:@""];
+        [[self returnsHistogramCompareSimName] setHidden:YES];
+        [[self returnsHistogramCompareToggleButton]  setHidden:YES];
+        [self setCompareSimulationHistogramDouble:NO];
+    }else{
+        NSString *message = [NSString stringWithFormat:@"Compare Simulation:\n%@",[[self compareSimulation] name]];
+        [[self returnsHistogramCompareSimName] setStringValue:message];
+        [[self returnsHistogramCompareSimName] setHidden:NO];
+        [[self returnsHistogramCompareToggleButton]  setHidden:NO];
+        [self setCompareSimulationHistogramDouble:YES];
+    }
+    
+}
 
 #pragma mark -
 #pragma mark IBActions Methods
@@ -1886,9 +1906,7 @@
     [[self returnsHistogramNBins] setStringValue: [NSString stringWithFormat:@"%d",(int)stepperValue]];
     [[self simulationReturnsHistogram] setNumberOfBins:(int)stepperValue];
     
-    [[self simulationReturnsHistogram] createHistogramDataForSim:  [self workingSimulation]
-                                                  andOptionalSim:  [self compareSimulation]];
-    
+    [self showHistogram];
     
 }
 
@@ -1919,8 +1937,8 @@
     if(nBins >= 2 && nBins <=100){
         [[self returnsHistogramBinsStepper] setIntegerValue:nBins];
         [[self simulationReturnsHistogram] setNumberOfBins:(int)nBins];
-        [[self simulationReturnsHistogram] createHistogramDataForSim:  [self workingSimulation]
-                                                      andOptionalSim:  [self compareSimulation]];
+        
+        [self showHistogram];
     }else{
         int stepperValue = [[self returnsHistogramBinsStepper] intValue];
         [[self returnsHistogramNBins] setStringValue: [NSString stringWithFormat:@"%d",stepperValue]];
@@ -1932,6 +1950,19 @@
 
 - (IBAction)returnsHistogramFullScreen:(id)sender {
     [self addPlotToFullScreenWindow:[self returnsHistogramGraphHostingView]];
+}
+
+- (IBAction)returnsHistogramCompareToggle:(id)sender {
+    if(![self compareSimulationHistogramDouble]){
+        [self showHistogram];
+    }else{
+        [[self simulationReturnsHistogram] createHistogramDataForSim:  [self workingSimulation]
+                                                      andOptionalSim:  nil];
+        [[self returnsHistogramCompareSimName] setStringValue:@""];
+        [[self returnsHistogramCompareSimName] setHidden:YES];
+        [self setCompareSimulationHistogramDouble:NO];
+    }
+    
 }
 
 - (IBAction) changeSelectedTradingPair:(id)sender {
@@ -2868,12 +2899,14 @@
             [self prepareSimCompareSheet];
             //[[self simulationComparePlot] initialGraphAndAddAnnotation:NO];
             [self adjustReportForOneSim];
-            [[self simulationReturnsHistogram] createHistogramDataForSim:  [self workingSimulation]
-                                                          andOptionalSim:  [self compareSimulation]];
+            
+  
         }
     }
     return;
 }
+
+
 
 
 - (void)tableView:(NSTableView *)tableView didClickTableColumn:(NSTableColumn *)tableColumn
