@@ -686,7 +686,7 @@
             NSMutableData *signalthresholdDataU = [[NSMutableData alloc] initWithLength:dataLength * sizeof(double)];
             double *signalthresholdArrayL = (double *)[signalthresholdDataL mutableBytes];
             double *signalthresholdArrayU = (double *)[signalthresholdDataU mutableBytes];
-            signalArray = (double *)[signalData mutableBytes];
+            //signalArray = (double *)[signalData mutableBytes];
             for(int i = 0; i < dataLength; i++){
                 signalthresholdArrayL[i] = -[signalSystem threshold];
                 signalthresholdArrayU[i] = [signalSystem threshold];
@@ -1228,7 +1228,7 @@ return returnData;
 {
     NSData *emadData;
     double *emadArray;
-    int dataLength;
+    int dataLength = 0;
     
     NSMutableDictionary *returnData = [[NSMutableDictionary alloc] init];
 
@@ -1438,7 +1438,6 @@ return returnData;
     {
         for(int i = 0; i < [dataKeys count]; i++){
             if([[dataKeys objectAtIndex:i] isEqualToString:seriesString]){
-                foundSeries = YES;
                 seriesData = [dataDictionary objectForKey:seriesString];
                 seriesArray = (double *)[seriesData bytes];
                 dataLength = [seriesData length]/sizeof(double);
@@ -2699,8 +2698,6 @@ return returnData;
         
         slowCode = [[pacsString substringFromIndex:lastBracket.location+1] intValue];
         pacsString = [pacsString substringToIndex:lastBracket.location];
-        lastBracket = [pacsString rangeOfString:@"/"
-                                        options:NSBackwardsSearch];
         
         fastString = [NSString stringWithFormat:@"EMBD/%@/%d/%d",pacsString,fastCode,fastCode];
         slowString = [NSString stringWithFormat:@"EMBD/%@/%d/%d",pacsString,slowCode,slowCode];
@@ -2996,7 +2993,7 @@ return returnData;
                             newPacsGridArray[(iSeries*newGridWidth) + iWidth] = pacsGridArray[(iSeries*gridWidth) + iWidth];
                         }
                     }
-                    pacsGridData = newPacsGridData;
+                    //pacsGridData = newPacsGridData;
                     pacsGridArray = newPacsGridArray;
                     gridWidth = newGridWidth;
                 }

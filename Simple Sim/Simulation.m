@@ -151,7 +151,7 @@ AndTradingTimeStart: (int) tradingTimeStart
 
 +(NSArray *)getReportFields
 {
-    NSArray *reportFields = [NSArray arrayWithObjects:@"NAME", @"TRADINGPAIR",@"ACCOUNTCURRENCY",@"BLANK",@"--RESULTS--", @"CASHTRANSFERS", @"FINALNAV", @"TRADE PNL", @"INTEREST",  @"DEEPESTDRAWDOWN", @"DEEPESTDRAWDOWNTIME", @"LONGESTDRAWDOWN", @"LONGESTDRAWDOWNTIME", @"NUMBEROFTRADES", @"SPREADCOST", @"BLANK",@"EXP NUMBER", @"EXP N LOSS", @"EXP N WIN", @"EXP MIN LEN", @"EXP MAX LEN", @"EXP MED LEN", @"EXP LOSS MED LEN", @"EXP WIN MED LEN", @"EXP BIG LOSS", @"EXP BIG WIN", @"SHARPE RATIO", @"SORTINO RATIO", @"BLANK", @"--PARAMETERS--",@"STARTTIME", @"ENDTIME", @"STRATEGY",@"EXTRASERIES",@"POSITIONING", @"RULES", @"MAXLEVERAGE", @"TIMESTEP", @"TRADINGLAG", @"TRADINGDAYSTART", @"TRADINGDAYEND", @"WARMUPTIME", @"DATARATE", @"USERADDEDDATA", nil];
+    NSArray *reportFields = [NSArray arrayWithObjects:@"NAME", @"TRADINGPAIR",@"ACCOUNTCURRENCY",@"BLANK",@"--RESULTS--", @"CASHTRANSFERS", @"FINALNAV", @"TRADE PNL", @"INTEREST",  @"DEEPESTDRAWDOWN", @"DEEPESTDRAWDOWNTIME", @"LONGESTDRAWDOWN", @"LONGESTDRAWDOWNTIME", @"NUMBEROFTRADES", @"SPREADCOST", @"BLANK",@"EXP NUMBER", @"EXP N LOSS", @"EXP N WIN", @"EXP MEAN LOSS", @"EXP MEAN WIN", @"EXP MIN LEN", @"EXP MAX LEN", @"EXP MED LEN", @"EXP LOSS MED LEN", @"EXP WIN MED LEN", @"EXP BIG LOSS", @"EXP BIG WIN", @"SHARPE RATIO", @"SORTINO RATIO", @"BLANK", @"--PARAMETERS--",@"STARTTIME", @"ENDTIME", @"STRATEGY",@"EXTRASERIES",@"POSITIONING", @"RULES", @"MAXLEVERAGE", @"TIMESTEP", @"TRADINGLAG", @"TRADINGDAYSTART", @"TRADINGDAYEND", @"WARMUPTIME", @"DATARATE", @"USERADDEDDATA", nil];
     
     
     
@@ -792,11 +792,13 @@ AndTradingTimeStart: (int) tradingTimeStart
             return returnData;
         }
         if([dataFieldIdentifier isEqualToString:@"EXP BIG LOSS"] ||
-           [dataFieldIdentifier isEqualToString:@"EXP BIG WIN"]){
+           [dataFieldIdentifier isEqualToString:@"EXP BIG WIN"] ||
+           [dataFieldIdentifier isEqualToString:@"EXP MEAN LOSS"] ||
+           [dataFieldIdentifier isEqualToString:@"EXP MEAN WIN"]){
             returnData = [NSString stringWithFormat:@"%5.2f",[returnData doubleValue]];
             return returnData;
         }
-                
+        
         if([dataFieldIdentifier isEqualToString:@"NUMBEROFTRADES"]){
             return [NSString stringWithFormat:@"%d",[returnData intValue]];
         }

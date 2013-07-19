@@ -670,7 +670,7 @@
     NSMutableArray *fieldNames;
     NSMutableArray *isAvailable;
     NSArray *fieldNamesFromData;
-    float tableViewWidth = 0.0;
+    //float tableViewWidth = 0.0;
     
     fieldNames = [[[analysisDataSeries yData] allKeys] mutableCopy];
     for(int i = 0; i < [fieldNames count]; i++){
@@ -722,7 +722,7 @@
     newTableColumn = [[NSTableColumn alloc] initWithIdentifier:@"TIME"];
     [[newTableColumn headerCell] setStringValue:@"TIME"];
     [newTableColumn setWidth:150];
-    tableViewWidth = [newTableColumn width];
+    //tableViewWidth = [newTableColumn width];
     [simulationNumbersTableView addTableColumn:newTableColumn];
     
     NSCell *columnsCell;
@@ -730,7 +730,7 @@
         newTableColumn = [[NSTableColumn alloc] initWithIdentifier:[fieldNames objectAtIndex:newColumnIndex]];
         [[newTableColumn headerCell] setStringValue:[fieldNames objectAtIndex:newColumnIndex]];
         [newTableColumn setWidth:70];
-        tableViewWidth = tableViewWidth + [newTableColumn width];
+        //tableViewWidth = tableViewWidth + [newTableColumn width];
         columnsCell = [newTableColumn dataCell];
         [columnsCell setAlignment:NSRightTextAlignment];
         [simulationNumbersTableView addTableColumn:newTableColumn];
@@ -739,7 +739,7 @@
     newTableColumn = [[NSTableColumn alloc] initWithIdentifier:@"DATETIME"];
     [[newTableColumn headerCell] setStringValue:@"DATETIME"];
     [newTableColumn setWidth:150];
-    tableViewWidth = [newTableColumn width];
+    //tableViewWidth = [newTableColumn width];
     [simulationNumbersTableView addTableColumn:newTableColumn];
     
     [simulationNumbersTableView widthAdjustLimit];
@@ -1157,7 +1157,8 @@
     [self initialiseSignalTableView];
     [self setupResultsReport];
     [self prepareSimCompareSheet];
-    [self leftPanelTopMessage:[[self workingSimulation] name]];
+    NSString *simulationTitle = [NSString stringWithFormat:@"Working Simulation:\n%@",[[self workingSimulation] name]];
+    [self leftPanelTopMessage:simulationTitle];
 }
 
 -(void)fillSetupSheet:(NSDictionary *) parameters

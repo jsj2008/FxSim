@@ -1431,9 +1431,8 @@
 										<object class="NSTextField" id="448599033">
 											<reference key="NSNextResponder" ref="807633877"/>
 											<int key="NSvFlags">268</int>
-											<string key="NSFrame">{{20, 411}, {188, 42}}</string>
+											<string key="NSFrame">{{20, 401}, {188, 52}}</string>
 											<reference key="NSSuperview" ref="807633877"/>
-											<reference key="NSNextKeyView"/>
 											<string key="NSReuseIdentifierKey">_NS:1535</string>
 											<bool key="NSEnabled">YES</bool>
 											<object class="NSTextFieldCell" key="NSCell" id="699198759">

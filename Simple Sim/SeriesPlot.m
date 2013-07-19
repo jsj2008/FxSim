@@ -265,7 +265,7 @@
     [[self lineAnnotationArray] removeAllObjects];
     [[self lineAnnotationLevelArray] removeAllObjects];
     [self setInteractionLayer:nil];
-    BOOL dateAnnotateRequired;
+    //BOOL dateAnnotateRequired;
     
     
     //[self setTimeSeriesLines:linesToPlot];
@@ -306,7 +306,7 @@
     [self setXAxis0:[axisSet xAxis]];
     [self setYAxis0:[axisSet yAxis]];
     [self setPlotSpace0:(CPTXYPlotSpace *)[[self graph] defaultPlotSpace]];
-    dateAnnotateRequired = [self fixUpXAxisLabels];
+    [self fixUpXAxisLabels];
     
     [self fixUpYAxisForLayerIndex:0];
     

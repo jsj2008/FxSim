@@ -705,7 +705,7 @@
     NSMutableArray *positionPrice = [[NSMutableArray alloc] init];
     NSMutableArray *positionAveClosePrice = [[NSMutableArray alloc] init];
     
-    int currentPosition, currentPositionSign, nextTradeAmount;
+    int currentPosition = 0, currentPositionSign = 0, nextTradeAmount = 0;
     double wgtPositionClosePrice;
     int exposureAfterTrade;
     long currentDateTime;
@@ -741,19 +741,17 @@
     BOOL allActivityFinished;
     NSMutableArray *activityDates;
     
-    
     if([self doThreads]){
         [self performSelectorOnMainThread:@selector(progressBarOn) withObject:nil waitUntilDone:NO];
         [self performSelectorOnMainThread:@selector(progressAsFraction:)
                                withObject:[NSNumber numberWithDouble:0.02 ] waitUntilDone:NO];
     }
-    
      
     if([simulation numberOfTrades] >0){
         
         // First get some details about all the trades
         long currentExposure = 0;
-        //double totalInterestCosts = 0.0;
+        double totalLosers = 0.0, totalWins = 0.0;
         long minExposureLength = 0, maxExposureLength = 0, medianExposureLength = 0, medianLoserExposureLength = 0, medianWinnerExposureLength = 0;
         NSMutableArray *exposureLengths = [[NSMutableArray alloc] init];
         NSMutableArray *winnerExposureLengths = [[NSMutableArray alloc] init];
@@ -774,7 +772,7 @@
                     tradeToCloseAmount = tradeAmount - tradeToOpenAmount;
                 }
                 if([UtilityFunctions signOfLong:currentExposure] == [UtilityFunctions signOfLong:tradeAmount]){
-                    tradeToOpenAmount = tradeAmount;
+                    //tradeToOpenAmount = tradeAmount;
                     tradeToCloseAmount = 0;
                 }
             
@@ -791,11 +789,13 @@
                     
                     if(tradeCashFlowOfExposure > 0){
                         numberOfGrossWiningTrades++;
+                        totalWins = totalWins + tradeCashFlowOfExposure;
                         bestWinner = MAX(bestWinner, tradeCashFlowOfExposure);
                         [winnerExposureLengths addObject:[NSNumber numberWithLong:exposureLength]];
                     }
                     if(tradeCashFlowOfExposure <= 0){
                         numberOfGrossLosingTrades++;
+                        totalLosers = totalLosers + tradeCashFlowOfExposure;
                         biggestLoser = MIN(biggestLoser, tradeCashFlowOfExposure);
                         [loserExposureLengths addObject:[NSNumber numberWithLong:exposureLength]];
                     }
@@ -810,7 +810,9 @@
             currentExposure = currentExposure + tradeAmount;
         }
         
-         
+        double meanLoser = totalLosers/numberOfGrossLosingTrades;
+        double meanWinner = totalWins/numberOfGrossWiningTrades;
+        
         long numberOfExposures = [exposureLengths count];
         NSSortDescriptor *lowestToHighest = [NSSortDescriptor sortDescriptorWithKey:@"self" ascending:YES];
         [exposureLengths sortUsingDescriptors:[NSArray arrayWithObject:lowestToHighest]];
@@ -860,6 +862,10 @@
                                           ForKey:@"EXP N LOSS"];
         [simulation addObjectToSimulationResults:[NSNumber numberWithLong:numberOfGrossWiningTrades]
                                           ForKey:@"EXP N WIN"];
+        [simulation addObjectToSimulationResults:[NSNumber numberWithDouble:meanLoser]
+                                          ForKey:@"EXP MEAN LOSS"];
+        [simulation addObjectToSimulationResults:[NSNumber numberWithDouble:meanWinner]
+                                          ForKey:@"EXP MEAN WIN"];
         [simulation addObjectToSimulationResults:[NSNumber numberWithLong:minExposureLength]
                                           ForKey:@"EXP MIN LEN"];
         [simulation addObjectToSimulationResults:[NSNumber numberWithLong:maxExposureLength]

@@ -74,7 +74,7 @@
         _identifier = identifierString;
         _numberOfBins = 10;
         _zeroCentered = YES;
-        _plotSpace0 =  [[CPTXYPlotSpace alloc] init];
+
         _simBIncluded = NO;
     }
     return self;
@@ -737,31 +737,29 @@
                 }
                 if([positiveReturnsB count] > 0){
                     if(A){
-                        maxReturn = MAX(maxReturn,[[positiveReturnsA objectAtIndex:[positiveReturnsA count]-1] doubleValue]);
+                        maxReturn = MAX(maxReturn,[[positiveReturnsB objectAtIndex:[positiveReturnsB count]-1] doubleValue]);
                     }else{
-                        maxReturn = [[positiveReturnsA objectAtIndex:[positiveReturnsA count]-1] doubleValue];
+                        maxReturn = [[positiveReturnsB objectAtIndex:[positiveReturnsB count]-1] doubleValue];
                     }
                 }else{
                     if(A){
-                        maxReturn = MAX(maxReturn,[[negativeReturnsA objectAtIndex:[negativeReturnsA count]-1] doubleValue]);
+                        maxReturn = MAX(maxReturn,[[negativeReturnsB objectAtIndex:[negativeReturnsB count]-1] doubleValue]);
                     }else{
-                        maxReturn = [[negativeReturnsA objectAtIndex:[negativeReturnsA count]-1] doubleValue];
+                        maxReturn = [[negativeReturnsB objectAtIndex:[negativeReturnsB count]-1] doubleValue];
                     }
                 }
             }
             
-            int binsRequested = 0, newNBinsPos = 0;
+            int  newNBinsPos = 0;
             
             BOOL posRets = [positiveReturnsA count] > 0 || [positiveReturnsB count] > 0;
             BOOL negRets = [negativeReturnsA count] > 0 || [negativeReturnsB count] > 0;
             
-            binsRequested = nBins;
             if(posRets && negRets){
                 binsStep = (maxReturn - minReturn)/(nBins-1);
                 newNBinsPos = (int)ceil(fabs(maxReturn/binsStep));
                 newNBinsNeg =  (int)ceil(fabs(minReturn/binsStep));
                 newNBins = newNBinsNeg + newNBinsPos;
-                binsMax = binsStep * newNBinsPos;
                 binsMin =  binsStep * -newNBinsNeg;
             }else{
                 if(negRets){
@@ -775,7 +773,6 @@
                     if(nBins == 1){
                         binsStep = minReturn;
                         binsMin = minReturn;
-                        binsMax = 0;
                         newNBins = 1;
                         newNBinsNeg = 1;
                     }
@@ -797,7 +794,7 @@
                     }
                 }
             }
-            double binLower, binUpper,currentReturn;
+            double binLower, currentReturn;
             int binIndex = -1;
             
             NSMutableData *countsNegAData = [[NSMutableData alloc] initWithLength:sizeof(long) *newNBinsNeg];
@@ -805,14 +802,14 @@
             NSMutableData *countsPosAData = [[NSMutableData alloc] initWithLength:sizeof(long) *(newNBins -newNBinsNeg)];
             long *countsPosAArray = (long *)[countsPosAData bytes];
             
-            NSMutableData *heightsNegAData = [[NSMutableData alloc] initWithLength:sizeof(long) *newNBinsNeg];
+            NSMutableData *heightsNegAData = [[NSMutableData alloc] initWithLength:sizeof(double) *newNBinsNeg];
             double *heightsNegAArray = (double *)[heightsNegAData bytes];
-            NSMutableData *heightsPosAData = [[NSMutableData alloc] initWithLength:sizeof(long) *(newNBins -newNBinsNeg)];
+            NSMutableData *heightsPosAData = [[NSMutableData alloc] initWithLength:sizeof(double) *(newNBins -newNBinsNeg)];
             double *heightsPosAArray = (double *)[heightsPosAData bytes];
             
-            NSMutableData *midpointsNegAData = [[NSMutableData alloc] initWithLength:sizeof(long) *newNBinsNeg];
+            NSMutableData *midpointsNegAData = [[NSMutableData alloc] initWithLength:sizeof(double) *newNBinsNeg];
             double *midpointsNegAArray = (double *)[midpointsNegAData bytes];
-            NSMutableData *midpointsPosAData = [[NSMutableData alloc] initWithLength:sizeof(long) *(newNBins -newNBinsNeg)];
+            NSMutableData *midpointsPosAData = [[NSMutableData alloc] initWithLength:sizeof(double) *(newNBins -newNBinsNeg)];
             double *midpointsPosAArray = (double *)[midpointsPosAData bytes];
             
             NSMutableData *countsNegBData, *countsPosBData, *heightsNegBData, *heightsPosBData, *midpointsNegBData,*midpointsPosBData;
@@ -825,27 +822,25 @@
                 countsPosBData = [[NSMutableData alloc] initWithLength:sizeof(long) *(newNBins -newNBinsNeg)];
                 countsPosBArray = (long *)[countsPosBData bytes];
                 
-                heightsNegBData = [[NSMutableData alloc] initWithLength:sizeof(long) *newNBinsNeg];
+                heightsNegBData = [[NSMutableData alloc] initWithLength:sizeof(double) *newNBinsNeg];
                 heightsNegBArray = (double *)[heightsNegBData bytes];
-                heightsPosBData = [[NSMutableData alloc] initWithLength:sizeof(long) *(newNBins -newNBinsNeg)];
+                heightsPosBData = [[NSMutableData alloc] initWithLength:sizeof(double) *(newNBins -newNBinsNeg)];
                 heightsPosBArray = (double *)[heightsPosBData bytes];
                 
-                midpointsNegBData = [[NSMutableData alloc] initWithLength:sizeof(long) *newNBinsNeg];
+                midpointsNegBData = [[NSMutableData alloc] initWithLength:sizeof(double) *newNBinsNeg];
                 midpointsNegBArray = (double *)[midpointsNegBData bytes];
-                midpointsPosBData = [[NSMutableData alloc] initWithLength:sizeof(long) *(newNBins -newNBinsNeg)];
+                midpointsPosBData = [[NSMutableData alloc] initWithLength:sizeof(double) *(newNBins -newNBinsNeg)];
                 midpointsPosBArray = (double *)[midpointsPosBData bytes];
             }
             
             binIndex = -1;
             binLower = binsMin - 1;
-            binUpper = binsMin + binsStep;
             for(int iReturn = 0; iReturn < [negativeReturnsA count]; iReturn++){
                 currentReturn = [[negativeReturnsA objectAtIndex:iReturn] doubleValue];
                 while (binLower < currentReturn) {
                     binIndex++;
                     midpointsNegAArray[binIndex] = binsMin + binsStep/2 + (binIndex * binsStep);
                     binLower = binsMin + (binIndex + 1) * binsStep;
-                    binUpper = binsMin + (binIndex + 2) * binsStep;
                     
                 }
                 countsNegAArray[binIndex]++;
@@ -859,7 +854,6 @@
                     binIndex++;
                     midpointsPosAArray[binIndex] = binsMin + binsStep/2 + ((newNBinsNeg + binIndex) * binsStep);
                     binLower = binsMin + (newNBinsNeg + binIndex + 1) * binsStep;
-                    binUpper = binsMin + (newNBinsNeg + binIndex + 2) * binsStep;
                 }
                 countsPosAArray[binIndex]++;
                 heightsPosAArray[binIndex] =  heightsPosAArray[binIndex] + currentReturn;
@@ -868,14 +862,12 @@
             binIndex = -1;
             if(B){
                 binLower = binsMin - 1;
-                binUpper = binsMin + binsStep;
                 for(int iReturn = 0; iReturn < [negativeReturnsB count]; iReturn++){
                     currentReturn = [[negativeReturnsB objectAtIndex:iReturn] doubleValue];
                     while (binLower < currentReturn) {
                         binIndex++;
                         midpointsNegBArray[binIndex] = binsMin + binsStep/2 + (binIndex * binsStep);
                         binLower = binsMin + (binIndex + 1) * binsStep;
-                        binUpper = binsMin + (binIndex + 2) * binsStep;
                         
                     }
                     countsNegBArray[binIndex]++;
@@ -889,7 +881,6 @@
                         binIndex++;
                         midpointsPosBArray[binIndex] = binsMin + binsStep/2 + ((newNBinsNeg + binIndex) * binsStep);
                         binLower = binsMin + (newNBinsNeg + binIndex + 1) * binsStep;
-                        binUpper = binsMin + (newNBinsNeg + binIndex + 2) * binsStep;
                     }
                     countsPosBArray[binIndex]++;
                     heightsPosBArray[binIndex] =  heightsPosBArray[binIndex] + currentReturn;
@@ -988,8 +979,6 @@
                     minReturn = [[returnsB objectAtIndex:0] doubleValue];
                     maxReturn = [[returnsB objectAtIndex:[returnsB count]-1] doubleValue];
                 }
-                
-                
                 
             }
         
