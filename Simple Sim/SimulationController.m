@@ -650,7 +650,7 @@
 {
     NSString *userMessage;
     DataSeries *positionDataSeries;
-    DataSeries *simulationDataSeries;
+    //DataSeries *simulationDataSeries;
     NSDictionary *currentDataValues;
     NSArray *simDataFieldNames;
     
@@ -659,8 +659,8 @@
     NSMutableDictionary *simulationDataDictionary;
     NSMutableData *simulationDataArrayData;
     double **simulationDataArray;
-    NSMutableData *signalData;
-    double *signalArray;
+    //NSMutableData *signalData;
+    //double *signalArray;
     NSMutableData *marketPositionData;
     double *marketPositionArray;
     NSMutableData *shortIndicatorData;
@@ -684,10 +684,11 @@
     NSMutableData *positionAvePriceData;
     double *positionAvePriceArray;
     
+    
     long dataStoreIndex = 0, dataRate = 0;
     
     NSUInteger timeStep = 0, tradeIndex, cashMoveIndex;
-    double signal, currentSignal;
+    //double signal, currentSignal;
     long startDateTime, endDateTime, stepDateTime, nextTradeDateTime;
     BOOL allTradesFinished, allCashMovesFinished;
     int dataRequestTruncated = 1;
@@ -708,7 +709,7 @@
     int currentPosition = 0, currentPositionSign = 0, nextTradeAmount = 0;
     double wgtPositionClosePrice;
     int exposureAfterTrade;
-    long currentDateTime;
+    long currentDateTime,previousDateTime;
     double currentBid = 0.0,currentAsk = 0.0;
     double nextTradePrice, currentCashBalance, tradePnl, interestCosts;
     double largestDrawdown;
@@ -726,10 +727,7 @@
         [self performSelectorOnMainThread:@selector(outputSimulationMessage:) withObject:userMessage waitUntilDone:NO];
     }
     
-    simulationDataSeries = [simulation simulationDataSeries];
-    simDataFieldNames = [simulationDataSeries getFieldNames];
-    
-    
+    simDataFieldNames = [[simulation simulationDataSeries] getFieldNames];
     
     startDateTime = [simulation startDate];
     endDateTime = [simulation endDate];
@@ -881,6 +879,11 @@
         [simulation addObjectToSimulationResults:[NSNumber numberWithDouble:bestWinner]
                                           ForKey:@"EXP BIG WIN"];
         
+        [simulation addObjectToSimulationResults:[NSNumber numberWithDouble:totalLosers]
+                                          ForKey:@"TOTAL LOSS"];
+        [simulation addObjectToSimulationResults:[NSNumber numberWithDouble:totalWins]
+                                          ForKey:@"TOTAL WIN"];
+        
         cashMoveIndex = 0;
         allCashMovesFinished = NO;
         nextCashMoveDateTime = [simulation getDateTimeForBalanceAdjustmentAtIndex:cashMoveIndex];
@@ -1026,8 +1029,8 @@
         dateTimesData = [[NSMutableData alloc] initWithLength:arraySize * sizeof(long)];
         dateTimesArray = (long *)[dateTimesData mutableBytes];
         
-        signalData = [[NSMutableData alloc] initWithLength:arraySize * sizeof(double)];
-        signalArray = (double *)[signalData mutableBytes];
+        //signalData = [[NSMutableData alloc] initWithLength:arraySize * sizeof(double)];
+        //signalArray = (double *)[signalData mutableBytes];
         
         marketPositionData = [[NSMutableData alloc] initWithLength:arraySize * sizeof(double)];
         marketPositionArray = (double *)[marketPositionData mutableBytes];
@@ -1061,9 +1064,10 @@
         
         positionAvePriceData = [[NSMutableData alloc] initWithLength:arraySize * sizeof(double)];
         positionAvePriceArray = (double *)[positionAvePriceData mutableBytes];
-        
-        
         //
+        
+        
+        
         simulationDataDictionary = [[NSMutableDictionary alloc] initWithCapacity:[simDataFieldNames count]];
         simulationDataArrayData = [[NSMutableData alloc] initWithLength:[simDataFieldNames count] * sizeof(double*)];
         simulationDataArray = (double **)[simulationDataArrayData mutableBytes];
@@ -1146,7 +1150,7 @@
         signalStartDateTime = [[tradeDetails objectForKey:@"SIGDATETIME"] longValue];
         tradeDetails = [simulation detailsOfTradeAtIndex:tradeIndex+1];
         signalEndDateTime = [[tradeDetails objectForKey:@"SIGDATETIME"] longValue];
-        signal = exposureAfterTrade < 0 ? -1 : 1;
+        //signal = exposureAfterTrade < 0 ? -1 : 1;
     }else{
         nextTradeDateTime = 0;
         allTradesFinished = YES;
@@ -1156,10 +1160,17 @@
     interestCosts = 0.0;
     largestDrawdown = 0.0;
     
+    double signal, signalLowerThreshold, signalUpperThreshold;
+    NSInteger positiveSignalTime = 0.0, totalSignalTime = 0.0, negativeSignalTime = 0.0;
+    currentDateTime = 0;
     // Main loop
     for(int dateIndex = 0; dateIndex < [dateTimesOfAnalysis count]; dateIndex++)
     {
+        previousDateTime = currentDateTime;
         currentDateTime = [[dateTimesOfAnalysis objectAtIndex:dateIndex] longValue];
+        
+        
+            
         
         // Update the database if needed
         if(currentDateTime > [[self dataController] getMaxDateTimeForLoadedData])
@@ -1194,6 +1205,26 @@
         
         currentBid = [[currentDataValues objectForKey:@"BID"] doubleValue];
         currentAsk = [[currentDataValues objectForKey:@"ASK"] doubleValue];
+        
+        signal = [[currentDataValues objectForKey:@"SIGNAL"] doubleValue];
+        signalLowerThreshold = [[currentDataValues objectForKey:@"SIGLTHRES"] doubleValue];
+        signalUpperThreshold = [[currentDataValues objectForKey:@"SIGUTHRES"] doubleValue];
+        
+        if(dateIndex > 0 ){
+   
+            totalSignalTime = totalSignalTime + MIN(timeStep, currentDateTime- previousDateTime);
+            
+            if(signal < signalLowerThreshold)
+            {
+                negativeSignalTime = negativeSignalTime+ MIN(timeStep, currentDateTime- previousDateTime);
+            }
+            if(signal > signalUpperThreshold)
+            {
+                positiveSignalTime = positiveSignalTime+ MIN(timeStep, currentDateTime- previousDateTime);
+            }
+ 
+        }
+        
         
         //Add in the trades and any cash moves
         if(currentDateTime == nextTradeDateTime){
@@ -1291,7 +1322,7 @@
                 }else{
                     signalEndDateTime = endDateTime;
                 }
-                signal = exposureAfterTrade < 0 ? -1 : 1;
+                //signal = exposureAfterTrade < 0 ? -1 : 1;
             }
         }
         
@@ -1318,14 +1349,14 @@
             }
         }
         
-        if(currentDateTime >= signalStartDateTime && currentDateTime < signalEndDateTime){
-            currentSignal = signal;
-        }else{
-            currentSignal = 0.0;
-        }
+//        if(currentDateTime >= signalStartDateTime && currentDateTime < signalEndDateTime){
+//            currentSignal = signal;
+//        }else{
+//            currentSignal = 0.0;
+//        }
         
         dateTimesArray[dateIndex] = currentDateTime;
-        signalArray[dateIndex] = currentSignal;
+        //signalArray[dateIndex] = currentSignal;
         marketPositionArray[dateIndex] = (double)currentPosition;
         
         shortIndicatorArray[dateIndex] = ([UtilityFunctions signOfInt:currentPosition] < 0)? (double) -currentPosition: 0.0;
@@ -1443,7 +1474,9 @@
     }//end of main sim
     
     
-    NSMutableArray *monthlyNavs = [[NSMutableArray alloc] init];
+   
+    
+    NSMutableArray *monthlyNavChange = [[NSMutableArray alloc] init];
     BOOL fullMonth = NO;
     double oldNav = 0.0, monthReturn = 0.0, monthReturnSumForCalc = 0.0, monthReturnMeanForCalc = 0.0;
     long nextDateTime = [[dateTimesOfAnalysis objectAtIndex:0] longValue];
@@ -1467,9 +1500,15 @@
         nextDateTimeMonth = [EpochTime monthNumberOfDateTime:nextDateTime];
         
         if(currentDateTimeMonth != nextDateTimeMonth){
+            if(!fullMonth){
+                // if hte first month is not full but at least 21 calendar days, its ok to use
+                if(((nextDateTime - dateTimesArray[0]))/(24 * 60 * 60) > 20){
+                    fullMonth = YES;
+                }
+            }
             if(fullMonth){
                 monthReturn = navArray[dateIndex+1]-oldNav;
-                [monthlyNavs addObject:[NSNumber numberWithDouble:monthReturn]];
+                [monthlyNavChange addObject:[NSNumber numberWithDouble:monthReturn]];
                 monthReturnSumForCalc = monthReturnSumForCalc + monthReturn;
             }else{
                 fullMonth = YES;
@@ -1498,21 +1537,25 @@
     
     double returnsSD = 0.0, downsideSD = 0.0;
     long returnsCount, downsideCount = 0;
-    returnsCount = [monthlyNavs count];
+    double proportionPositive = 0;
+    returnsCount = [monthlyNavChange count];
     if(returnsCount>2){
-        monthReturnMeanForCalc = monthReturnSumForCalc/[monthlyNavs count];
-        for(int i = 0;i < [monthlyNavs count];i++){
-            returnsSD = returnsSD + pow([[monthlyNavs objectAtIndex:i] doubleValue] - monthReturnMeanForCalc,2.0);
-            if([[monthlyNavs objectAtIndex:i] doubleValue] < 0){
-                downsideSD = downsideSD + pow([[monthlyNavs objectAtIndex:i] doubleValue] - monthReturnMeanForCalc,2.0);
+        monthReturnMeanForCalc = monthReturnSumForCalc/[monthlyNavChange count];
+        for(int i = 0;i < [monthlyNavChange count];i++){
+            returnsSD = returnsSD + pow([[monthlyNavChange objectAtIndex:i] doubleValue] - monthReturnMeanForCalc,2.0);
+            if([[monthlyNavChange objectAtIndex:i] doubleValue] < 0){
+                downsideSD = downsideSD + pow([[monthlyNavChange objectAtIndex:i] doubleValue] - monthReturnMeanForCalc,2.0);
                 downsideCount++;
+            }else{
+                proportionPositive++;
             }
         }
+        proportionPositive = proportionPositive /returnsCount;
         returnsSD = sqrt(returnsSD/(returnsCount-1));
         downsideSD = sqrt(downsideSD/(downsideCount-1));
     }
     
-    
+    double drawDownInMeanMonthRet = largestDrawdown/ monthReturnMeanForCalc;
     
     double sharpeRatio = 0.0, sortinoRatio = 0.0;
     if(returnsCount > 2){
@@ -1586,7 +1629,10 @@
                                           ForKey:@"LONGESTDRAWDOWN"];
         [simulation addObjectToSimulationResults:[NSNumber numberWithLong:longestDrawdownDateTime]
                                           ForKey:@"LONGESTDRAWDOWNTIME"];
-        
+        [simulation addObjectToSimulationResults:[NSNumber numberWithLong:drawDownInMeanMonthRet]
+                                          ForKey:@"DRAWDOWN AS AVE MONTH"];
+        [simulation addObjectToSimulationResults:[NSNumber numberWithDouble:proportionPositive]
+                                          ForKey:@"MONTHS POSITIVE"];
         if(returnsCount > 2){
             [simulation addObjectToSimulationResults:[NSNumber numberWithDouble:sharpeRatio]
                                              ForKey:@"SHARPE RATIO"];
@@ -1595,6 +1641,12 @@
             [simulation addObjectToSimulationResults:[NSNumber numberWithDouble:sortinoRatio]
                                               ForKey:@"SORTINO RATIO"];
         }
+        [simulation addObjectToSimulationResults:[NSNumber numberWithDouble:(double)negativeSignalTime/totalSignalTime]
+                                          ForKey:@"TIME SIG NEG"];
+        [simulation addObjectToSimulationResults:[NSNumber numberWithDouble:(double)positiveSignalTime/totalSignalTime]
+                                          ForKey:@"TIME SIG POS"];
+
+        
     }
     
     if(![self cancelProcedure])

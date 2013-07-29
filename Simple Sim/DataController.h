@@ -44,6 +44,8 @@
 - (void) setDelegate:(id)del;
 - (BOOL) doThreads;
 - (void) setDoThreads:(BOOL)doThreadedProcedures;
++ (NSString *) getSignalListAsString;
++ (NSString *) getSeriesListAsString;
 - (void) clearDataStore;
 - (void) removeDerivedFromDataStore;
 - (int) databaseSamplingRate;
@@ -90,5 +92,7 @@
 - (long) getDataSeriesLength;
 
 + (long) getMaxDataLength;
+
+
 
 @end

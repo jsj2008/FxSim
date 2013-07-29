@@ -25,6 +25,8 @@
 + (int) daysBetweenInclusiveFrom: (long) startDateTime
                               To: (long) endDateTime
                 CountingWeekends:(BOOL) countWeekendDays;
++ (long) epochTimeAtZeroHourJan1NextYear:(long) epochDate;
+
 //-(id)init;
 
 @end

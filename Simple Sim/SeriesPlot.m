@@ -541,7 +541,7 @@
         [dataSourceLinePlot setAreaFill:[CPTFill fillWithColor:areaColor]];
         [dataSourceLinePlot setAreaBaseValue :CPTDecimalFromDouble(0.0)];
         [dataSourceLinePlot setDataLineStyle:lineStyle];
-  
+        
         if([dataSource shortLongIndicatorA]){
             [dataSourceLinePlot setDataSource:dataSource];
         }else{
@@ -564,11 +564,11 @@
             
             [dataSourceLinePlot setDataLineStyle:lineStyle];
             
-             if([dataSource shortLongIndicatorB]){
-                 [dataSourceLinePlot setDataSource:dataSource];
-             }else{
-                 [dataSourceLinePlot setDataSource:nil];
-             }
+            if([dataSource shortLongIndicatorB]){
+                [dataSourceLinePlot setDataSource:dataSource];
+            }else{
+                [dataSourceLinePlot setDataSource:nil];
+            }
             [[self graph] addPlot:dataSourceLinePlot toPlotSpace:[self shortLongPlotSpace]];
             // Long indicator
             dataSourceLinePlot = [[CPTScatterPlot alloc] init];
@@ -588,7 +588,7 @@
                 [dataSourceLinePlot setDataSource:nil];
             }
             [[self graph] addPlot:dataSourceLinePlot toPlotSpace:[self shortLongPlotSpace]];
-         }
+        }
         
         // Find a good range for the X axis
         double niceXrange = (ceil( (double)([self maxXrangeForPlot] - [self minXrangeForPlot]) / [self majorIntervalForX]) * [self majorIntervalForX]);
@@ -631,46 +631,45 @@
             [[self yAxis2] setMajorTickLineStyle:nil];
             [self setPlot2AxisVisible:NO];
         }
-
+        
         CPTPlotRange *shortLongPlotYRange;
         shortLongPlotYRange = [[CPTPlotRange alloc] initWithLocation:[[NSDecimalNumber numberWithInt:0] decimalValue]  length:[[NSDecimalNumber numberWithInt:1] decimalValue]];
         CPTMutablePlotRange *shortLongPlotXRange =[[[self plotSpace0] xRange] copy];
         [[self shortLongPlotSpace] setXRange:shortLongPlotXRange];
         [[self shortLongPlotSpace] setYRange:shortLongPlotYRange];
         
-//        [self setXRangeZoomOut:xRange];
+        //        [self setXRangeZoomOut:xRange];
         
         BOOL dateAnnotateRequired = [self fixUpXAxisLabels];
         if(dateAnnotateRequired){
-            long firstMidnight = [EpochTime epochTimeAtZeroHour:[self minXrangeForPlot]];
-            long lastMidnight = [EpochTime epochTimeNextDayAtZeroHour:[self maxXrangeForPlot]];
-            
-            CPTPlotRange *xRange  = [[self plotSpace0] xRange];
-            CPTPlotRange *yRange = [[self plotSpace0] yRange];
-            double minXrange = [[NSDecimalNumber decimalNumberWithDecimal:[xRange location]] doubleValue];
-            double maxXrange = [[NSDecimalNumber decimalNumberWithDecimal:[xRange location]] doubleValue] + [[NSDecimalNumber decimalNumberWithDecimal:[xRange length]] doubleValue];
-            
-            CGRect bounds = NSRectToCGRect([[self hostingView] bounds]);
-            
-            NSString *stringFromDate;
-            CPTMutableTextStyle *dateStringStyle;
-            NSArray *dateAnnotationPoint;
-            CPTTextLayer *textLayer;
-            NSDateFormatter *labelFormatter = [[NSDateFormatter alloc] init] ;
-            [labelFormatter setDateFormat:@"MM/dd"];
-            labelFormatter.timeZone = [NSTimeZone timeZoneWithName:@"GMT"];
-            CPTPlotSpaceAnnotation *dateAnnotation;
-            for(long labelDate = firstMidnight; labelDate <= lastMidnight; labelDate = labelDate + (60*60*24))
-            {
-                if((double)labelDate >= minXrange && labelDate <= (double)(maxXrange)){
-                    stringFromDate = [labelFormatter stringFromDate:[NSDate dateWithTimeIntervalSince1970:labelDate]];
+            if(([self maxXrangeForPlot] - [self minXrangeForPlot])/(365.0*60 * 60 * 24)>1 ){
+                NSString *stringFromDate;
+                CPTMutableTextStyle *dateStringStyle;
+                NSArray *dateAnnotationPoint;
+                CPTTextLayer *textLayer;
+                //NSDateFormatter *labelFormatter = [[NSDateFormatter alloc] init] ;
+                //[labelFormatter setDateFormat:@"Y"];
+                //labelFormatter.timeZone = [NSTimeZone timeZoneWithName:@"UTC"];
+                CPTPlotSpaceAnnotation *dateAnnotation;
+                
+                CGRect bounds = NSRectToCGRect([[self hostingView] bounds]);
+                CPTPlotRange *yRange = [[self plotSpace0] yRange];
+                
+                long yearEnd;
+                
+                yearEnd = [EpochTime epochTimeAtZeroHourJan1NextYear:[self minXrangeForPlot]];
+                
+                while(yearEnd < [self maxXrangeForPlot]){
+//                    stringFromDate = [labelFormatter stringFromDate:[NSDate dateWithTimeIntervalSince1970:yearEnd]];
+                    stringFromDate = [EpochTime stringOfDateTime:yearEnd
+                                                      WithFormat:@"%Y"];
                     dateStringStyle = [CPTMutableTextStyle textStyle];
                     dateStringStyle.color	= [CPTColor redColor];
                     dateStringStyle.fontSize = round(bounds.size.height / (CGFloat)30.0);
                     dateStringStyle.fontName = @"Courier";
                     
                     // Determine point of symbol in plot coordinates
-                    dateAnnotationPoint = [NSArray arrayWithObjects:[NSDecimalNumber numberWithLong:labelDate],[NSDecimalNumber decimalNumberWithDecimal: yRange.location], nil];
+                    dateAnnotationPoint = [NSArray arrayWithObjects:[NSDecimalNumber numberWithLong:yearEnd],[NSDecimalNumber decimalNumberWithDecimal: yRange.location], nil];
                     
                     textLayer = [[CPTTextLayer alloc] initWithText:stringFromDate style:dateStringStyle];
                     
@@ -679,7 +678,51 @@
                     dateAnnotation.displacement =  CGPointMake( 0.0f,10.0f);
                     [[[[self graph] plotAreaFrame] plotArea] addAnnotation:dateAnnotation];
                     [[self dateAnnotationArray] addObject:dateAnnotation];
-                    
+                     
+                    yearEnd = [EpochTime epochTimeAtZeroHourJan1NextYear:yearEnd + 100];
+                }
+                
+                
+            }else{
+                long firstMidnight = [EpochTime epochTimeAtZeroHour:[self minXrangeForPlot]];
+                long lastMidnight = [EpochTime epochTimeNextDayAtZeroHour:[self maxXrangeForPlot]];
+                
+                //CPTPlotRange *xRange  = [[self plotSpace0] xRange];
+                CPTPlotRange *yRange = [[self plotSpace0] yRange];
+                double minXrange = [[NSDecimalNumber decimalNumberWithDecimal:[xRange location]] doubleValue];
+                double maxXrange = [[NSDecimalNumber decimalNumberWithDecimal:[xRange location]] doubleValue] + [[NSDecimalNumber decimalNumberWithDecimal:[xRange length]] doubleValue];
+                
+                CGRect bounds = NSRectToCGRect([[self hostingView] bounds]);
+                
+                NSString *stringFromDate;
+                CPTMutableTextStyle *dateStringStyle;
+                NSArray *dateAnnotationPoint;
+                CPTTextLayer *textLayer;
+                NSDateFormatter *labelFormatter = [[NSDateFormatter alloc] init] ;
+                [labelFormatter setDateFormat:@"MM/dd"];
+                labelFormatter.timeZone = [NSTimeZone timeZoneWithName:@"GMT"];
+                CPTPlotSpaceAnnotation *dateAnnotation;
+                for(long labelDate = firstMidnight; labelDate <= lastMidnight; labelDate = labelDate + (60*60*24))
+                {
+                    if((double)labelDate >= minXrange && labelDate <= (double)(maxXrange)){
+                        stringFromDate = [labelFormatter stringFromDate:[NSDate dateWithTimeIntervalSince1970:labelDate]];
+                        dateStringStyle = [CPTMutableTextStyle textStyle];
+                        dateStringStyle.color	= [CPTColor redColor];
+                        dateStringStyle.fontSize = round(bounds.size.height / (CGFloat)30.0);
+                        dateStringStyle.fontName = @"Courier";
+                        
+                        // Determine point of symbol in plot coordinates
+                        dateAnnotationPoint = [NSArray arrayWithObjects:[NSDecimalNumber numberWithLong:labelDate],[NSDecimalNumber decimalNumberWithDecimal: yRange.location], nil];
+                        
+                        textLayer = [[CPTTextLayer alloc] initWithText:stringFromDate style:dateStringStyle];
+                        
+                        dateAnnotation = [[CPTPlotSpaceAnnotation alloc] initWithPlotSpace:[[self graph] defaultPlotSpace] anchorPlotPoint:dateAnnotationPoint];
+                        dateAnnotation.contentLayer = textLayer;
+                        dateAnnotation.displacement =  CGPointMake( 0.0f,10.0f);
+                        [[[[self graph] plotAreaFrame] plotArea] addAnnotation:dateAnnotation];
+                        [[self dateAnnotationArray] addObject:dateAnnotation];
+                        
+                    }
                 }
             }
         }
@@ -728,31 +771,31 @@
     dateFormatter.timeZone = [NSTimeZone timeZoneWithName:@"GMT"];
     // If it more than 3 days, major tic is 1 day, otherwise a major tic is 6 hours
     
-    BOOL dateIsSpecifiedInAxis = NO;
+    BOOL dateIsFullySpecifiedInAxis = NO;
     
     [self setMinXrangeForPlot:minXaxis];
     [self setMaxXrangeForPlot:maxXaxis];
     //    
-    if(((float)([self maxXrangeForPlot] - [self minXrangeForPlot])/(4*30*60 * 60 * 24))>1){
-        [self setMajorIntervalForX:28 * 24 * 60 * 60];
+    if(((float)([self maxXrangeForPlot] - [self minXrangeForPlot])/(121*30*60 * 60 * 24))>1){
+        [self setMajorIntervalForX:120 * 24 * 60 * 60];
         [[self xAxis0] setMajorIntervalLength:CPTDecimalFromInt([self majorIntervalForX])]; // 14 Day
-        [[self xAxis0] setMinorTicksPerInterval:13];
+        [[self xAxis0] setMinorTicksPerInterval:40];
         [dateFormatter setDateFormat:@"MM/dd"];
-        dateIsSpecifiedInAxis = TRUE;
+        dateIsFullySpecifiedInAxis = NO;
     }else{
         if(((float)([self maxXrangeForPlot] - [self minXrangeForPlot])/(4*30*60 * 60 * 24))>1){
             [self setMajorIntervalForX:14 * 24 * 60 * 60];
             [[self xAxis0] setMajorIntervalLength:CPTDecimalFromInt([self majorIntervalForX])]; // 14 Day
             [[self xAxis0] setMinorTicksPerInterval:13];
             [dateFormatter setDateFormat:@"MM/dd"];
-            dateIsSpecifiedInAxis = TRUE;
+            dateIsFullySpecifiedInAxis = TRUE;
         }else{
             if(((float)([self maxXrangeForPlot] - [self minXrangeForPlot])/(21*60 * 60 * 24))>1){
                 [self setMajorIntervalForX:7 * 24 * 60 * 60];
                 [[self xAxis0] setMajorIntervalLength:CPTDecimalFromInt([self majorIntervalForX])]; // 7 Day
                 [[self xAxis0] setMinorTicksPerInterval:6];
                 [dateFormatter setDateFormat:@"MM/dd"];
-                dateIsSpecifiedInAxis = TRUE;
+                dateIsFullySpecifiedInAxis = TRUE;
             }else{
                 //If greater than 3 days
                 if(((float)([self maxXrangeForPlot] - [self minXrangeForPlot])/(3*60 * 60 * 24))>1){
@@ -760,7 +803,7 @@
                     [[self xAxis0] setMajorIntervalLength:CPTDecimalFromInt([self majorIntervalForX])]; // 1 Day
                     [[self xAxis0] setMinorTicksPerInterval:5];
                     [dateFormatter setDateFormat:@"MM/dd"];
-                    dateIsSpecifiedInAxis = TRUE;
+                    dateIsFullySpecifiedInAxis = TRUE;
                 }else{
                     //If greater than 12 hours
                     if(((float)([self maxXrangeForPlot] - [self minXrangeForPlot])/(60 * 60 * 12))>1){
@@ -797,7 +840,7 @@
     [[self xAxis0] setLabelOffset:5.0];
     [[self xAxis0] setAxisConstraints:[CPTConstraints constraintWithLowerOffset:0.0]];
     
-    return !dateIsSpecifiedInAxis;
+    return !dateIsFullySpecifiedInAxis;
 }
 
 - (BOOL) fixUpXAxisLabels
@@ -820,29 +863,29 @@
     dateFormatter.timeZone = [NSTimeZone timeZoneWithName:@"GMT"];
     // If it more than 3 days, major tic is 1 day, otherwise a major tic is 6 hours
     
-    BOOL dateIsSpecifiedInAxis = NO;
+    BOOL dateIsFullySpecifiedInAxis = NO;
     
     //
-    if(((float)([self maxXrangeForPlot] - [self minXrangeForPlot])/(4*30*60 * 60 * 24))>1){
-        [self setMajorIntervalForX:(28 * 24 * 60 * 60)];
-        [[self xAxis0] setMajorIntervalLength:CPTDecimalFromInt([self majorIntervalForX])]; // 14 Day
-        [[self xAxis0] setMinorTicksPerInterval:13];
+    if(((float)([self maxXrangeForPlot] - [self minXrangeForPlot])/(365*60 * 60 * 24))>1){
+        [self setMajorIntervalForX:(121 * 24 * 60 * 60)];
+        [[self xAxis0] setMajorIntervalLength:CPTDecimalFromInt([self majorIntervalForX])]; // 121 Day
+        [[self xAxis0] setMinorTicksPerInterval:40];
         [dateFormatter setDateFormat:@"MM/dd"];
-        dateIsSpecifiedInAxis = TRUE;
+        dateIsFullySpecifiedInAxis = NO;
     }else{
         if(((float)([self maxXrangeForPlot] - [self minXrangeForPlot])/(4*30*60 * 60 * 24))>1){
             [self setMajorIntervalForX:14 * 24 * 60 * 60];
             [[self xAxis0] setMajorIntervalLength:CPTDecimalFromInt([self majorIntervalForX])]; // 14 Day
             [[self xAxis0] setMinorTicksPerInterval:13];
             [dateFormatter setDateFormat:@"MM/dd"];
-            dateIsSpecifiedInAxis = TRUE;
+            dateIsFullySpecifiedInAxis = YES;
         }else{
             if(((float)([self maxXrangeForPlot] - [self minXrangeForPlot])/(21*60 * 60 * 24))>1){
                 [self setMajorIntervalForX:7 * 24 * 60 * 60];
                 [[self xAxis0] setMajorIntervalLength:CPTDecimalFromInt([self majorIntervalForX])]; // 7 Day
                 [[self xAxis0] setMinorTicksPerInterval:6];
                 [dateFormatter setDateFormat:@"MM/dd"];
-                dateIsSpecifiedInAxis = TRUE;
+                dateIsFullySpecifiedInAxis = YES;
             }else{
                 //If greater than 3 days
                 if(((float)([self maxXrangeForPlot] - [self minXrangeForPlot])/(3*60 * 60 * 24))>1){
@@ -850,7 +893,7 @@
                     [[self xAxis0] setMajorIntervalLength:CPTDecimalFromInt([self majorIntervalForX])]; // 1 Day
                     [[self xAxis0] setMinorTicksPerInterval:5];
                     [dateFormatter setDateFormat:@"MM/dd"];
-                    dateIsSpecifiedInAxis = TRUE;
+                    dateIsFullySpecifiedInAxis = YES;
                 }else{
                     //If greater than 12 hours
                     if(((float)([self maxXrangeForPlot] - [self minXrangeForPlot])/(60 * 60 * 12))>1){
@@ -887,7 +930,7 @@
     [[self xAxis0] setLabelOffset:5.0];
     [[self xAxis0] setAxisConstraints:[CPTConstraints constraintWithLowerOffset:0.0]];
     
-    return !dateIsSpecifiedInAxis;
+    return !dateIsFullySpecifiedInAxis;
 }
 
 

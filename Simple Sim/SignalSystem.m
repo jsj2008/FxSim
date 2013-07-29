@@ -9,15 +9,47 @@
 #import "SignalSystem.h"
 #import "UtilityFunctions.h"
 
+
 @implementation SignalSystem
 
-static NSArray *calculationNames;
+static NSArray *seriesNames;
+static NSArray *signalNames;
+
+
 
 +(void)load {
     [super load];
-    calculationNames = [[NSArray alloc] initWithObjects:@"EMA",@"REMA",@"EMB",@"ATR",@"OHLC",@"TR2",@"FDIM",
-                        @"MACD",@"EMAD",@"EMBD",@"AEMAD",@"AEMBD",@"AEMBAD",@"EMAG",@"TICN",@"GRDPOS",@"EDPU",@"PACS",nil];
-}
+    seriesNames = [[NSArray alloc] initWithObjects:@"EMA",[NSNumber numberWithInt:1],
+                   @"REMA",[NSNumber numberWithInt:1],
+                   @"EMB",[NSNumber numberWithInt:3],
+                   @"ATR",[NSNumber numberWithInt:1],
+                   @"OHLC",[NSNumber numberWithInt:0],
+                   @"TR2",[NSNumber numberWithInt:1],
+                   @"FDIM",[NSNumber numberWithInt:0],
+                   @"MACD",[NSNumber numberWithInt:3],
+                   @"EMAD",[NSNumber numberWithInt:2],
+                   @"EMBD",[NSNumber numberWithInt:5],
+                   @"AEMAD",[NSNumber numberWithInt:4],
+                   @"AEMBD",[NSNumber numberWithInt:7],
+                   @"EMAG",[NSNumber numberWithInt:3],
+                   @"TICN",[NSNumber numberWithInt:0],
+                   @"GRDPOS",[NSNumber numberWithInt:4],
+                   @"EDPU",[NSNumber numberWithInt:2],
+                   @"PACS",[NSNumber numberWithInt:3],nil];
+     
+    
+    signalNames = [[NSArray alloc] initWithObjects:@"SECO", [NSNumber numberWithInt:2],
+                   @"MACD", [NSNumber numberWithInt:3],
+                   @"EMAD", [NSNumber numberWithInt:2],
+                   @"MCD2", [NSNumber numberWithInt:3],
+                   @"EMA", [NSNumber numberWithInt:2],
+                   @"REMA", [NSNumber numberWithInt:2],
+                   @"AEMAD", [NSNumber numberWithInt:4],
+                   @"AEMBD", [NSNumber numberWithInt:7],
+                   @"PACS", [NSNumber numberWithInt:3],
+                   @"EMB", [NSNumber numberWithInt:4],
+                   @"EMBD", [NSNumber numberWithInt:5], nil];
+   }
 
 -(id)init
 {
@@ -131,19 +163,6 @@ static NSArray *calculationNames;
             initStringUnderstood = YES;
         }
         
-//        if([[signalComponents objectAtIndex:0] isEqualToString:@"EMA"]  && [signalComponents count]==3){
-//            _type = @"EMA";
-//            _fastCode = [[signalComponents objectAtIndex:1] intValue];
-//            _slowCode = [[signalComponents objectAtIndex:2] intValue];
-//            initStringUnderstood = YES;
-//        }
-//        
-       //        if([[signalComponents objectAtIndex:0] isEqualToString:@"GRIDPOS"]  && [signalComponents count]==5){
-//            _type = @"GRIDPOS";
-//            _slowCode = [[signalComponents objectAtIndex:1] intValue];
-//            initStringUnderstood = YES;
-//        }
-        
         if([signalComponentsPlusExtras count] > 1){
             for( int i = 1; i < [signalComponentsPlusExtras count];i++ )
             {
@@ -152,8 +171,8 @@ static NSArray *calculationNames;
                 NSString *typeOfExtra = [components objectAtIndex:0];
                 
                 BOOL nameUnderstood = NO;
-                for(int j = 0; j < [calculationNames count]; j++){
-                    if([typeOfExtra isEqualToString:[calculationNames objectAtIndex:j]]){
+                for(int j = 0; j < [seriesNames count]; j = j+2){
+                    if([typeOfExtra isEqualToString:[seriesNames objectAtIndex:j]]){
                         nameUnderstood = YES;
                         break;
                     }
@@ -178,44 +197,112 @@ static NSArray *calculationNames;
     return self;
 }
 
+
++ (NSString *) signalListAsString
+{
+    NSString *signalList, *oneSignal;
+    NSArray *alphabet = [NSArray arrayWithObjects:@"A",@"B",@"C",@"D",@"E",@"F",@"G",@"H",@"I",@"J",@"K",@"L", nil];
+    int nParams = 0;
+    for(int i = 0; i < [signalNames count]; i = i+2){
+        oneSignal = [signalNames objectAtIndex:i];
+        nParams = [[signalNames objectAtIndex:i+1] intValue];
+        for(int j = 0; j < nParams; j++){
+            oneSignal = [NSString stringWithFormat:@"%@/%@",oneSignal,[alphabet objectAtIndex:j]];
+        }
+        if(i > 0 ){
+            signalList =  [NSString stringWithFormat:@"%@\n%@",signalList,oneSignal];
+        }else{
+            signalList = oneSignal;
+        }
+    }
+    return signalList;
+}
+
++ (NSString *) seriesListAsString
+{
+    NSString *seriesList, *oneSeries;
+    NSArray *alphabet = [NSArray arrayWithObjects:@"A",@"B",@"C",@"D",@"E",@"F",@"G",@"H",@"I",@"J",@"K",@"L", nil];
+    int nParams = 0;
+    for(int i = 0; i < [seriesNames count]; i = i+2){
+        oneSeries = [seriesNames objectAtIndex:i];
+        nParams = [[seriesNames objectAtIndex:i+1] intValue];
+        for(int j = 0; j < nParams; j++){
+            oneSeries = [NSString stringWithFormat:@"%@/%@",oneSeries,[alphabet objectAtIndex:j]];
+        }
+        if(i > 0 ){
+            seriesList =  [NSString stringWithFormat:@"%@\n%@",seriesList,oneSeries];
+        }else{
+            seriesList = oneSeries;
+        }
+    }
+    return seriesList;
+}
+
 +(BOOL)basicSignalCheck: (NSString *) signalString
 {
-    BOOL understood = NO;
-    NSArray *signalComponents = [signalString componentsSeparatedByString:@"/"];
-    if([[signalComponents objectAtIndex:0] isEqualToString:@"SECO"]  && [signalComponents count] == 3){
-        understood = YES;
+    BOOL understood = YES;
+    NSArray *signalArray = [signalString componentsSeparatedByString:@";"];
+    
+    if([signalArray count] > 0){
+        for( int i = 0; i < [signalArray count];i++)
+        {
+            NSString *singleSignal = [signalArray objectAtIndex:i];
+            NSArray *components = [singleSignal componentsSeparatedByString:@"/"];
+            NSString *typeOfSignal = [components objectAtIndex:0];
+            
+            BOOL nameUnderstood = NO;
+            for(int j = 0; j < [signalNames count]; j = j+2){
+                if([typeOfSignal isEqualToString:[signalNames objectAtIndex:j]]){
+                    if(([components count] -1) == [[signalNames objectAtIndex:j+1] intValue]){
+                        nameUnderstood = YES;
+                        break;
+                    }
+                }
+            }
+            if(!nameUnderstood){
+                understood = NO;
+                break;
+            }
+        }
     }
-    if([[signalComponents objectAtIndex:0] isEqualToString:@"MACD"]  && [signalComponents count] == 4){
-        understood = YES;
-    }
-    if([[signalComponents objectAtIndex:0] isEqualToString:@"EMAD"]  && [signalComponents count] == 3){
-        understood = YES;
-    }
-    if([[signalComponents objectAtIndex:0] isEqualToString:@"MCD2"]  && [signalComponents count] == 4){
-        understood = YES;
-    }
-    if([[signalComponents objectAtIndex:0] isEqualToString:@"EMA"] && [signalComponents count] == 3){
-        understood = YES;
-    }
-    if([[signalComponents objectAtIndex:0] isEqualToString:@"REMA"] && [signalComponents count] == 3){
-        understood = YES;
-    }
-    if([[signalComponents objectAtIndex:0] isEqualToString:@"AEMAD"] && [signalComponents count] == 5){
-        understood = YES;
-    }
-    if([[signalComponents objectAtIndex:0] isEqualToString:@"AEMBD"] && [signalComponents count] == 8){
-        understood = YES;
-    }
-    if([[signalComponents objectAtIndex:0] isEqualToString:@"PACS"] && [signalComponents count] == 4){
-        understood = YES;
-    }
-    if([[signalComponents objectAtIndex:0] isEqualToString:@"EMB"] && [signalComponents count] == 5){
-        understood = YES;
-    }
-    if([[signalComponents objectAtIndex:0] isEqualToString:@"EMBD"] && [signalComponents count] == 6){
-        understood = YES;
-    }
+    
     return understood;
+//    BOOL understood = NO;
+//    NSArray *signalComponents = [signalString componentsSeparatedByString:@"/"];
+//    if([[signalComponents objectAtIndex:0] isEqualToString:@"SECO"]  && [signalComponents count] == 3){
+//        understood = YES;
+//    }
+//    if([[signalComponents objectAtIndex:0] isEqualToString:@"MACD"]  && [signalComponents count] == 4){
+//        understood = YES;
+//    }
+//    if([[signalComponents objectAtIndex:0] isEqualToString:@"EMAD"]  && [signalComponents count] == 3){
+//        understood = YES;
+//    }
+//    if([[signalComponents objectAtIndex:0] isEqualToString:@"MCD2"]  && [signalComponents count] == 4){
+//        understood = YES;
+//    }
+//    if([[signalComponents objectAtIndex:0] isEqualToString:@"EMA"] && [signalComponents count] == 3){
+//        understood = YES;
+//    }
+//    if([[signalComponents objectAtIndex:0] isEqualToString:@"REMA"] && [signalComponents count] == 3){
+//        understood = YES;
+//    }
+//    if([[signalComponents objectAtIndex:0] isEqualToString:@"AEMAD"] && [signalComponents count] == 5){
+//        understood = YES;
+//    }
+//    if([[signalComponents objectAtIndex:0] isEqualToString:@"AEMBD"] && [signalComponents count] == 8){
+//        understood = YES;
+//    }
+//    if([[signalComponents objectAtIndex:0] isEqualToString:@"PACS"] && [signalComponents count] == 4){
+//        understood = YES;
+//    }
+//    if([[signalComponents objectAtIndex:0] isEqualToString:@"EMB"] && [signalComponents count] == 5){
+//        understood = YES;
+//    }
+//    if([[signalComponents objectAtIndex:0] isEqualToString:@"EMBD"] && [signalComponents count] == 6){
+//        understood = YES;
+//    }
+//    return understood;
 }
 +(BOOL)basicSeriesCheck: (NSString *) seriesString
 {
@@ -224,17 +311,19 @@ static NSArray *calculationNames;
     
     
     if([seriesArray count] > 0){
-        for( int i = 1; i < [seriesArray count];i++)
+        for( int i = 0; i < [seriesArray count];i++)
         {
             NSString *singleSeries = [seriesArray objectAtIndex:i];
             NSArray *components = [singleSeries componentsSeparatedByString:@"/"];
             NSString *typeOfSeries = [components objectAtIndex:0];
             
             BOOL nameUnderstood = NO;
-            for(int j = 0; j < [calculationNames count]; j++){
-                if([typeOfSeries isEqualToString:[calculationNames objectAtIndex:j]]){
-                    nameUnderstood = YES;
-                    break;
+            for(int j = 0; j < [seriesNames count]; j = j+2){
+                if([typeOfSeries isEqualToString:[seriesNames objectAtIndex:j]]){
+                    if(([components count] -1) == [[seriesNames objectAtIndex:j+1] intValue]){
+                        nameUnderstood = YES;
+                        break;
+                    }
                 }
             }
             if(!nameUnderstood){
@@ -320,10 +409,7 @@ static NSArray *calculationNames;
         [varsNeeded addObject:[NSString stringWithFormat:@"EMB/%@/%d",pacsString, emaCode]];
         [varsNeeded addObject:[NSString stringWithFormat:@"EMBD/%@/%d/%d",pacsString, emaCode,deltaCode]];
     }
-
-    
-    
-    
+   
     if([[self type] isEqualToString:@"EMAD"]){
         [varsNeeded addObject:[NSString stringWithFormat:@"EMA/%d",[self slowCode]]];
         [varsNeeded addObject:[NSString stringWithFormat:@"EMAD/%d/%d",[self slowCode],[self signalSmooth]]];

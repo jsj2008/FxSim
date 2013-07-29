@@ -43,6 +43,30 @@
 
 }
 
++ (long) epochTimeAtZeroHourJan1NextYear:(long) epochDate
+{
+    NSDate *nsDate = [[NSDate alloc] initWithTimeIntervalSince1970:epochDate];
+    
+    NSCalendar *calendar= [[NSCalendar alloc] initWithCalendarIdentifier:NSGregorianCalendar];
+    [calendar setTimeZone:[NSTimeZone timeZoneWithAbbreviation:@"UTC"]];
+    NSCalendarUnit unitFlags = NSYearCalendarUnit;
+    
+    NSDateComponents *dateComponents = [calendar components:unitFlags fromDate:nsDate];
+    NSInteger year = [dateComponents year];
+    
+    NSString *formatString = @"%Y-%m-%d %H:%M:%S";
+    NSDateFormatter *formatter = [[NSDateFormatter alloc] initWithDateFormat:formatString allowNaturalLanguage:NO];
+    [formatter setTimeZone:[NSTimeZone timeZoneWithAbbreviation:@"UTC"]];
+    NSString *dateString = [NSString stringWithFormat:@"%ld-01-01 00:00:00",year+1];
+    NSDate *startOfYear = [formatter dateFromString:dateString];
+    
+    return [startOfYear timeIntervalSince1970];
+}
+
+
+
+
+
 + (NSString *) stringDateWithDayOfWeek:(long) epochDate
 {
     NSString *returnString;
@@ -87,9 +111,6 @@
 }
 
 
-
-
-
 + (int) daysSinceEpoch:(long) epochDate
 {
     int daysSinceZero;
@@ -124,9 +145,9 @@
     return isMonToFri;
 }
 
-+(int)daysBetweenInclusiveFrom: (long) startDateTime
-                            To: (long) endDateTime
-              CountingWeekends:(BOOL) countWeekendDays
++ (int) daysBetweenInclusiveFrom: (long) startDateTime
+                              To: (long) endDateTime
+                CountingWeekends: (BOOL) countWeekendDays
 {
     startDateTime = [self epochTimeAtZeroHour:startDateTime];
     endDateTime = [self epochTimeAtZeroHour:endDateTime];
@@ -143,6 +164,7 @@
     }
     return count;
 }
+
 @end
 
 

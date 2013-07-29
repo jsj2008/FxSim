@@ -29,6 +29,8 @@
 - (NSArray *) variablesNeeded;
 - (long) leadTimeRequired;
 - (long) leadTicsRequired;
++ (NSString *) signalListAsString;
++ (NSString *) seriesListAsString;
 
 @property (readonly) NSString *signalString;
 @property (readonly) NSString *type;

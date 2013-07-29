@@ -2843,8 +2843,8 @@ return returnData;
     long gridWidth, newGridWidth;
     long *newPacsGridArray;
     //long countOfSmallerMoves;
-    long midAbsMove, midMove, newMidMove, seriesIndex, moveCount, newDataIndex = 0, moveSign;
-    
+    long midAbsMove, midMove, criticalMidMove, seriesIndex, moveCount, newDataIndex = 0, moveSign;
+    //long bmidAbsMove, bmidMove, bmoveSign;
     // This is an array of data totals we need for calculation
     
     NSMutableData *pacsDivisorData = [[NSMutableData alloc] initWithLength:sizeof(long)*numberOfSeries];
@@ -2883,8 +2883,8 @@ return returnData;
         NSData *oldDateTimeData = [oldDataDictionary objectForKey:@"OLDDATETIME"];
         long *oldDateTimeArray = (long *) [oldDateTimeData bytes];
         long oldDataLength = [oldDateTimeData length]/sizeof(long);
-        //NSData *oldMidData = [trailingSeriesDictionary objectForKey:@"MID"];
-        //double *oldMidArray = (double *)[oldMidData bytes];
+        NSData *oldMidData = [trailingSeriesDictionary objectForKey:@"MID"];
+        double *oldMidArray = (double *)[oldMidData bytes];
         NSData *oldBmidData = [trailingSeriesDictionary objectForKey:bmidString];
         double *oldBmidArray = (double *)[oldBmidData bytes];
         NSData *oldBremData = [trailingSeriesDictionary objectForKey:bremString];
@@ -2950,31 +2950,42 @@ return returnData;
                 seriesIndex = iLookback - minimumStep;
                 
                 if(newDataIndex-iLookback<0 && dataOverlapIndex-iLookback >= 0 ){
-                    midMove = (int)((bmidArray[newDataIndex] - oldBmidArray[dataOverlapIndex-iLookback])/pipSize);
+                    midMove = (int)((midArray[newDataIndex] - oldMidArray[dataOverlapIndex-iLookback])/pipSize);
                     midAbsMove = labs(midMove);
                     moveSign = midMove == midAbsMove? 1: -1;
+                    
+//                    bmidMove = (int)((bmidArray[newDataIndex] - oldBmidArray[dataOverlapIndex-iLookback])/pipSize);
+//                    bmidAbsMove = labs(bmidMove);
+//                    bmoveSign = bmidMove == bmidAbsMove? 1: -1;
+//                    
+                    
+                    
                 }else{
-                    midMove = (int)((bmidArray[newDataIndex] - bmidArray[newDataIndex-iLookback])/pipSize);
+                    midMove = (int)((midArray[newDataIndex] - midArray[newDataIndex-iLookback])/pipSize);
                     midAbsMove = labs(midMove);
                     moveSign = midMove == midAbsMove? 1: -1;
+    
+//                    bmidMove = (int)((bmidArray[newDataIndex] - bmidArray[newDataIndex-iLookback])/pipSize);
+//                    bmidAbsMove = labs(bmidMove);
+//                    bmoveSign = bmidMove == bmidAbsMove? 1: -1;
                 }
                 
                 // Do the winsorising
                 moveCount = 0;
-                newMidMove = 0;
-                while((double)moveCount/pacsDivisorArray[seriesIndex] < quantile && newMidMove < gridWidth){
-                    moveCount = moveCount +  pacsGridArray[(seriesIndex*gridWidth)+newMidMove];
-                    newMidMove++;
+                criticalMidMove = 0;
+                while((double)moveCount/pacsDivisorArray[seriesIndex] < quantile && criticalMidMove < gridWidth){
+                    moveCount = moveCount +  pacsGridArray[(seriesIndex*gridWidth)+criticalMidMove];
+                    criticalMidMove++;
                 }
-                if(newMidMove>0)newMidMove--;
+                if(criticalMidMove>0)criticalMidMove--;
                 
-                pathSeriesTempHolderArray[seriesIndex][newDataIndex] = newMidMove;
+                pathSeriesTempHolderArray[seriesIndex][newDataIndex] = criticalMidMove;
                 
                 if((double)moveCount/pacsDivisorArray[seriesIndex] >= quantile)
                 {
-                    if(fabs(bmidArray[newDataIndex]-bmidArray[newDataIndex-iLookback])/pipSize > newMidMove){
-                        bmidArray[newDataIndex] = bmidArray[newDataIndex-iLookback] + newMidMove*pipSize*moveSign;
-                        //NSLog(@"Adjusting lookback %ld %@, %d from %ld to %ld", dateTimeArray[newDataIndex], [EpochTime stringDateWithTime:dateTimeArray[newDataIndex]], iLookback,midMove,newMidMove);
+                    if(fabs(bmidArray[newDataIndex]-bmidArray[newDataIndex-iLookback])/pipSize > criticalMidMove){
+                        bmidArray[newDataIndex] = bmidArray[newDataIndex-iLookback] + criticalMidMove*pipSize*moveSign;
+                        //NSLog(@"Adjusting lookback %ld %@, %d from %ld to %ld", dateTimeArray[newDataIndex], [EpochTime stringDateWithTime:dateTimeArray[newDataIndex]], iLookback,midMove,criticalMidMove);
                         bremArray[newDataIndex] = midArray[newDataIndex] - bmidArray[newDataIndex];
                         //pacsGridUseArray[seriesIndex]++;
                     }
@@ -3027,7 +3038,7 @@ return returnData;
                 for(int iLookback = minimumStep; iLookback <= maximumStep; iLookback++){
                     seriesIndex = iLookback - minimumStep;
                     if(newDataIndex-iLookback >= 0){
-                        midMove = (int)((bmidArray[newDataIndex] - bmidArray[newDataIndex-iLookback])/pipSize);
+                        midMove = (int)((midArray[newDataIndex] - midArray[newDataIndex-iLookback])/pipSize);
                         midAbsMove = labs(midMove);
                         if(midAbsMove >= gridWidth){
                             //pacsSeriesTempHolderArray[seriesIndex][newDataIndex] = 1.0;
@@ -3063,27 +3074,27 @@ return returnData;
         for(int iLookback = minimumStep; iLookback <= maximumStep; iLookback++){
             seriesIndex = iLookback - minimumStep;
             
-            midMove = (int)((bmidArray[newDataIndex] - bmidArray[newDataIndex-iLookback])/pipSize);
+            midMove = (int)((midArray[newDataIndex] - midArray[newDataIndex-iLookback])/pipSize);
             midAbsMove = labs(midMove);
             moveSign = midMove == midAbsMove? 1: -1;
             
             if(newDataIndex > 100){
                 // Do the winsorising
                 moveCount = 0;
-                newMidMove = 0;
-                while((double)moveCount/pacsDivisorArray[seriesIndex] < quantile && newMidMove < gridWidth){
-                    moveCount = moveCount +  pacsGridArray[(seriesIndex*gridWidth)+newMidMove];
-                    newMidMove++;
+                criticalMidMove = 0;
+                while((double)moveCount/pacsDivisorArray[seriesIndex] < quantile && criticalMidMove < gridWidth){
+                    moveCount = moveCount +  pacsGridArray[(seriesIndex*gridWidth)+criticalMidMove];
+                    criticalMidMove++;
                 }
-                if(newMidMove>0)newMidMove--;
+                if(criticalMidMove>0)criticalMidMove--;
                 
-                pathSeriesTempHolderArray[seriesIndex][newDataIndex] = newMidMove;
+                pathSeriesTempHolderArray[seriesIndex][newDataIndex] = criticalMidMove;
                 
                 if((double)moveCount/pacsDivisorArray[seriesIndex] >= quantile)
                 {
-                    if(fabs(bmidArray[newDataIndex]-bmidArray[newDataIndex-iLookback])/pipSize > newMidMove){
-                        bmidArray[newDataIndex] = bmidArray[newDataIndex-iLookback] + newMidMove*pipSize*moveSign;
-                        //NSLog(@"Adjusting lookback %ld %@, %d from %ld to %ld", dateTimeArray[newDataIndex], [EpochTime stringDateWithTime:dateTimeArray[newDataIndex]], iLookback,midMove,newMidMove);
+                    if(fabs(bmidArray[newDataIndex]-bmidArray[newDataIndex-iLookback])/pipSize > criticalMidMove){
+                        bmidArray[newDataIndex] = bmidArray[newDataIndex-iLookback] + criticalMidMove*pipSize*moveSign;
+                        //NSLog(@"Adjusting lookback %ld %@, %d from %ld to %ld", dateTimeArray[newDataIndex], [EpochTime stringDateWithTime:dateTimeArray[newDataIndex]], iLookback,midMove,criticalMidMove);
                         bremArray[newDataIndex] = midArray[newDataIndex] - bmidArray[newDataIndex];
                         //pacsGridUseArray[seriesIndex]++;
                     }

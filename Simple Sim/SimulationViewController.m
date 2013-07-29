@@ -354,6 +354,13 @@
     [_returnsHistogramCompareToggleButton setHidden:YES];
     
     [reportTableView setDelegate:self];
+    
+    NSString *tooltip;
+    tooltip = [DataController getSignalListAsString];
+    [setupParameterTextField setToolTip:tooltip];
+    
+    tooltip = [DataController getSeriesListAsString];
+    [setupExtraSeriesTextField setToolTip:tooltip];
 }
 
 - (void) setDelegate:(id)del
@@ -3328,7 +3335,7 @@
 @synthesize importDataArray = _importDataArray;
 @synthesize fxPairsAndDbIds = _fxPairsAndDbIds;
 @synthesize coloursForPlots = _coloursForPlots;
-@synthesize dataControllerForUI = _dataControllerForUI;
+//@synthesize dataControllerForUI = _dataControllerForUI;
 @synthesize doThreads = _doThreads;
 @synthesize firstTimeSetup = _firstTimeSetup;
 @synthesize workingSimulation = _workingSimulation;

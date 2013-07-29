@@ -264,7 +264,15 @@ NSString *dbPath = @"/Users/Martin/Projects/Databases/tsSampled.db";
 //    return [DataProcessor leadTicsRequired:strategyString];
 //}
 
++(NSString *)getSignalListAsString
+{
+    return [SignalSystem signalListAsString];
+}
 
++(NSString *)getSeriesListAsString
+{
+    return [SignalSystem seriesListAsString];
+}
 
 - (void) setupListofPairs{
     NSMutableDictionary *retrievedPairs = [[NSMutableDictionary alloc]init];

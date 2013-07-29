@@ -151,7 +151,7 @@ AndTradingTimeStart: (int) tradingTimeStart
 
 +(NSArray *)getReportFields
 {
-    NSArray *reportFields = [NSArray arrayWithObjects:@"NAME", @"TRADINGPAIR",@"ACCOUNTCURRENCY",@"BLANK",@"--RESULTS--", @"CASHTRANSFERS", @"FINALNAV", @"TRADE PNL", @"INTEREST",  @"DEEPESTDRAWDOWN", @"DEEPESTDRAWDOWNTIME", @"LONGESTDRAWDOWN", @"LONGESTDRAWDOWNTIME", @"NUMBEROFTRADES", @"SPREADCOST", @"BLANK",@"EXP NUMBER", @"EXP N LOSS", @"EXP N WIN", @"EXP MEAN LOSS", @"EXP MEAN WIN", @"EXP MIN LEN", @"EXP MAX LEN", @"EXP MED LEN", @"EXP LOSS MED LEN", @"EXP WIN MED LEN", @"EXP BIG LOSS", @"EXP BIG WIN", @"SHARPE RATIO", @"SORTINO RATIO", @"BLANK", @"--PARAMETERS--",@"STARTTIME", @"ENDTIME", @"STRATEGY",@"EXTRASERIES",@"POSITIONING", @"RULES", @"MAXLEVERAGE", @"TIMESTEP", @"TRADINGLAG", @"TRADINGDAYSTART", @"TRADINGDAYEND", @"WARMUPTIME", @"DATARATE", @"USERADDEDDATA", nil];
+    NSArray *reportFields = [NSArray arrayWithObjects:@"NAME", @"TRADINGPAIR",@"ACCOUNTCURRENCY",@"BLANK",@"--RESULTS--", @"CASHTRANSFERS", @"FINALNAV", @"TRADE PNL", @"INTEREST",  @"DEEPESTDRAWDOWN", @"DEEPESTDRAWDOWNTIME", @"LONGESTDRAWDOWN", @"LONGESTDRAWDOWNTIME", @"DRAWDOWN AS AVE MONTH", @"NUMBEROFTRADES", @"SPREADCOST", @"BLANK",@"EXP NUMBER", @"EXP N LOSS", @"EXP N WIN", @"EXP MEAN LOSS", @"EXP MEAN WIN", @"EXP MIN LEN", @"EXP MAX LEN", @"EXP MED LEN", @"EXP LOSS MED LEN", @"EXP WIN MED LEN", @"EXP BIG LOSS", @"EXP BIG WIN", @"TOTAL LOSS", @"TOTAL WIN", @"SORTINO RATIO", @"MONTHS POSITIVE", @"TIME SIG NEG", @"TIME SIG POS", @"BLANK", @"--PARAMETERS--",@"STARTTIME", @"ENDTIME", @"STRATEGY",@"EXTRASERIES",@"POSITIONING", @"RULES", @"MAXLEVERAGE", @"TIMESTEP", @"TRADINGLAG", @"TRADINGDAYSTART", @"TRADINGDAYEND", @"WARMUPTIME", @"DATARATE", @"USERADDEDDATA", nil];
     
     
     
@@ -772,6 +772,13 @@ AndTradingTimeStart: (int) tradingTimeStart
             return returnData;
         }
         
+        if([dataFieldIdentifier isEqualToString:@"DRAWDOWN AS AVE MONTH"]){
+            returnData = [NSString stringWithFormat:@"%5.1f months",[returnData doubleValue]];
+            return returnData;
+        }
+        
+        
+        
         if([dataFieldIdentifier isEqualToString:@"PNLUPTIME"] || [dataFieldIdentifier isEqualToString:@"PNLDOWNTIME"]){
             returnData = [NSString stringWithFormat:@"%ld hours",[returnData longValue]/(60*60)];
             return returnData;
@@ -794,7 +801,9 @@ AndTradingTimeStart: (int) tradingTimeStart
         if([dataFieldIdentifier isEqualToString:@"EXP BIG LOSS"] ||
            [dataFieldIdentifier isEqualToString:@"EXP BIG WIN"] ||
            [dataFieldIdentifier isEqualToString:@"EXP MEAN LOSS"] ||
-           [dataFieldIdentifier isEqualToString:@"EXP MEAN WIN"]){
+           [dataFieldIdentifier isEqualToString:@"EXP MEAN WIN"] ||
+           [dataFieldIdentifier isEqualToString:@"TOTAL LOSS"] ||
+           [dataFieldIdentifier isEqualToString:@"TOTAL WIN"]){
             returnData = [NSString stringWithFormat:@"%5.2f",[returnData doubleValue]];
             return returnData;
         }
@@ -802,6 +811,19 @@ AndTradingTimeStart: (int) tradingTimeStart
         if([dataFieldIdentifier isEqualToString:@"NUMBEROFTRADES"]){
             return [NSString stringWithFormat:@"%d",[returnData intValue]];
         }
+        
+        if([dataFieldIdentifier isEqualToString:@"MONTHS POSITIVE"]){
+            return [NSString stringWithFormat:@"%2.1f %%",[returnData doubleValue]*100];
+        }
+
+        if([dataFieldIdentifier isEqualToString:@"TIME SIG NEG"]){
+            return [NSString stringWithFormat:@"%2.1f %%",[returnData doubleValue]*100];
+        }
+       
+        if([dataFieldIdentifier isEqualToString:@"TIME SIG POS"]){
+            return [NSString stringWithFormat:@"%2.1f %%",[returnData doubleValue]*100];
+        }
+        
         returnData = [NSString stringWithFormat:@"%5.2f",[returnData floatValue]];
         
         return returnData;
