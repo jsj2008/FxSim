@@ -810,16 +810,16 @@
                         [self setMajorIntervalForX:4 * 60 * 60];
                         [[self xAxis0] setMajorIntervalLength:CPTDecimalFromInt([self majorIntervalForX])]; // 4 hours
                         [[self xAxis0] setMinorTicksPerInterval:3];
-                        [dateFormatter setDateStyle:kCFDateFormatterNoStyle];
-                        [dateFormatter setTimeStyle:kCFDateFormatterShortStyle];
+                        [dateFormatter setDateStyle:NSDateFormatterNoStyle];
+                        [dateFormatter setTimeStyle:NSDateFormatterShortStyle];
                     }else{
                         //If less than 12 hours
                         if(((float)([self maxXrangeForPlot] - [self minXrangeForPlot])/(60 * 60 * 12))<=1){
                             [self setMajorIntervalForX:(60 * 60)];
                             [[self xAxis0] setMajorIntervalLength:CPTDecimalFromInt([self majorIntervalForX])]; // 1 hours
                             [[self xAxis0] setMinorTicksPerInterval:5];
-                            [dateFormatter setDateStyle:kCFDateFormatterNoStyle];
-                            [dateFormatter setTimeStyle:kCFDateFormatterShortStyle];
+                            [dateFormatter setDateStyle:NSDateFormatterNoStyle];
+                            [dateFormatter setTimeStyle:NSDateFormatterShortStyle];
                         }
                     }
                 }   
@@ -900,16 +900,16 @@
                         [self setMajorIntervalForX:4 * 60 * 60];
                         [[self xAxis0] setMajorIntervalLength:CPTDecimalFromInt([self majorIntervalForX])]; // 4 hours
                         [[self xAxis0] setMinorTicksPerInterval:3];
-                        [dateFormatter setDateStyle:kCFDateFormatterNoStyle];
-                        [dateFormatter setTimeStyle:kCFDateFormatterShortStyle];
+                        [dateFormatter setDateStyle:NSDateFormatterNoStyle];
+                        [dateFormatter setTimeStyle:NSDateFormatterShortStyle];
                     }else{
                         //If less than 12 hours
                         if(((float)([self maxXrangeForPlot] - [self minXrangeForPlot])/(60 * 60 * 12))<=1){
                             [self setMajorIntervalForX:60 * 60];
                             [[self xAxis0] setMajorIntervalLength:CPTDecimalFromInt([self majorIntervalForX])]; // 1 hours
                             [[self xAxis0] setMinorTicksPerInterval:5];
-                            [dateFormatter setDateStyle:kCFDateFormatterNoStyle];
-                            [dateFormatter setTimeStyle:kCFDateFormatterShortStyle];
+                            [dateFormatter setDateStyle:NSDateFormatterNoStyle];
+                            [dateFormatter setTimeStyle:NSDateFormatterShortStyle];
                         }
                     }
                 }
@@ -1110,9 +1110,11 @@
     [self setLineAnnotation:[[CPTPlotSpaceAnnotation alloc] initWithPlotSpace:plotSpace anchorPlotPoint:nil]];
 	[[self lineAnnotation] setContentLayer:lineLayer];
     
-    CGPoint startPoint =  [plotSpace plotAreaViewPointForDoublePrecisionPlotPoint:dataValues];
+    CGPoint startPoint =  [plotSpace plotAreaViewPointForDoublePrecisionPlotPoint:dataValues
+                                                              numberOfCoordinates:2];
     dataValues[0] = maxXRange;
-    CGPoint endPoint =  [plotSpace plotAreaViewPointForDoublePrecisionPlotPoint:dataValues];
+    CGPoint endPoint =  [plotSpace plotAreaViewPointForDoublePrecisionPlotPoint:dataValues
+                                                            numberOfCoordinates:2];
     
     CGRect borderRect;
     borderRect = CGRectMake(startPoint.x, startPoint.y ,
@@ -1152,9 +1154,11 @@
             getValues[0] = 0.0;
             getValues[1] = minYRange;
             
-            CGPoint getMinY =  [[self plotSpace0] plotAreaViewPointForDoublePrecisionPlotPoint:getValues];
+            CGPoint getMinY =  [[self plotSpace0] plotAreaViewPointForDoublePrecisionPlotPoint:getValues
+                                                                           numberOfCoordinates:2];
             getValues[1] = maxYRange;
-            CGPoint getMaxY =  [[self plotSpace0] plotAreaViewPointForDoublePrecisionPlotPoint:getValues];
+            CGPoint getMaxY =  [[self plotSpace0] plotAreaViewPointForDoublePrecisionPlotPoint:getValues
+                                                                           numberOfCoordinates:2];
             borderRect = CGRectMake(dragStartInPlotArea.x, getMinY.y ,
                                     (dragEndInPlotArea.x - dragStartInPlotArea.x),
                                     getMaxY.y);
@@ -1169,7 +1173,9 @@
             //CPTXYPlotSpace *plotSpace = (CPTXYPlotSpace *)graph.defaultPlotSpace;
             CGPoint dragInPlotArea = [[self graph] convertPoint:interactionPoint toLayer:[self interactionLayer]];
             double dataCoords[2];
-            [[self plotSpace0] doublePrecisionPlotPoint:dataCoords forPlotAreaViewPoint:dragInPlotArea];
+            [[self plotSpace0] doublePrecisionPlotPoint:dataCoords
+                                    numberOfCoordinates: 2
+                                   forPlotAreaViewPoint:dragInPlotArea];
             
             NSString *currentValue;
             if(flags == NSAlternateKeyMask){
@@ -1215,6 +1221,7 @@
             double dataCoords[2];
             
             [plotSpace doublePrecisionPlotPoint:dataCoords
+                            numberOfCoordinates:2
                            forPlotAreaViewPoint:clickInPlotArea];
             [self addHorizontalLineAt:dataCoords[CPTCoordinateY]
                          ForPlotspace:[self plotSpace0]];
@@ -1238,12 +1245,15 @@
                 [self addHorizontalLineAt:inputValue
                              ForPlotspace:[self plotSpace0]];
             }
+        }else if(flags == NSCommandKeyMask + NSShiftKeyMask){
+            [self removeLineAnnotation];
         }else {
             [self setDragStart:interactionPoint];
            CGPoint clickInPlotArea = [[self graph] convertPoint:interactionPoint
                                                          toLayer:[self interactionLayer]];
             double dataCoords[2];
             [plotSpace doublePrecisionPlotPoint:dataCoords
+                            numberOfCoordinates:2
                            forPlotAreaViewPoint:clickInPlotArea];
             
             // Add annotation
@@ -1287,11 +1297,12 @@
 {
     NSUInteger flags = [NSEvent modifierFlags] & NSDeviceIndependentModifierFlagsMask;
     if([self interactionLayer]){
-        if(flags == NSCommandKeyMask){
-            if([event clickCount] == 2){
-                [self removeLineAnnotation];
-            }
-        }else if(flags == 0 || flags == NSAlternateKeyMask){
+//        if(flags == NSCommandKeyMask){
+//            if([event clickCount] == 2){
+//                [self removeLineAnnotation];
+//            }
+//        }else
+        if(flags == 0 || flags == NSAlternateKeyMask){
             if ( [self clickDateAnnotation] ) {
                 [[[[self graph] plotAreaFrame] plotArea] removeAnnotation:[self clickDateAnnotation]];
                 [self setClickDateAnnotation:nil];
@@ -1347,14 +1358,26 @@
 	double start0[2], end0[2], start1[2], end1[2], start2[2], end2[2];
     
 	// obtain the datapoints for the drag start and end
-	[[self plotSpace0] doublePrecisionPlotPoint:start0 forPlotAreaViewPoint:dragStartInPlotArea];
-	[[self plotSpace0] doublePrecisionPlotPoint:end0 forPlotAreaViewPoint:dragEndInPlotArea];
+	[[self plotSpace0] doublePrecisionPlotPoint:start0
+                            numberOfCoordinates:2
+                           forPlotAreaViewPoint:dragStartInPlotArea];
+	[[self plotSpace0] doublePrecisionPlotPoint:end0
+                           numberOfCoordinates:2
+                           forPlotAreaViewPoint:dragEndInPlotArea];
     
-    [[self plotSpace1] doublePrecisionPlotPoint:start1 forPlotAreaViewPoint:dragStartInPlotArea];
-    [[self plotSpace1] doublePrecisionPlotPoint:end1 forPlotAreaViewPoint:dragEndInPlotArea];
+    [[self plotSpace1] doublePrecisionPlotPoint:start1
+                            numberOfCoordinates:2
+                           forPlotAreaViewPoint:dragStartInPlotArea];
+    [[self plotSpace1] doublePrecisionPlotPoint:end1
+                           numberOfCoordinates:2
+                           forPlotAreaViewPoint:dragEndInPlotArea];
     
-    [[self plotSpace2] doublePrecisionPlotPoint:start2 forPlotAreaViewPoint:dragStartInPlotArea];
-    [[self plotSpace2] doublePrecisionPlotPoint:end2 forPlotAreaViewPoint:dragEndInPlotArea];
+    [[self plotSpace2] doublePrecisionPlotPoint:start2
+                            numberOfCoordinates:2
+                           forPlotAreaViewPoint:dragStartInPlotArea];
+    [[self plotSpace2] doublePrecisionPlotPoint:end2
+                            numberOfCoordinates:2
+                           forPlotAreaViewPoint:dragEndInPlotArea];
     
 	// recalculate the min and max values
 	minXzoomForPlot = MIN(start0[CPTCoordinateX], end0[CPTCoordinateX]);

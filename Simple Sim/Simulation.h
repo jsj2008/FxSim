@@ -67,8 +67,8 @@ typedef enum {
         AndDataRate: (long) dataRate
     AndSamplingRate: (NSUInteger) dataSamplingRate
       AndTradingLag: (NSUInteger) signalToTradeLag
-AndTradingTimeStart: (int) tradingTimeStart
-  AndTradingTimeEnd: (int) tradingTimeEnd
+AndTradingTimeStart: (long) tradingTimeStart
+  AndTradingTimeEnd: (long) tradingTimeEnd
   AndWeekendTrading: (BOOL) weekendTrading
       AndWarmupTime: (long) warmupTime;
 

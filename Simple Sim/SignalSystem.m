@@ -19,7 +19,9 @@ static NSArray *signalNames;
 
 +(void)load {
     [super load];
-    seriesNames = [[NSArray alloc] initWithObjects:@"EMA",[NSNumber numberWithInt:1],
+    seriesNames = [[NSArray alloc] initWithObjects:
+                   @"EMA",[NSNumber numberWithInt:1],
+                   @"EMA2",[NSNumber numberWithInt:2],
                    @"REMA",[NSNumber numberWithInt:1],
                    @"EMB",[NSNumber numberWithInt:3],
                    @"ATR",[NSNumber numberWithInt:1],
@@ -35,10 +37,13 @@ static NSArray *signalNames;
                    @"TICN",[NSNumber numberWithInt:0],
                    @"GRDPOS",[NSNumber numberWithInt:4],
                    @"EDPU",[NSNumber numberWithInt:2],
-                   @"PACS",[NSNumber numberWithInt:3],nil];
+                   @"PACS",[NSNumber numberWithInt:3],
+                   @"BUT",[NSNumber numberWithInt:1],
+                   @"BUT3",[NSNumber numberWithInt:1], nil];
      
     
-    signalNames = [[NSArray alloc] initWithObjects:@"SECO", [NSNumber numberWithInt:2],
+    signalNames = [[NSArray alloc] initWithObjects:
+                   @"SECO", [NSNumber numberWithInt:2],
                    @"MACD", [NSNumber numberWithInt:3],
                    @"EMAD", [NSNumber numberWithInt:2],
                    @"MCD2", [NSNumber numberWithInt:3],
@@ -310,7 +315,7 @@ static NSArray *signalNames;
     NSArray *seriesArray = [seriesString componentsSeparatedByString:@";"];
     
     
-    if([seriesArray count] > 0){
+    if([seriesString length] > 0 && [seriesArray count] > 0){
         for( int i = 0; i < [seriesArray count];i++)
         {
             NSString *singleSeries = [seriesArray objectAtIndex:i];

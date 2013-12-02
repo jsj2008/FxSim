@@ -11,10 +11,10 @@
 		5B01B0D514C130150032A301 /* DataController.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B01B0D414C130150032A301 /* DataController.m */; };
 		5B147E74160AB59B0016C04A /* RulesSystem.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B147E73160AB59B0016C04A /* RulesSystem.m */; };
 		5B1F09CA178F0D3D00BC4C7F /* HistogramPlot.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B1F09C9178F0D3D00BC4C7F /* HistogramPlot.m */; };
+		5B20C1471843E376005B120C /* CorePlot.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 5B20C1461843E376005B120C /* CorePlot.framework */; };
+		5B20C1481843E3C4005B120C /* CorePlot.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5B20C1461843E376005B120C /* CorePlot.framework */; };
 		5B22D0C01729C7AF00A55E32 /* SeriesPlotDataWrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B22D0BF1729C7AE00A55E32 /* SeriesPlotDataWrapper.m */; };
 		5B2EDCC014CD979600EC26B8 /* OCR2.icns in Resources */ = {isa = PBXBuildFile; fileRef = 5B2EDCBF14CD979600EC26B8 /* OCR2.icns */; };
-		5B5A07DA1632AE1A00DBB2E8 /* CorePlot.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5B5A07D71632AD9700DBB2E8 /* CorePlot.framework */; };
-		5B5A07DC1632AE7900DBB2E8 /* CorePlot.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 5B5A07D71632AD9700DBB2E8 /* CorePlot.framework */; };
 		5B7B774A15DDFC9C003911FB /* PositioningSystem.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B7B774915DDFC9C003911FB /* PositioningSystem.m */; };
 		5B85EFD615EC557C004B5381 /* SignalSystem.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B85EFD515EC557C004B5381 /* SignalSystem.m */; };
 		5B88332314BAC44000352C83 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5B88332214BAC44000352C83 /* QuartzCore.framework */; };
@@ -25,14 +25,15 @@
 		5B8C03F0149ECEC70071189F /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B8C03EF149ECEC70071189F /* AppDelegate.m */; };
 		5B8C03F3149ECEC70071189F /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 5B8C03F1149ECEC70071189F /* MainMenu.xib */; };
 		5B8C03FE149ED0870071189F /* AppController.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B8C03FD149ED0870071189F /* AppController.m */; };
-		5B9049ED14B2D8FD008A20AA /* FMDatabase.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B9049E814B2D8FD008A20AA /* FMDatabase.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
-		5B9049EE14B2D8FD008A20AA /* FMDatabaseAdditions.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B9049EA14B2D8FD008A20AA /* FMDatabaseAdditions.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
-		5B9049EF14B2D8FD008A20AA /* FMResultSet.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B9049EC14B2D8FD008A20AA /* FMResultSet.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		5B9049F314B2DA3D008A20AA /* libsqlite3.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 5B9049F214B2DA3D008A20AA /* libsqlite3.dylib */; };
 		5B9049FD14B6CD9A008A20AA /* EpochTime.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B9049FC14B6CD9A008A20AA /* EpochTime.m */; };
 		5B904A0414B7368E008A20AA /* DataSeries.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B904A0314B7368E008A20AA /* DataSeries.m */; };
 		5B9382D51521C092003F8FE5 /* redgreen14b.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 5B9382D41521C092003F8FE5 /* redgreen14b.jpg */; };
 		5BA3C23516193C7C00FCCC24 /* BasicParameters.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BA3C23416193C7C00FCCC24 /* BasicParameters.m */; };
+		5BB70FF21843EFDF00B6B729 /* FMDatabase.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BB70FF11843EFDF00B6B729 /* FMDatabase.m */; };
+		5BB70FF51843EFED00B6B729 /* FMDatabaseAdditions.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BB70FF41843EFEC00B6B729 /* FMDatabaseAdditions.m */; };
+		5BB70FF81843EFF900B6B729 /* FMResultSet.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BB70FF71843EFF900B6B729 /* FMResultSet.m */; };
+		5BB70FFB1843F02200B6B729 /* FMDatabasePool.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BB70FFA1843F02200B6B729 /* FMDatabasePool.m */; };
 		5BB9A35A14EF5B71001372D1 /* DataSeriesValue.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BB9A35914EF5B71001372D1 /* DataSeriesValue.m */; };
 		5BC43F5C151463C20020300A /* UtilityFunctions.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BC43F5B151463C20020300A /* UtilityFunctions.m */; };
 		5BC4C15A14E3811E0024F1BD /* SimulationController.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BC4C15914E3811E0024F1BD /* SimulationController.m */; };
@@ -51,16 +52,16 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		5B5A07D61632AD9700DBB2E8 /* PBXContainerItemProxy */ = {
+		5B20C1401843E2AC005B120C /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
-			containerPortal = 5B5A07CD1632AD9700DBB2E8 /* CorePlot.xcodeproj */;
+			containerPortal = 5B20C13A1843E2A9005B120C /* CorePlot.xcodeproj */;
 			proxyType = 2;
 			remoteGlobalIDString = 8DC2EF5B0486A6940098B216;
 			remoteInfo = CorePlot;
 		};
-		5B5A07D81632AD9700DBB2E8 /* PBXContainerItemProxy */ = {
+		5B20C1421843E2AC005B120C /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
-			containerPortal = 5B5A07CD1632AD9700DBB2E8 /* CorePlot.xcodeproj */;
+			containerPortal = 5B20C13A1843E2A9005B120C /* CorePlot.xcodeproj */;
 			proxyType = 2;
 			remoteGlobalIDString = 0730F600109492D800E95162;
 			remoteInfo = UnitTests;
@@ -74,7 +75,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				5B5A07DC1632AE7900DBB2E8 /* CorePlot.framework in CopyFiles */,
+				5B20C1471843E376005B120C /* CorePlot.framework in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -89,10 +90,11 @@
 		5B147E73160AB59B0016C04A /* RulesSystem.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RulesSystem.m; sourceTree = "<group>"; };
 		5B1F09C8178F0D3D00BC4C7F /* HistogramPlot.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HistogramPlot.h; sourceTree = "<group>"; };
 		5B1F09C9178F0D3D00BC4C7F /* HistogramPlot.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = HistogramPlot.m; sourceTree = "<group>"; };
+		5B20C13A1843E2A9005B120C /* CorePlot.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = CorePlot.xcodeproj; path = ../CorePlot_1.4/Source/framework/CorePlot.xcodeproj; sourceTree = "<group>"; };
+		5B20C1461843E376005B120C /* CorePlot.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CorePlot.framework; path = ../CorePlot_1.4/Binaries/MacOS/CorePlot.framework; sourceTree = "<group>"; };
 		5B22D0BE1729C7AE00A55E32 /* SeriesPlotDataWrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SeriesPlotDataWrapper.h; sourceTree = "<group>"; };
 		5B22D0BF1729C7AE00A55E32 /* SeriesPlotDataWrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SeriesPlotDataWrapper.m; sourceTree = "<group>"; };
 		5B2EDCBF14CD979600EC26B8 /* OCR2.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = OCR2.icns; path = ../OCR2.icns; sourceTree = "<group>"; };
-		5B5A07CD1632AD9700DBB2E8 /* CorePlot.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = CorePlot.xcodeproj; path = ../CorePlot_1.0/Source/framework/CorePlot.xcodeproj; sourceTree = "<group>"; };
 		5B7B774815DDFC9C003911FB /* PositioningSystem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PositioningSystem.h; sourceTree = "<group>"; };
 		5B7B774915DDFC9C003911FB /* PositioningSystem.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PositioningSystem.m; sourceTree = "<group>"; };
 		5B85EFD415EC557C004B5381 /* SignalSystem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SignalSystem.h; sourceTree = "<group>"; };
@@ -112,12 +114,6 @@
 		5B8C03F2149ECEC70071189F /* en */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = en; path = en.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		5B8C03FC149ED0870071189F /* AppController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AppController.h; sourceTree = "<group>"; };
 		5B8C03FD149ED0870071189F /* AppController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AppController.m; sourceTree = "<group>"; };
-		5B9049E714B2D8FC008A20AA /* FMDatabase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FMDatabase.h; sourceTree = "<group>"; };
-		5B9049E814B2D8FD008A20AA /* FMDatabase.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FMDatabase.m; sourceTree = "<group>"; };
-		5B9049E914B2D8FD008A20AA /* FMDatabaseAdditions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FMDatabaseAdditions.h; sourceTree = "<group>"; };
-		5B9049EA14B2D8FD008A20AA /* FMDatabaseAdditions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FMDatabaseAdditions.m; sourceTree = "<group>"; };
-		5B9049EB14B2D8FD008A20AA /* FMResultSet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FMResultSet.h; sourceTree = "<group>"; };
-		5B9049EC14B2D8FD008A20AA /* FMResultSet.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FMResultSet.m; sourceTree = "<group>"; };
 		5B9049F214B2DA3D008A20AA /* libsqlite3.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libsqlite3.dylib; path = usr/lib/libsqlite3.dylib; sourceTree = SDKROOT; };
 		5B9049FB14B6CD99008A20AA /* EpochTime.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = EpochTime.h; sourceTree = "<group>"; };
 		5B9049FC14B6CD9A008A20AA /* EpochTime.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = EpochTime.m; sourceTree = "<group>"; };
@@ -126,6 +122,14 @@
 		5B9382D41521C092003F8FE5 /* redgreen14b.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = redgreen14b.jpg; sourceTree = "<group>"; };
 		5BA3C23316193C7C00FCCC24 /* BasicParameters.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BasicParameters.h; sourceTree = "<group>"; };
 		5BA3C23416193C7C00FCCC24 /* BasicParameters.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = BasicParameters.m; sourceTree = "<group>"; };
+		5BB70FF01843EFDF00B6B729 /* FMDatabase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FMDatabase.h; sourceTree = "<group>"; };
+		5BB70FF11843EFDF00B6B729 /* FMDatabase.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FMDatabase.m; sourceTree = "<group>"; };
+		5BB70FF31843EFEC00B6B729 /* FMDatabaseAdditions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FMDatabaseAdditions.h; sourceTree = "<group>"; };
+		5BB70FF41843EFEC00B6B729 /* FMDatabaseAdditions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FMDatabaseAdditions.m; sourceTree = "<group>"; };
+		5BB70FF61843EFF900B6B729 /* FMResultSet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FMResultSet.h; sourceTree = "<group>"; };
+		5BB70FF71843EFF900B6B729 /* FMResultSet.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FMResultSet.m; sourceTree = "<group>"; };
+		5BB70FF91843F02200B6B729 /* FMDatabasePool.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FMDatabasePool.h; sourceTree = "<group>"; };
+		5BB70FFA1843F02200B6B729 /* FMDatabasePool.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FMDatabasePool.m; sourceTree = "<group>"; };
 		5BB9A35814EF5B71001372D1 /* DataSeriesValue.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DataSeriesValue.h; sourceTree = "<group>"; };
 		5BB9A35914EF5B71001372D1 /* DataSeriesValue.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DataSeriesValue.m; sourceTree = "<group>"; };
 		5BC43F5A151463C20020300A /* UtilityFunctions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = UtilityFunctions.h; sourceTree = "<group>"; };
@@ -162,8 +166,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5B20C1481843E3C4005B120C /* CorePlot.framework in Frameworks */,
 				5B88332314BAC44000352C83 /* QuartzCore.framework in Frameworks */,
-				5B5A07DA1632AE1A00DBB2E8 /* CorePlot.framework in Frameworks */,
 				5B9049F314B2DA3D008A20AA /* libsqlite3.dylib in Frameworks */,
 				5B8C03DD149ECEC60071189F /* Cocoa.framework in Frameworks */,
 			);
@@ -223,11 +227,11 @@
 			name = "General UI";
 			sourceTree = "<group>";
 		};
-		5B5A07CE1632AD9700DBB2E8 /* Products */ = {
+		5B20C13B1843E2A9005B120C /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				5B5A07D71632AD9700DBB2E8 /* CorePlot.framework */,
-				5B5A07D91632AD9700DBB2E8 /* UnitTests.octest */,
+				5B20C1411843E2AC005B120C /* CorePlot.framework */,
+				5B20C1431843E2AC005B120C /* UnitTests.octest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -235,7 +239,8 @@
 		5B8C03CD149ECEC60071189F = {
 			isa = PBXGroup;
 			children = (
-				5B5A07CD1632AD9700DBB2E8 /* CorePlot.xcodeproj */,
+				5B20C1461843E376005B120C /* CorePlot.framework */,
+				5B20C13A1843E2A9005B120C /* CorePlot.xcodeproj */,
 				5B8C03E2149ECEC70071189F /* Simple Sim */,
 				5B8C03DB149ECEC60071189F /* Frameworks */,
 				5B8C03D9149ECEC60071189F /* Products */,
@@ -301,12 +306,14 @@
 		5B9049F114B2D909008A20AA /* FMDB */ = {
 			isa = PBXGroup;
 			children = (
-				5B9049E714B2D8FC008A20AA /* FMDatabase.h */,
-				5B9049E814B2D8FD008A20AA /* FMDatabase.m */,
-				5B9049E914B2D8FD008A20AA /* FMDatabaseAdditions.h */,
-				5B9049EA14B2D8FD008A20AA /* FMDatabaseAdditions.m */,
-				5B9049EB14B2D8FD008A20AA /* FMResultSet.h */,
-				5B9049EC14B2D8FD008A20AA /* FMResultSet.m */,
+				5BB70FF01843EFDF00B6B729 /* FMDatabase.h */,
+				5BB70FF11843EFDF00B6B729 /* FMDatabase.m */,
+				5BB70FF31843EFEC00B6B729 /* FMDatabaseAdditions.h */,
+				5BB70FF41843EFEC00B6B729 /* FMDatabaseAdditions.m */,
+				5BB70FF61843EFF900B6B729 /* FMResultSet.h */,
+				5BB70FF71843EFF900B6B729 /* FMResultSet.m */,
+				5BB70FF91843F02200B6B729 /* FMDatabasePool.h */,
+				5BB70FFA1843F02200B6B729 /* FMDatabasePool.m */,
 			);
 			name = FMDB;
 			sourceTree = "<group>";
@@ -376,7 +383,7 @@
 		5B8C03CF149ECEC60071189F /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0450;
+				LastUpgradeCheck = 0500;
 				ORGANIZATIONNAME = "OCONNOR RESEARCH";
 			};
 			buildConfigurationList = 5B8C03D2149ECEC60071189F /* Build configuration list for PBXProject "Simple Sim" */;
@@ -392,8 +399,8 @@
 			projectDirPath = "";
 			projectReferences = (
 				{
-					ProductGroup = 5B5A07CE1632AD9700DBB2E8 /* Products */;
-					ProjectRef = 5B5A07CD1632AD9700DBB2E8 /* CorePlot.xcodeproj */;
+					ProductGroup = 5B20C13B1843E2A9005B120C /* Products */;
+					ProjectRef = 5B20C13A1843E2A9005B120C /* CorePlot.xcodeproj */;
 				},
 			);
 			projectRoot = "";
@@ -404,18 +411,18 @@
 /* End PBXProject section */
 
 /* Begin PBXReferenceProxy section */
-		5B5A07D71632AD9700DBB2E8 /* CorePlot.framework */ = {
+		5B20C1411843E2AC005B120C /* CorePlot.framework */ = {
 			isa = PBXReferenceProxy;
 			fileType = wrapper.framework;
 			path = CorePlot.framework;
-			remoteRef = 5B5A07D61632AD9700DBB2E8 /* PBXContainerItemProxy */;
+			remoteRef = 5B20C1401843E2AC005B120C /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
-		5B5A07D91632AD9700DBB2E8 /* UnitTests.octest */ = {
+		5B20C1431843E2AC005B120C /* UnitTests.octest */ = {
 			isa = PBXReferenceProxy;
 			fileType = wrapper.cfbundle;
 			path = UnitTests.octest;
-			remoteRef = 5B5A07D81632AD9700DBB2E8 /* PBXContainerItemProxy */;
+			remoteRef = 5B20C1421843E2AC005B120C /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
 /* End PBXReferenceProxy section */
@@ -445,24 +452,25 @@
 				5B8C03E9149ECEC70071189F /* main.m in Sources */,
 				5B8C03F0149ECEC70071189F /* AppDelegate.m in Sources */,
 				5B8C03FE149ED0870071189F /* AppController.m in Sources */,
-				5B9049ED14B2D8FD008A20AA /* FMDatabase.m in Sources */,
-				5B9049EE14B2D8FD008A20AA /* FMDatabaseAdditions.m in Sources */,
-				5B9049EF14B2D8FD008A20AA /* FMResultSet.m in Sources */,
 				5B9049FD14B6CD9A008A20AA /* EpochTime.m in Sources */,
 				5B904A0414B7368E008A20AA /* DataSeries.m in Sources */,
 				5B01B0C914C026C10032A301 /* SeriesPlot.m in Sources */,
 				5B01B0D514C130150032A301 /* DataController.m in Sources */,
+				5BB70FFB1843F02200B6B729 /* FMDatabasePool.m in Sources */,
 				5BDA503C14D225EA009842D5 /* DataView.m in Sources */,
 				5BFF896114D81F7B00F68453 /* TimeSeriesLine.m in Sources */,
 				5BC4C15A14E3811E0024F1BD /* SimulationController.m in Sources */,
 				5BC4C15F14E3826B0024F1BD /* Simulation.m in Sources */,
 				5BB9A35A14EF5B71001372D1 /* DataSeriesValue.m in Sources */,
+				5BB70FF21843EFDF00B6B729 /* FMDatabase.m in Sources */,
 				5BC43F5C151463C20020300A /* UtilityFunctions.m in Sources */,
 				5BEC77F11517694B0084D778 /* SimulationViewController.m in Sources */,
 				5BE265BF1519EE6D003CAA60 /* TitlePaneViewController.m in Sources */,
 				5BECD1F71548F21800819CBE /* DataProcessor.m in Sources */,
 				5BC52992158D9A0F00FDFAF0 /* CashFlowRecord.m in Sources */,
+				5BB70FF81843EFF900B6B729 /* FMResultSet.m in Sources */,
 				5BC52995158D9B0700FDFAF0 /* TransactionRecord.m in Sources */,
+				5BB70FF51843EFED00B6B729 /* FMDatabaseAdditions.m in Sources */,
 				5BC52998158D9ECB00FDFAF0 /* PositionRecord.m in Sources */,
 				5BE5093D158EB5BA00AB4026 /* SignalRecord.m in Sources */,
 				5B7B774A15DDFC9C003911FB /* PositioningSystem.m in Sources */,
@@ -508,8 +516,13 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
@@ -524,6 +537,9 @@
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.7;
 				ONLY_ACTIVE_ARCH = YES;
@@ -535,8 +551,13 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				GCC_C_LANGUAGE_STANDARD = gnu99;
@@ -545,6 +566,9 @@
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 10.7;
 				ONLY_ACTIVE_ARCH = YES;
@@ -555,11 +579,12 @@
 		5B8C03F7149ECEC70071189F /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(NATIVE_ARCH_ACTUAL)";
+				CLANG_ENABLE_OBJC_ARC = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
-					"\"$(SRCROOT)/../CorePlot_1.0/Binaries/MacOS\"",
+					"$(SRCROOT)",
+					/Users/Martin/Dropbox/Library/projects/objC/CorePlot_1.4/Binaries/MacOS,
 				);
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "Simple Sim/Simple Sim-Prefix.pch";
@@ -573,11 +598,12 @@
 		5B8C03F8149ECEC70071189F /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(NATIVE_ARCH_ACTUAL)";
+				CLANG_ENABLE_OBJC_ARC = YES;
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
-					"\"$(SRCROOT)/../CorePlot_1.0/Binaries/MacOS\"",
+					"$(SRCROOT)",
+					/Users/Martin/Dropbox/Library/projects/objC/CorePlot_1.4/Binaries/MacOS,
 				);
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "Simple Sim/Simple Sim-Prefix.pch";

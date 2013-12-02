@@ -12,16 +12,7 @@
 @class SignalSystem;
 
 @interface DataController : NSObject{
-//    BOOL _connected;
     BOOL _doThreads;
-//    BOOL cancelProcedure;
-//    BOOL _adhocDataAdded;
-//    id _delegate;
-//    BOOL _fileDataAdded;
-//    NSString *fileDataFileName;
-//    NSArray *fileData;
-//    DataSeries *_dataSeries;
-    
 }
 @property (retain) NSMutableDictionary *archive;
 @property(readonly) BOOL connected;
@@ -73,7 +64,7 @@
                 AndSignalSystem: (SignalSystem *) signalSystem
                     AndDataRate: (long) dataRate
                   WithStoreCode: (long) archiveCode
-       WithRequestTruncatedFlag: (int *) requestTrucated;
+       WithRequestTruncatedFlag: (long *) requestTrucated;
 
 - (long) getMinDataDateTimeForPair:(NSString *) fxPairName;
 - (long) getMaxDataDateTimeForPair:(NSString *) fxPairName;

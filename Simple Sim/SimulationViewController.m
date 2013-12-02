@@ -2101,8 +2101,17 @@
     
     long startDateTime = [[setupStartTimePicker dateValue] timeIntervalSince1970];
     long endDateTime = [[setupEndTimePicker dateValue] timeIntervalSince1970];
+    long warmUpTime = [setupDataWarmUpTextField intValue]*DAY_SECONDS;
+    long minDateTime = [[self dataControllerForUI] getMinDataDateTimeForPair:tradingPair];
+    
     
     if(startDateTime > endDateTime){
+        userMessage = @"Start date is not after End data";
+        basicCheckOk = NO;
+    }
+    
+    if(startDateTime < minDateTime + warmUpTime){
+        userMessage = @"Warm up time is greater than the interval between start of data and start of simulation";
         basicCheckOk = NO;
     }
     

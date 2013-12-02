@@ -10,8 +10,8 @@
 #import "UtilityFunctions.h"
 #import "PositioningSystem.h"
 #import "SignalSystem.h"
-//#import "DataSeries.h"
 #import "EpochTime.h"
+#import "math.h"
 
 @interface DataProcessor()
 + (NSDictionary *) calcEMAForCode: (NSString *) seriesCode
@@ -72,6 +72,8 @@
                         AndPipSize: (double) pipSize
                    AndSignalSystem: (SignalSystem *) signalSystem;
 
+
+
 @end
 
 
@@ -85,7 +87,7 @@
 {
     BOOL success = YES, useAllNewData;
     NSMutableDictionary *returnData = [[NSMutableDictionary alloc] init];
-    int dataLength;
+    long dataLength;
     NSData *dateTimeData, *oldDateTimeData;
     long *dateTimeArray;
     BOOL doSignal= NO;
@@ -327,7 +329,20 @@
                 }
             }
 
-            
+            //Variable: BUT
+            if([currentSeriesType  isEqualToString:@"BUT"] || [currentSeriesType  isEqualToString:@"BUT3"])
+            {
+                NSDictionary *butDataSeries = [self calcBUTForCode:currentSeriesName
+                                                          WithData:dataDictionary
+                                                        AndOldData:trailingData];
+                
+                success = [[butDataSeries objectForKey:@"SUCCESS"] boolValue];
+                
+                if(success){
+                    NSData *butData = [butDataSeries objectForKey:currentSeriesName];
+                    [returnData setObject:butData forKey:currentSeriesName];
+                }
+            }
             
             // Variable: SPREAD
             if([currentSeriesType isEqualToString:@"SPREAD"] || [[currentSeriesType substringToIndex:3]  isEqualToString:@"SPD"])
@@ -914,7 +929,7 @@
                         AndMidData: (NSData * ) midData
 {
     double *fastArray, *slowArray;
-    int dataLength;
+    long dataLength;
     
     NSMutableDictionary *returnData = [[NSMutableDictionary alloc] init];
     
@@ -1055,7 +1070,7 @@
 {
     NSData *emaData;
     double *emaArray;
-    int dataLength;
+    long dataLength;
     
     NSMutableDictionary *returnData = [[NSMutableDictionary alloc] init];
     
@@ -1228,7 +1243,7 @@ return returnData;
 {
     NSData *emadData;
     double *emadArray;
-    int dataLength = 0;
+    long dataLength = 0;
     
     NSMutableDictionary *returnData = [[NSMutableDictionary alloc] init];
 
@@ -1394,7 +1409,7 @@ return returnData;
                                         ForCode: (NSString *) gridStatsCode
                                 AndSignalSystem: (SignalSystem *) signalSystem
 {
-    int dataLength;
+    long dataLength;
     NSString *seriesString;
     
     //GRDPOS/26/0.025/26/0.2
@@ -2010,7 +2025,7 @@ return returnData;
     dataCountArray = (long *)[dataCountData bytes];
     NSMutableData *atrData;
     
-    int dataLength = [closeData length]/sizeof(double);
+    long dataLength = [closeData length]/sizeof(double);
     
     // Get rid of any weekend days
     
@@ -2076,7 +2091,7 @@ return returnData;
         
         double *oldAtrArray, *oldCloseArray;
         long *oldDateTimeArray;
-        int dataOverlapIndex, oldDataLength;
+        long dataOverlapIndex, oldDataLength;
         
         
         
@@ -2203,7 +2218,7 @@ return returnData;
     NSMutableData  *lastDateTimeForDayData, *closeForDayData, *highForDayData, *lowForDayData, *atrForDayData;
     NSMutableDictionary *returnData = [[NSMutableDictionary alloc] init];
     
-    long *lastDateTimeForDayArray;
+    
     
     double  *closeForDayArray, *highForDayArray, *lowForDayArray, *atrForDayArray;
     
@@ -2242,6 +2257,7 @@ return returnData;
         }
     }
     if(success){
+        long *lastDateTimeForDayArray = 0;
         if(includeOldData){
             NSData *oldMidData = [trailingSeriesDictionary objectForKey:@"MID"];
             double *oldMidArray = (double *)[oldMidData bytes];
@@ -2429,10 +2445,7 @@ return returnData;
             }
             
             atrArray[i] = atrForDayArray[indexByDay];
-            if(atrArray[i]<= 0.002 && indexByDay > 18){
-                NSLog(@"CHECK");
-            }
-            
+                        
             highArray[i] = highForDayArray[indexByDay];
             lowArray[i] = lowForDayArray[indexByDay];
             closeArray[i] = closeForDayArray[indexByDay];
@@ -2500,7 +2513,7 @@ return returnData;
     }
     if(success){
         
-        int dayDataLength = [closeData length]/sizeof(double);
+        long dayDataLength = [closeData length]/sizeof(double);
         
         // Get rid of any weekend days
         
@@ -2559,7 +2572,7 @@ return returnData;
         long *dateTimeArray;
         
         midData = [dataDictionary objectForKey:@"MID"];
-        int dataLength = [midData length]/sizeof(double);
+        long dataLength = [midData length]/sizeof(double);
         midArray = (double *)[midData bytes];
         dateTimeData =  [dataDictionary objectForKey:@"DATETIME"];
         dateTimeArray = (long *)[dateTimeData bytes];
@@ -2655,7 +2668,7 @@ return returnData;
                          AndPipSize: (double) pipSize
 {
     double *fastArray, *slowArray;
-    int dataLength;
+    long dataLength;
     
     NSMutableDictionary *returnData = [[NSMutableDictionary alloc] init];
     
@@ -2854,19 +2867,12 @@ return returnData;
     //NSMutableArray *pacsSeriesTempHolder = [[NSMutableArray alloc] initWithCapacity:numberOfSeries];
     NSMutableArray *pathSeriesTempHolder = [[NSMutableArray alloc] initWithCapacity:numberOfSeries];
     
-    //NSMutableData *pacsSeriesTempHolderData  = [[NSMutableData alloc] initWithLength:sizeof(double *) * numberOfSeries];
     NSMutableData *pathSeriesTempHolderData  = [[NSMutableData alloc] initWithLength:sizeof(double *) * numberOfSeries];
-    //double **pacsSeriesTempHolderArray = (double **)[pacsSeriesTempHolderData bytes];
      double **pathSeriesTempHolderArray = (double **)[pathSeriesTempHolderData bytes];
-    //NSMutableData *pacsSeriesData;
     NSMutableData *pathSeriesData;
     
     for(int i = minimumStep; i <= maximumStep; i++){
         seriesIndex = i - minimumStep;
-        
-//        pacsSeriesData = [[NSMutableData alloc] initWithLength:sizeof(double) * dataLength];
-//        [pacsSeriesTempHolder addObject:pacsSeriesData];
-//        pacsSeriesTempHolderArray[seriesIndex] = (double *)[pacsSeriesData bytes];
         
         pathSeriesData = [[NSMutableData alloc] initWithLength:sizeof(double) * dataLength];
         [pathSeriesTempHolder addObject:pathSeriesData];
@@ -2891,20 +2897,16 @@ return returnData;
         double *oldBremArray = (double *)[oldBremData bytes];
         
         
-        //NSMutableArray *oldPacsSeriesTempHolder;
-        NSMutableArray *oldPathSeriesTempHolder;
-        //NSData *oldPacsSeriesTempHolderData;
-        NSData *oldPathSeriesTempHolderData;
-        //double **oldPacsSeriesTempHolderArray;
-        double **oldPathSeriesTempHolderArray;
+        NSMutableArray *oldPathSeriesTempHolder ;
+        NSData *oldPathSeriesTempHolderData = [[NSMutableData alloc] initWithLength:sizeof(double *) * numberOfSeries];
+        double **oldPathSeriesTempHolderArray = (double **)[oldPathSeriesTempHolderData bytes];
+        
+        
         
         for(int i = 0; i < numberOfSeries; i++){
-            //oldPacsSeriesTempHolderData = [trailingSeriesDictionary objectForKey:[pacsSeriesNames objectAtIndex:i]];
-            oldPathSeriesTempHolderData = [trailingSeriesDictionary objectForKey:[pathSeriesNames objectAtIndex:i]];
-            //[oldPacsSeriesTempHolder addObject:oldPacsSeriesTempHolderData];
-            [oldPathSeriesTempHolder addObject:oldPathSeriesTempHolderData];
-            //oldPacsSeriesTempHolderArray[seriesIndex] = (double *)[oldPacsSeriesTempHolderData bytes];
-            oldPathSeriesTempHolderArray[seriesIndex] = (double *)[oldPathSeriesTempHolderData bytes];
+            pathSeriesData = [trailingSeriesDictionary objectForKey:[pathSeriesNames objectAtIndex:i]];
+            [oldPathSeriesTempHolder addObject:pathSeriesData];
+            oldPathSeriesTempHolderArray[seriesIndex] = (double *)[pathSeriesData bytes];
         }
         
         int oldDataIndex = dataOverlapIndex;
@@ -3056,7 +3058,7 @@ return returnData;
                             pacsGridData = newPacsGridData;
                             pacsGridArray = newPacsGridArray;
                             gridWidth = newGridWidth;
-                            newPacsGridArray[(seriesIndex*gridWidth)+midAbsMove]++;
+                            pacsGridArray[(seriesIndex*gridWidth)+midAbsMove]++;
                         }else{
                             pacsGridArray[(seriesIndex*gridWidth)+midAbsMove]++;
                         }
@@ -3131,7 +3133,7 @@ return returnData;
             //                }
             //pacsGridArray[(seriesIndex*gridWidth)+midAbsMove]++;
             //            }
-            newPacsGridArray[(seriesIndex*gridWidth)+midAbsMove]++;
+            pacsGridArray[(seriesIndex*gridWidth)+midAbsMove]++;
             pacsDivisorArray[seriesIndex]++;
         }
         newDataIndex++;
@@ -3154,6 +3156,147 @@ return returnData;
 
     return returnData;
 }
+
++ (NSDictionary *) calcBUTForCode: (NSString *) butCode
+                         WithData: (NSDictionary *) dataDictionary
+                       AndOldData: (NSDictionary *) oldDataDictionary
+{
+    NSMutableDictionary *returnData = [[NSMutableDictionary alloc] init];
+    NSMutableData *butData;
+    NSString *baseSeriesString;
+    
+    double *butArray, parameter;
+    NSArray *codeComponents = [butCode componentsSeparatedByString:@"/"];
+    double butCodeParam;
+    
+    double numberOfPoles = 2.0;
+    
+    if([[codeComponents objectAtIndex:0] isEqualToString:@"BUT"] || [[codeComponents objectAtIndex:0] isEqualToString:@"BUT3"]){
+        baseSeriesString = @"MID";
+        butCodeParam = [[codeComponents objectAtIndex:1] doubleValue];
+        
+    }
+    if([[codeComponents objectAtIndex:0] isEqualToString:@"BUT3"]){
+        numberOfPoles = 3.0;
+        
+    }
+    
+    if([[codeComponents objectAtIndex:0] isEqualToString:@"BUTB"]){
+        NSRange firstBracket = [butCode rangeOfString:@"/"];
+        NSString *subString = [butCode substringFromIndex:firstBracket.location];
+        NSRange lastBracket = [subString rangeOfString:@"/"
+                                               options:NSBackwardsSearch];
+        baseSeriesString = [NSString stringWithFormat:@"BMID%@",[subString substringToIndex:lastBracket.location]];
+        butCodeParam = [[codeComponents objectAtIndex:4] intValue];
+    }
+    
+    BOOL includeOldData = NO, success = YES;
+    includeOldData = ![[oldDataDictionary objectForKey:@"ALLNEWDATA"] boolValue];
+    
+    int dataOverlapIndex;
+    NSDictionary *trailingSeriesDictionary;
+    long oldDataLength, dataLength, *oldDataTimeArray, *dateTimeArray;
+    
+    NSData *midData,  *dateTimeData, *oldDateTimeData, *oldButData;
+    double *midArray, *oldButArray;
+    
+    midData = [dataDictionary objectForKey:baseSeriesString];
+    dataLength = [midData length]/sizeof(double);
+    midArray = (double *)[midData bytes];
+    dateTimeData =  [dataDictionary objectForKey:@"DATETIME"];
+    dateTimeArray = (long *)[dateTimeData bytes];
+    
+    parameter = [UtilityFunctions fib:butCodeParam];
+    
+    double a, b, c;
+    
+    
+    double c1 = 0.0, c2 = 0.0, c3 = 0.0, c4 = 0.0;
+    if(numberOfPoles < 2.5){
+        a = exp(-sqrt(2.0)*M_PI/parameter);
+        b = 2*a*cos(sqrt(2.0)*M_PI/parameter);
+        c1 = (1-b+a*a)/4;
+        c2 = b;
+        c3 = -a*a;
+    }
+    
+    if(numberOfPoles > 2.5 ){
+        a = exp(-M_PI/parameter);
+        b = 2*a*cos(sqrt(3.0)*M_PI/parameter);
+        c = a*a;
+        c1 = (1-b+c)*(1-c)/8;
+        c2 = b+c;
+        c3 = -(c+b*c);
+        c4 = c * c;
+    }
+    
+    if(includeOldData){
+        if([oldDataDictionary objectForKey:@"OLDDATA"] == nil || [oldDataDictionary objectForKey: @"OVERLAPINDEX"] == nil || [oldDataDictionary objectForKey:@"OLDDATETIME"] == nil){
+            success = NO;
+        }else{
+            trailingSeriesDictionary = [oldDataDictionary objectForKey:@"OLDDATA"];
+            dataOverlapIndex = [[oldDataDictionary objectForKey:@"OVERLAPINDEX"] intValue];
+            oldDateTimeData = [oldDataDictionary objectForKey:@"OLDDATETIME"];
+            oldDataTimeArray = (long *) [oldDateTimeData bytes];
+            oldDataLength = [oldDateTimeData length]/sizeof(long);
+            
+            for(long i = dataOverlapIndex ; i < oldDataLength; i++){
+                if(dateTimeArray[i-dataOverlapIndex] != oldDataTimeArray[i]){
+                    success = NO;
+                    NSLog(@"Problem with overlapping periods, times don't match");
+                }
+            }
+        }
+    }
+    
+    if(success){
+        
+        butData = [[NSMutableData alloc] initWithLength:dataLength * sizeof(double)];
+        butArray = [butData mutableBytes];
+        
+        if(includeOldData){
+            oldButData = [trailingSeriesDictionary objectForKey:butCode];
+            oldButArray = (double *)[oldButData bytes];
+            
+            for(long i = dataOverlapIndex ; i <= oldDataLength; i++){
+                butArray[i-dataOverlapIndex] = oldButArray[i];
+            }
+            for(long i = oldDataLength - dataOverlapIndex; i < dataLength; i++){
+                if(numberOfPoles < 2.5){
+                    butArray[i] = c1*(midArray[i] + 2*midArray[i-1] + midArray[i-2]) + c2 * butArray[i-1] +c3*butArray[i-2];
+                }
+                if(numberOfPoles > 2.5){
+                    butArray[i] = c1*(midArray[i]+3*midArray[i-1]+3*midArray[i-2]+midArray[i-3])+c2*butArray[i-1]+c3*butArray[i-2]+c4*butArray[i-3];
+                }
+            }
+            [returnData setObject:butData forKey:butCode];
+        }else{
+            butArray[0] = midArray[0];
+            butArray[1] = midArray[1];
+            butArray[2] = midArray[2];
+            for(int i = 3; i < dataLength; i++){
+                if(numberOfPoles < 2.5){
+                    butArray[i] = c1*(midArray[i] + 2*midArray[i-1] + midArray[i-2]) + c2 * butArray[i-1] +c3*butArray[i-2];
+                }
+                if(numberOfPoles > 2.5){
+                    butArray[i] = c1*(midArray[i]+3*midArray[i-1]+3*midArray[i-2]+midArray[i-3])+c2*butArray[i-1]+c3*butArray[i-2]+c4*butArray[i-3];
+                }
+            }
+            [returnData setObject:butData forKey:butCode];
+            
+        }
+    }
+    
+    if(success){
+        [returnData setObject:[NSNumber numberWithBool:YES] forKey:@"SUCCESS"];
+    }else{
+        [returnData setObject:[NSNumber numberWithBool:NO] forKey:@"SUCCESS"];
+        
+    }
+    
+    return returnData;
+}
+
 
 
 //+ (NSDictionary *) calcFRAMAForCode: (NSString *) seriesCode

@@ -132,22 +132,21 @@
 
 - (void)tradingSimulation:(NSDictionary *) parameters
 {
-    
     NSString *tradingPair;
     Simulation *newSimulation;
     long minDateTime, maxDateTime;
     //BOOL accountCurrencyIsQuoteCurrency = NO;
     NSArray *userData;
     NSString *userDataFilename;
-    int tradingDayStartHour; 
-    int tradingDayEndHour;
-    int tradingDayStartMinute; 
-    int tradingDayEndMinute; 
+    long tradingDayStartHour;
+    long tradingDayEndHour;
+    long tradingDayStartMinute;
+    long tradingDayEndMinute;
     NSString *userMessage;
-    int tradingDayStartSeconds = 0;
-    int tradingDayEndSeconds = 0;
+    long tradingDayStartSeconds = 0;
+    long tradingDayEndSeconds = 0;
     long dataRequestMinDateTime, dataRequestMaxDateTime;
-    int dataRequestTruncatedFlag = 1;
+    long dataRequestTruncatedFlag = 1;
     BOOL allOk = YES;
     BOOL fullDataLoaded = YES;
     
@@ -201,8 +200,8 @@
              [[self dataController] setFileDataAdded:NO];
         }
         
-        tradingDayStartHour = tradingDayStart/(60*60) ; 
-        tradingDayEndHour = tradingDayEnd/(60*60) ;
+        tradingDayStartHour = (int)tradingDayStart/(60*60) ;
+        tradingDayEndHour = (int)tradingDayEnd/(60*60) ;
         tradingDayStartMinute = (tradingDayStart-(tradingDayStartHour*60*60))%60; 
         tradingDayEndMinute = (tradingDayEnd-(tradingDayEndHour*60*60))%60; 
         
@@ -228,7 +227,14 @@
         startDateTime = startDateTime + timeStep;
         
         [self clearUserInterfaceMessages];
-        userMessage = [NSString stringWithFormat:@"Starting %@\n",simName];
+        
+        
+        NSDate * now = [NSDate date];
+        NSDateFormatter *outputFormatter = [[NSDateFormatter alloc] init];
+        [outputFormatter setDateFormat:@"YYYY/MM/dd HH:mm:ss"];
+        NSString *currentDateString = [outputFormatter stringFromDate:now];
+        
+        userMessage = [NSString stringWithFormat:@"%@ Starting %@\n",currentDateString, simName];
         [[[newSimulation simulationRunOutput] mutableString] appendString:userMessage];
         if([self doThreads]){
             [self performSelectorOnMainThread:@selector(outputSimulationMessage:) 
@@ -691,7 +697,7 @@
     //double signal, currentSignal;
     long startDateTime, endDateTime, stepDateTime, nextTradeDateTime;
     BOOL allTradesFinished, allCashMovesFinished;
-    int dataRequestTruncated = 1;
+    long dataRequestTruncated = 1;
     NSArray *extraRequiredVariables; 
     
     long signalStartDateTime, signalEndDateTime, nextCashMoveDateTime;
@@ -1538,6 +1544,9 @@
     double returnsSD = 0.0, downsideSD = 0.0;
     long returnsCount, downsideCount = 0;
     double proportionPositive = 0;
+    double drawDownInMeanMonthRet = 0.0;
+    double sharpeRatio = 0.0, sortinoRatio = 0.0;
+    
     returnsCount = [monthlyNavChange count];
     if(returnsCount>2){
         monthReturnMeanForCalc = monthReturnSumForCalc/[monthlyNavChange count];
@@ -1553,15 +1562,10 @@
         proportionPositive = proportionPositive /returnsCount;
         returnsSD = sqrt(returnsSD/(returnsCount-1));
         downsideSD = sqrt(downsideSD/(downsideCount-1));
-    }
     
-    double drawDownInMeanMonthRet = largestDrawdown/ monthReturnMeanForCalc;
+        drawDownInMeanMonthRet = largestDrawdown/ monthReturnMeanForCalc;
     
-    double sharpeRatio = 0.0, sortinoRatio = 0.0;
-    if(returnsCount > 2){
         sharpeRatio = sqrt(12.0)*(monthReturnSumForCalc/returnsCount)/returnsSD;
-    }
-    if(returnsCount > 2){
         sortinoRatio = sqrt(12.0)*(monthReturnSumForCalc/returnsCount)/downsideSD;
     }
     
