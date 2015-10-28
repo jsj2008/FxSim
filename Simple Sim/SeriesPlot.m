@@ -380,7 +380,7 @@
 {
     //Create a plot that uses the data source method
     CPTScatterPlot *dataSourceLinePlot;
-    CPTLineStyle *ls;
+    //CPTLineStyle *ls;
     CPTMutableLineStyle *lineStyle;
     [self setDataSource:dataSource];
     [self setInteractionLayer:nil];
@@ -438,7 +438,7 @@
                 dataSourceLinePlot = (CPTScatterPlot *)[[self graph] plotWithIdentifier:lineName];
                 if(dataSourceLinePlot){
                     lineFound = YES;
-                    ls = [dataSourceLinePlot dataLineStyle];
+                    //ls = [dataSourceLinePlot dataLineStyle];
                     switch ([tsl layerIndex]) {
                         case 0:
                             if([dataSourceLinePlot plotSpace] != [self plotSpace0]){

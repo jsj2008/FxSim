@@ -21,7 +21,7 @@ typedef enum {
 } PriceType;
     
 @interface SimulationController : NSObject {
-    BOOL _doThreads;
+    //BOOL _doThreads;
     DataController *_dataController;
     NSMutableDictionary *_interestRates;
     BOOL _simulationDone;

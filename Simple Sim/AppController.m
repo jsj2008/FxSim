@@ -220,7 +220,7 @@
     NSString *defaultButton = [alertInfo objectForKey:@"DEFAULTBUTTON"]; 
     NSString * altButton =  [alertInfo objectForKey:@"ALTBUTTON"]; 
     NSString *otherButton =  [alertInfo objectForKey:@"OTHERBUTTON"]; 
-    NSRunAlertPanel(title, msgFormat, defaultButton, altButton, otherButton);
+    NSRunAlertPanel(title, @"%@", defaultButton, altButton, otherButton,msgFormat);
 }
 
 

@@ -9,12 +9,12 @@
 /* Begin PBXBuildFile section */
 		5B01B0C914C026C10032A301 /* SeriesPlot.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B01B0C814C026C00032A301 /* SeriesPlot.m */; };
 		5B01B0D514C130150032A301 /* DataController.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B01B0D414C130150032A301 /* DataController.m */; };
+		5B0DC7621BE136E900A10A63 /* CorePlot.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 5B0DC75D1BE1363200A10A63 /* CorePlot.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		5B147E74160AB59B0016C04A /* RulesSystem.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B147E73160AB59B0016C04A /* RulesSystem.m */; };
 		5B1F09CA178F0D3D00BC4C7F /* HistogramPlot.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B1F09C9178F0D3D00BC4C7F /* HistogramPlot.m */; };
-		5B20C1471843E376005B120C /* CorePlot.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 5B20C1461843E376005B120C /* CorePlot.framework */; };
-		5B20C1481843E3C4005B120C /* CorePlot.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5B20C1461843E376005B120C /* CorePlot.framework */; };
 		5B22D0C01729C7AF00A55E32 /* SeriesPlotDataWrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B22D0BF1729C7AE00A55E32 /* SeriesPlotDataWrapper.m */; };
 		5B2EDCC014CD979600EC26B8 /* OCR2.icns in Resources */ = {isa = PBXBuildFile; fileRef = 5B2EDCBF14CD979600EC26B8 /* OCR2.icns */; };
+		5B3830AE1BE138F1006C9A24 /* CorePlot.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5B0DC75D1BE1363200A10A63 /* CorePlot.framework */; };
 		5B7B774A15DDFC9C003911FB /* PositioningSystem.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B7B774915DDFC9C003911FB /* PositioningSystem.m */; };
 		5B85EFD615EC557C004B5381 /* SignalSystem.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B85EFD515EC557C004B5381 /* SignalSystem.m */; };
 		5B88332314BAC44000352C83 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5B88332214BAC44000352C83 /* QuartzCore.framework */; };
@@ -52,19 +52,26 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		5B20C1401843E2AC005B120C /* PBXContainerItemProxy */ = {
+		5B0DC75C1BE1363200A10A63 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
-			containerPortal = 5B20C13A1843E2A9005B120C /* CorePlot.xcodeproj */;
+			containerPortal = 5B0DC7561BE1363100A10A63 /* CorePlot.xcodeproj */;
 			proxyType = 2;
 			remoteGlobalIDString = 8DC2EF5B0486A6940098B216;
 			remoteInfo = CorePlot;
 		};
-		5B20C1421843E2AC005B120C /* PBXContainerItemProxy */ = {
+		5B0DC75E1BE1363200A10A63 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
-			containerPortal = 5B20C13A1843E2A9005B120C /* CorePlot.xcodeproj */;
+			containerPortal = 5B0DC7561BE1363100A10A63 /* CorePlot.xcodeproj */;
 			proxyType = 2;
 			remoteGlobalIDString = 0730F600109492D800E95162;
 			remoteInfo = UnitTests;
+		};
+		5B0DC7601BE1364100A10A63 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5B0DC7561BE1363100A10A63 /* CorePlot.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = 8DC2EF4F0486A6940098B216;
+			remoteInfo = CorePlot;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -75,7 +82,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				5B20C1471843E376005B120C /* CorePlot.framework in CopyFiles */,
+				5B0DC7621BE136E900A10A63 /* CorePlot.framework in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -86,12 +93,11 @@
 		5B01B0C814C026C00032A301 /* SeriesPlot.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SeriesPlot.m; sourceTree = "<group>"; };
 		5B01B0D314C130150032A301 /* DataController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DataController.h; sourceTree = "<group>"; };
 		5B01B0D414C130150032A301 /* DataController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DataController.m; sourceTree = "<group>"; };
+		5B0DC7561BE1363100A10A63 /* CorePlot.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = CorePlot.xcodeproj; path = ../CorePlot_1.5.1/Source/framework/CorePlot.xcodeproj; sourceTree = "<group>"; };
 		5B147E72160AB59B0016C04A /* RulesSystem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RulesSystem.h; sourceTree = "<group>"; };
 		5B147E73160AB59B0016C04A /* RulesSystem.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RulesSystem.m; sourceTree = "<group>"; };
 		5B1F09C8178F0D3D00BC4C7F /* HistogramPlot.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HistogramPlot.h; sourceTree = "<group>"; };
 		5B1F09C9178F0D3D00BC4C7F /* HistogramPlot.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = HistogramPlot.m; sourceTree = "<group>"; };
-		5B20C13A1843E2A9005B120C /* CorePlot.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = CorePlot.xcodeproj; path = ../CorePlot_1.4/Source/framework/CorePlot.xcodeproj; sourceTree = "<group>"; };
-		5B20C1461843E376005B120C /* CorePlot.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CorePlot.framework; path = ../CorePlot_1.4/Binaries/MacOS/CorePlot.framework; sourceTree = "<group>"; };
 		5B22D0BE1729C7AE00A55E32 /* SeriesPlotDataWrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SeriesPlotDataWrapper.h; sourceTree = "<group>"; };
 		5B22D0BF1729C7AE00A55E32 /* SeriesPlotDataWrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SeriesPlotDataWrapper.m; sourceTree = "<group>"; };
 		5B2EDCBF14CD979600EC26B8 /* OCR2.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = OCR2.icns; path = ../OCR2.icns; sourceTree = "<group>"; };
@@ -166,7 +172,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5B20C1481843E3C4005B120C /* CorePlot.framework in Frameworks */,
+				5B3830AE1BE138F1006C9A24 /* CorePlot.framework in Frameworks */,
 				5B88332314BAC44000352C83 /* QuartzCore.framework in Frameworks */,
 				5B9049F314B2DA3D008A20AA /* libsqlite3.dylib in Frameworks */,
 				5B8C03DD149ECEC60071189F /* Cocoa.framework in Frameworks */,
@@ -208,6 +214,15 @@
 			name = Plots;
 			sourceTree = "<group>";
 		};
+		5B0DC7571BE1363100A10A63 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				5B0DC75D1BE1363200A10A63 /* CorePlot.framework */,
+				5B0DC75F1BE1363200A10A63 /* UnitTests.octest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
 		5B1ECBFE1519D23300476DB8 /* General UI */ = {
 			isa = PBXGroup;
 			children = (
@@ -227,20 +242,10 @@
 			name = "General UI";
 			sourceTree = "<group>";
 		};
-		5B20C13B1843E2A9005B120C /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				5B20C1411843E2AC005B120C /* CorePlot.framework */,
-				5B20C1431843E2AC005B120C /* UnitTests.octest */,
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
 		5B8C03CD149ECEC60071189F = {
 			isa = PBXGroup;
 			children = (
-				5B20C1461843E376005B120C /* CorePlot.framework */,
-				5B20C13A1843E2A9005B120C /* CorePlot.xcodeproj */,
+				5B0DC7561BE1363100A10A63 /* CorePlot.xcodeproj */,
 				5B8C03E2149ECEC70071189F /* Simple Sim */,
 				5B8C03DB149ECEC60071189F /* Frameworks */,
 				5B8C03D9149ECEC60071189F /* Products */,
@@ -371,6 +376,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				5B0DC7611BE1364100A10A63 /* PBXTargetDependency */,
 			);
 			name = "Simple Sim";
 			productName = "Simple Sim";
@@ -383,7 +389,7 @@
 		5B8C03CF149ECEC60071189F /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0500;
+				LastUpgradeCheck = 0640;
 				ORGANIZATIONNAME = "OCONNOR RESEARCH";
 			};
 			buildConfigurationList = 5B8C03D2149ECEC60071189F /* Build configuration list for PBXProject "Simple Sim" */;
@@ -399,8 +405,8 @@
 			projectDirPath = "";
 			projectReferences = (
 				{
-					ProductGroup = 5B20C13B1843E2A9005B120C /* Products */;
-					ProjectRef = 5B20C13A1843E2A9005B120C /* CorePlot.xcodeproj */;
+					ProductGroup = 5B0DC7571BE1363100A10A63 /* Products */;
+					ProjectRef = 5B0DC7561BE1363100A10A63 /* CorePlot.xcodeproj */;
 				},
 			);
 			projectRoot = "";
@@ -411,18 +417,18 @@
 /* End PBXProject section */
 
 /* Begin PBXReferenceProxy section */
-		5B20C1411843E2AC005B120C /* CorePlot.framework */ = {
+		5B0DC75D1BE1363200A10A63 /* CorePlot.framework */ = {
 			isa = PBXReferenceProxy;
 			fileType = wrapper.framework;
 			path = CorePlot.framework;
-			remoteRef = 5B20C1401843E2AC005B120C /* PBXContainerItemProxy */;
+			remoteRef = 5B0DC75C1BE1363200A10A63 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
-		5B20C1431843E2AC005B120C /* UnitTests.octest */ = {
+		5B0DC75F1BE1363200A10A63 /* UnitTests.octest */ = {
 			isa = PBXReferenceProxy;
 			fileType = wrapper.cfbundle;
 			path = UnitTests.octest;
-			remoteRef = 5B20C1421843E2AC005B120C /* PBXContainerItemProxy */;
+			remoteRef = 5B0DC75E1BE1363200A10A63 /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
 /* End PBXReferenceProxy section */
@@ -484,6 +490,14 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		5B0DC7611BE1364100A10A63 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = CorePlot;
+			targetProxy = 5B0DC7601BE1364100A10A63 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin PBXVariantGroup section */
 		5B8C03E5149ECEC70071189F /* InfoPlist.strings */ = {
 			isa = PBXVariantGroup;
@@ -522,11 +536,14 @@
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"DEBUG=1",
@@ -557,11 +574,14 @@
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
@@ -584,13 +604,15 @@
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)",
-					/Users/Martin/Dropbox/Library/projects/objC/CorePlot_1.4/Binaries/MacOS,
+					/Users/Martin/GoogleDrive/Shared/Library/projects/objC/CorePlot_1.5.1/Binaries/MacOS,
 				);
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "Simple Sim/Simple Sim-Prefix.pch";
 				INFOPLIST_FILE = "Simple Sim/Simple Sim-Info.plist";
 				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				USER_HEADER_SEARCH_PATHS = "/Users/Martin/Google Drive/Shared/Library/projects/objC/CorePlot_1.5.1/Source/framework/**";
+				"USER_HEADER_SEARCH_PATHS[arch=*]" = "/Users/Martin/Google Drive/Shared/Library/projects/objC/CorePlot_1.5.1/Source/framework/**";
 				WRAPPER_EXTENSION = app;
 			};
 			name = Debug;
@@ -603,13 +625,14 @@
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)",
-					/Users/Martin/Dropbox/Library/projects/objC/CorePlot_1.4/Binaries/MacOS,
+					/Users/Martin/GoogleDrive/Shared/Library/projects/objC/CorePlot_1.5.1/Binaries/MacOS,
 				);
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "Simple Sim/Simple Sim-Prefix.pch";
 				INFOPLIST_FILE = "Simple Sim/Simple Sim-Info.plist";
 				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				USER_HEADER_SEARCH_PATHS = "/Users/Martin/Google Drive/Shared/Library/projects/objC/CorePlot_1.5.1/Source/framework/**";
 				WRAPPER_EXTENSION = app;
 			};
 			name = Release;

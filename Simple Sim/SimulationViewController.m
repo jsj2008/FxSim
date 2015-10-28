@@ -2277,7 +2277,7 @@
         [performSimulationButton setEnabled:YES];
         [self endSetupSheet];
     }else{
-        NSRunAlertPanel(@"Bad Parameters", userMessage, @"OK", nil, nil);
+        NSRunAlertPanel(@"Bad Parameters", @"%@", @"OK", nil, nil, userMessage);
         [performSimulationButton setEnabled:YES];
     }
     

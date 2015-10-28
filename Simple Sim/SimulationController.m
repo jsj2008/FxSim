@@ -71,7 +71,7 @@
         _dataController = [[DataController alloc] init];
         [_dataController setDelegate:self];
         _interestRates = [[NSMutableDictionary alloc] init];
-        _doThreads = NO;
+//        _doThreads = NO;
         _loadAllData = YES;
         _simulationRunning = NO;
         return self;
@@ -89,16 +89,16 @@
     return _delegate;
 };
 
-- (BOOL) doThreads
-{
-    return _doThreads;
-}
-
-- (void) setDoThreads:(BOOL)doThreadedProcedures
-{
-    _doThreads = doThreadedProcedures;
-    [[self dataController] setDoThreads:doThreadedProcedures];
-}
+//- (BOOL) doThreads
+//{
+//    return _doThreads;
+//}
+//
+//- (void) setDoThreads:(BOOL)doThreadedProcedures
+//{
+//    _doThreads = doThreadedProcedures;
+//    [[self dataController] setDoThreads:doThreadedProcedures];
+//}
 
 #pragma mark -
 #pragma mark General Methods
@@ -236,10 +236,8 @@
         
         userMessage = [NSString stringWithFormat:@"%@ Starting %@\n",currentDateString, simName];
         [[[newSimulation simulationRunOutput] mutableString] appendString:userMessage];
-        if([self doThreads]){
-            [self performSelectorOnMainThread:@selector(outputSimulationMessage:) 
-                                   withObject:userMessage waitUntilDone:NO];
-        }
+
+        [self outputSimulationMessage:userMessage];
         
         // Set up the simulation data object
         tradingDayStartSeconds = (tradingDayStartMinute*60) + (tradingDayStartHour * 60 * 60);
@@ -281,11 +279,7 @@
             if(!rulesAdded){
                 userMessage = @"***Problem setting up rules***\n";
                 [[[newSimulation simulationRunOutput] mutableString] appendString:userMessage];
-                if([self doThreads]){
-                    [self performSelectorOnMainThread:@selector(outputSimulationMessage:) 
-                                           withObject:userMessage 
-                                        waitUntilDone:NO];
-                }
+                [self outputSimulationMessage:userMessage];
                 [self setCancelProcedure:YES];
             }
         }
@@ -294,19 +288,15 @@
     if(![self cancelProcedure]){
         //Getting Interest Rate Data
         userMessage = @"Getting Interest Rate data";
-        if([self doThreads]){
-            [self performSelectorOnMainThread:@selector(updateStatus:) withObject:userMessage waitUntilDone:NO];
-            [self performSelectorOnMainThread:@selector(readingDatabaseOn) withObject:nil waitUntilDone:NO]; 
-        }
+        [self updateStatus:userMessage];
+        [self readingDatabaseOn];
+        
         
         NSArray *interestRateSeries;
         
         interestRateSeries = [self getInterestRateDataFor:baseCode 
                                                       And:quoteCode];
-        
-        if([self doThreads]){
-            [self performSelectorOnMainThread:@selector(readingDatabaseOff) withObject:nil waitUntilDone:NO]; 
-        }
+        [self readingDatabaseOff];
     }
     
     leadTimeRequiredForSignal = [newSigSystem leadTimeRequired];
@@ -321,20 +311,12 @@
     
     
     if(![self cancelProcedure]){
-        userMessage = @"Importing initial price data";
+        userMessage = @"Importing initial price data\n";
         [[[newSimulation simulationRunOutput] mutableString] appendString:userMessage];
-        if([self doThreads]){
-            [self performSelectorOnMainThread:@selector(outputSimulationMessage:)
-                                   withObject:userMessage waitUntilDone:NO];
-            [self performSelectorOnMainThread:@selector(updateStatus:) 
-                                   withObject:userMessage 
-                                waitUntilDone:NO];
-            
-            if(doDatabaseProgress){
-                [self performSelectorOnMainThread:@selector(readingDatabaseOn)
-                                       withObject:nil
-                                    waitUntilDone:NO];
-            }
+        [self outputSimulationMessage:userMessage];
+        [self updateStatus:userMessage];
+        if(doDatabaseProgress){
+            [self readingDatabaseOn];
         }
         
         extraRequiredVariables =  [SimulationController getNamesOfRequiredVariablesForSignal:[newSimulation signalSystem]                                                       
@@ -348,11 +330,7 @@
         allOk = [[self dataController] setupDataSeriesForName:tradingPair];
         if(!allOk){
             userMessage = @"***Problem setting up database***";
-            if([self doThreads]){
-                [self performSelectorOnMainThread:@selector(updateStatus:) 
-                                       withObject:userMessage 
-                                    waitUntilDone:NO];
-            }
+            [self updateStatus:userMessage];
             [self setCancelProcedure:YES];
         }
         
@@ -378,16 +356,11 @@
         //[[[self dataController] dataSeries] writeDataSeriesToFile:dumpFile];
         
         userMessage = @"Data set up";
-        if([self doThreads] ){
-            [self performSelectorOnMainThread:@selector(updateStatus:) 
-                                   withObject:userMessage
-                                waitUntilDone:NO];
-            if(doDatabaseProgress){
-                [self performSelectorOnMainThread:@selector(readingDatabaseOff)
-                                       withObject:nil
-                                    waitUntilDone:NO];
-            }
+        [self updateStatus:userMessage];
+        if(doDatabaseProgress){
+            [self readingDatabaseOff];
         }
+        
     }
 
     //Adding the signal variables 
@@ -417,10 +390,10 @@
     }
 
     //****ACTUAL START OF THE SIMULATION****//
-    if([self doThreads] && ![self cancelProcedure]){
+    if( ![self cancelProcedure]){
         userMessage = @"Simulation Loop";
-        [self performSelectorOnMainThread:@selector(updateStatus:) withObject:userMessage waitUntilDone:NO];
-        [self performSelectorOnMainThread:@selector(progressBarOn) withObject:nil waitUntilDone:NO];
+        [self updateStatus:userMessage];
+        [self progressBarOn];
     }
     
     BOOL isTradingTime;
@@ -466,7 +439,6 @@
             }
             
             if(!marketClosed){
-                
                 if(!weekendTrading){
                     NSString *dayOfWeek = [[NSDate dateWithTimeIntervalSince1970:simulationDateTime] descriptionWithCalendarFormat:@"%w" timeZone:[NSTimeZone timeZoneWithName:@"GMT"] locale:nil];
                     if([dayOfWeek isEqualToString:@"0"] || [dayOfWeek isEqualToString:@"6"]){
@@ -500,9 +472,8 @@
                     }else{
                         dataRequestMaxDateTime = endDateTime + 7*DAY_SECONDS  + tradingLag;
                     }
-                    if([self doThreads]  && dataStoreIndex >= 0 && doDatabaseProgress){
-                        [self performSelectorOnMainThread:@selector(readingDatabaseOn) withObject:nil waitUntilDone:NO];
-                        
+                    if(dataStoreIndex >= 0 && doDatabaseProgress){
+                        [self readingDatabaseOn];
                     }
                     if(useDataStore){
                         dataStoreIndex--;
@@ -520,17 +491,15 @@
                     if(dataRequestTruncatedFlag == 0){
                         endDateTime = MIN(endDateTime,[[self dataController] getMaxDateTimeForLoadedData]);
                     }
-                    if([self doThreads] && doDatabaseProgress){
-                        [self performSelectorOnMainThread:@selector(readingDatabaseOff)
-                                               withObject:nil
-                                            waitUntilDone:NO];
+                    if(doDatabaseProgress){
+                        [self readingDatabaseOff];
                     }
                 }
                 
                 //Check we successfully have data for the required date
                 if(simulationDateTime > [[self dataController] getMaxDateTimeForLoadedData]){
                     userMessage = [NSString stringWithFormat:@"@DataSeries does not cover current date, Max: %ld current %ld",[[self dataController] getMaxDateTimeForLoadedData],simulationDateTime];
-                    [self performSelectorOnMainThread:@selector(updateStatus:) withObject:userMessage waitUntilDone:NO];
+                    [self updateStatus:userMessage];
                     [self setCancelProcedure:YES];
                 }
                 values = [[self dataController] getValues: fieldNames
@@ -539,7 +508,7 @@
                 if(![[values objectForKey:@"SUCCESS"] boolValue])
                 {
                     userMessage = [NSString stringWithFormat:@"Data Problem in getValuesForFields %ld",simulationDateTime];
-                    [self performSelectorOnMainThread:@selector(updateStatus:) withObject:userMessage waitUntilDone:NO];
+                    [self updateStatus:userMessage];
                     [self setCancelProcedure:YES];
                     
                 }
@@ -548,8 +517,6 @@
                     simulationData[fieldIndex][simStepIndex] = [[values objectForKey:[fieldNames objectAtIndex:fieldIndex]] doubleValue];
                 }
                 
-                
-                                
                 if(fridayCutoff > 0.0){
                     if([EpochTime dayOfWeek:simulationDateTime] == 5){
                         if(simulationDateTime > [EpochTime epochTimeAtZeroHour:simulationDateTime] + (fridayCutoff * 60 * 60))
@@ -558,7 +525,6 @@
                         }
                     }
                 }
-                
                 
                 if(doCloseOut){
                     doCloseOut = ![self checkSignalAndAdjustPositionAtTime:simulationDateTime
@@ -584,33 +550,26 @@
             }
             simulationDateTime= simulationDateTime+timeStep;
             simStepIndex++;
-            //NSLog(@"%@ CASH:%f NAV:%f",[EpochTime stringDateWithTime:simulationDateTime], cashPosition, nav);
-            if([self doThreads]){
-                [self performSelectorOnMainThread:@selector(progressAsFraction:)
-                                       withObject:[NSNumber numberWithDouble:(double)(simulationDateTime - startDateTime)/(endDateTime - startDateTime) ] waitUntilDone:NO];
-            }
+            [self progressAsFraction:[NSNumber numberWithDouble:(double)(simulationDateTime - startDateTime)/(endDateTime - startDateTime)]];
+            
         }while((simulationDateTime <= endDateTime)   && allOk && ![self cancelProcedure]);
     }
     
     if(![self cancelProcedure]){
         //currentDateAsString = [EpochTime stringDateWithTime:simulationDateTime]; 
         userMessage = @"Finished Simulation - Starting Analysis....";
-        if([self doThreads]){
-            [self performSelectorOnMainThread:@selector(updateStatus:) withObject:userMessage waitUntilDone:NO];
-        }  
+        [self updateStatus:userMessage];
     }
-    
-    if([self doThreads]){
-        [self performSelectorOnMainThread:@selector(progressBarOff) withObject:nil waitUntilDone:YES];
-    }
+   
+    [self progressBarOff];
     //***END OF THE SIMULATION****//
     
     if(![self cancelProcedure])
     {
         DataSeries *simulationDataSeries;
         simulationDataSeries = [[self dataController] createNewDataSeriesWithXData: dateTimesData
-                                                                      AndYData: simulationDataDictionary 
-                                                                 AndSampleRate: timeStep];
+                                                                          AndYData: simulationDataDictionary
+                                                                     AndSampleRate: timeStep];
         [newSimulation setSimulationDataSeries:simulationDataSeries];
         [self summariseSimulation:newSimulation];
     }
@@ -618,9 +577,7 @@
     if(![self cancelProcedure])
     {
         userMessage = @"Analysing The Simulation";
-        if([self doThreads]){
-            [self performSelectorOnMainThread:@selector(updateStatus:) withObject:userMessage waitUntilDone:NO];
-        }
+        [self updateStatus:userMessage];
         [self analyseSimulation:newSimulation
       withOptionalPreloadedData:fullDataLoaded];
         
@@ -629,13 +586,8 @@
     if([self cancelProcedure]){
         userMessage = @"Simulation Cancelled \n";
         [[[newSimulation simulationRunOutput] mutableString] appendString:userMessage];
-        if([self doThreads]){
-            [self performSelectorOnMainThread:@selector(updateStatus:) withObject:userMessage waitUntilDone:NO];
-            [self performSelectorOnMainThread:@selector(outputSimulationMessage:) withObject:userMessage waitUntilDone:NO];
-        }else{
-            [self updateStatus:userMessage];
-            [self outputSimulationMessage:userMessage];
-        }
+        [self updateStatus:userMessage];
+        [self outputSimulationMessage:userMessage];
     }
     [[self dataController] removeDerivedFromDataStore] ;
     [self setSimulationRunning:NO];
@@ -644,11 +596,8 @@
     NSDate *calculationEndTime = [NSDate date];
     userMessage = [NSString stringWithFormat:@"Simulation took %3.0lf seconds \n",[calculationEndTime timeIntervalSinceDate:calculationStartTime]];
     [[[newSimulation simulationRunOutput] mutableString] appendString:userMessage];
-    if([self doThreads]){
-        [self performSelectorOnMainThread:@selector(outputSimulationMessage:) withObject:userMessage waitUntilDone:NO];
-    }else{
-        [self outputSimulationMessage:userMessage];
-    }
+    [self outputSimulationMessage:userMessage];
+
 }
 
 -(void)analyseSimulation: (Simulation *) simulation
@@ -729,10 +678,8 @@
     
     userMessage = @"Performing Analysis of Simulation\n";
     [[[simulation simulationRunOutput] mutableString] appendString:userMessage];
-    if([self doThreads]){
-        [self performSelectorOnMainThread:@selector(outputSimulationMessage:) withObject:userMessage waitUntilDone:NO];
-    }
-    
+    [self outputSimulationMessage:userMessage];
+   
     simDataFieldNames = [[simulation simulationDataSeries] getFieldNames];
     
     startDateTime = [simulation startDate];
@@ -745,12 +692,9 @@
     BOOL allActivityFinished;
     NSMutableArray *activityDates;
     
-    if([self doThreads]){
-        [self performSelectorOnMainThread:@selector(progressBarOn) withObject:nil waitUntilDone:NO];
-        [self performSelectorOnMainThread:@selector(progressAsFraction:)
-                               withObject:[NSNumber numberWithDouble:0.02 ] waitUntilDone:NO];
-    }
-     
+    [self progressBarOn];
+    [self progressAsFraction:[NSNumber numberWithDouble:0.02 ] ];
+    
     if([simulation numberOfTrades] >0){
         
         // First get some details about all the trades
@@ -959,11 +903,9 @@
         }   
     }
     
-    if([self doThreads]){
-        [self performSelectorOnMainThread:@selector(progressBarOn) withObject:nil waitUntilDone:NO];
-        [self performSelectorOnMainThread:@selector(progressAsFraction:)
-                               withObject:[NSNumber numberWithDouble:0.04 ] waitUntilDone:NO];
-    }
+    [self progressBarOn];
+    [self progressAsFraction:[NSNumber numberWithDouble:0.04 ]];
+    
 
      
     NSMutableArray *dateTimesOfAnalysis = [[NSMutableArray alloc] init];
@@ -1094,8 +1036,8 @@
                                                                                  AndPositioning: [simulation positionSystem]
                                                                                        AndRules: [simulation rulesSystem]];
             dataStoreIndex--;
-            if([self doThreads] && dataStoreIndex >= 0 && doDatabaseProgress){
-                [self performSelectorOnMainThread:@selector(readingDatabaseOn) withObject:nil waitUntilDone:NO];
+            if(dataStoreIndex >= 0 && doDatabaseProgress){
+                [self readingDatabaseOn];
             }
             
             if(![[self dataController] getDataForStartDateTime: dataRequestMinDateTime
@@ -1109,8 +1051,8 @@
                             format:nil];
             }
             
-            if([self doThreads] && doDatabaseProgress){
-                [self performSelectorOnMainThread:@selector(readingDatabaseOff) withObject:nil waitUntilDone:NO];
+            if(doDatabaseProgress){
+                [self readingDatabaseOff];
             }
         }
     }
@@ -1138,11 +1080,8 @@
         allCashMovesFinished = YES;
     }
     
-    if([self doThreads]){
-        [self performSelectorOnMainThread:@selector(progressBarOn) withObject:nil waitUntilDone:NO];
-        [self performSelectorOnMainThread:@selector(progressAsFraction:)
-                               withObject:[NSNumber numberWithDouble:0.06 ] waitUntilDone:NO];
-    }
+    [self progressBarOn];
+    [self progressAsFraction:[NSNumber numberWithDouble:0.06 ]];
    
     if([simulation numberOfTrades] >0){
         tradeIndex = 0;
@@ -1181,8 +1120,8 @@
         // Update the database if needed
         if(currentDateTime > [[self dataController] getMaxDateTimeForLoadedData])
         {
-            if([self doThreads] && dataStoreIndex >= 0 && doDatabaseProgress){
-                [self performSelectorOnMainThread:@selector(readingDatabaseOn) withObject:nil waitUntilDone:NO];
+            if(dataStoreIndex >= 0 && doDatabaseProgress){
+                [self readingDatabaseOn];
             }
             dataRequestMinDateTime = [[self dataController] getMaxDateTimeForLoadedData] - 3*timeStep;
             dataRequestMaxDateTime = MAX(currentDateTime,endDateTime);
@@ -1194,10 +1133,8 @@
                                                AndDataRate: dataRate
                                              WithStoreCode: dataStoreIndex
                                   WithRequestTruncatedFlag: &dataRequestTruncated];
-            if([self doThreads] && doDatabaseProgress){
-                [self performSelectorOnMainThread:@selector(readingDatabaseOff)
-                                       withObject:nil
-                                    waitUntilDone:NO];
+            if(doDatabaseProgress){
+                [self readingDatabaseOff];
             }
         }
         
@@ -1467,9 +1404,9 @@
             largestDrawdown = drawDownArray[dateIndex];
             largestDrawdownDateTime = currentDateTime;
         }
-        if([self doThreads]){
-            [self performSelectorOnMainThread:@selector(progressAsFraction:) withObject:[NSNumber   numberWithDouble:MAX(0.08,(double)(currentDateTime-startDateTime)/(endDateTime-startDateTime))  ] waitUntilDone:NO];
-        }
+
+        [self progressAsFraction:[NSNumber numberWithDouble:MAX(0.08,(double)(currentDateTime-startDateTime)/(endDateTime-startDateTime))]];
+ 
         int checkPosition =  0 ;
         for(int i = 0; i < [positionAmount count]; i++){
             checkPosition = checkPosition + [[positionAmount objectAtIndex:i] intValue];
@@ -1587,7 +1524,7 @@
         [simulation addToSignalInfoAtIndex:signalIndex EstimatedPnl:estimatedPnl];
     }
     
-    [self performSelectorOnMainThread:@selector(progressBarOff) withObject:nil waitUntilDone:NO];
+    [self progressBarOff];
     
     if(![self cancelProcedure])
     {
@@ -1658,19 +1595,14 @@
         [simulation setAnalysisDataSeries:positionDataSeries];
         [simulation setIsAnalysed:YES];
         
-        [self performSelectorOnMainThread:@selector(registerSimulation:) withObject:simulation waitUntilDone:YES];
-        
+        [self registerSimulation:simulation];
         
         userMessage = @"Analysis Prepared";
         [[[simulation simulationRunOutput] mutableString] appendString:userMessage];
-        if([self doThreads]){
-            [self performSelectorOnMainThread:@selector(updateStatus:) withObject:userMessage waitUntilDone:NO];
-        }
+        [self updateStatus:userMessage];
         userMessage = @"Analysis Prepared\n";
         [[[simulation simulationRunOutput] mutableString] appendString:userMessage];
-        if([self doThreads]){
-            [self performSelectorOnMainThread:@selector(outputSimulationMessage:) withObject:userMessage waitUntilDone:NO];
-        }
+        [self outputSimulationMessage:userMessage];
     }
 }
 
@@ -1718,12 +1650,7 @@
         nav = [self cashPosition];
         NSString *userMessage = [NSString stringWithFormat:@"%@ Closeout of position  -- NAV: %5.2f %@ \n",[EpochTime stringDateWithTime:simulationDateTime + [simulation tradingLag]], nav,[simulation accCode]];
         [[[simulation simulationRunOutput] mutableString] appendString:userMessage];
-        if([self doThreads]){
-            [self performSelectorOnMainThread:@selector(outputSimulationMessage:) withObject:userMessage waitUntilDone:NO];
-        }else{
-            [self outputSimulationMessage:userMessage];
-        }
-
+        [self outputSimulationMessage:userMessage];
     }else{
         bid = [[values objectForKey:@"BID"] doubleValue];
         ask =  [[values objectForKey:@"ASK"] doubleValue];
@@ -1752,12 +1679,12 @@
         }
         if(accountCurrencyIsQuoteCurrency){
             if([simulation currentExposure] > 0){
-                marginUsed = fabsf([simulation currentExposure] * ask / [[simulation basicParameters] maxLeverage]);
+                marginUsed = fabs([simulation currentExposure] * ask / [[simulation basicParameters] maxLeverage]);
             }else{
-                marginUsed = fabsf([simulation currentExposure] * bid / [[simulation basicParameters] maxLeverage]);
+                marginUsed = fabs([simulation currentExposure] * bid / [[simulation basicParameters] maxLeverage]);
             }
         }else{
-            marginUsed = fabsf([simulation currentExposure] / [[simulation basicParameters] maxLeverage]);
+            marginUsed = fabs([simulation currentExposure] / [[simulation basicParameters] maxLeverage]);
         }
         nav = [self cashPosition] + unrealisedPnl;
         marginAvailable = nav - marginUsed;
@@ -1806,11 +1733,7 @@
             nav = [self cashPosition];
             NSString *userMessage = [NSString stringWithFormat:@"%@ Trade from %d to %d %@ -- NAV: %5.2f %@ \n",[EpochTime stringDateWithTime:simulationDateTime + [simulation tradingLag]], keepCurrentExposure,requiredPositionSize, [simulation baseCode], nav,[simulation accCode]];
             [[[simulation simulationRunOutput] mutableString] appendString:userMessage];
-            if([self doThreads]){
-                [self performSelectorOnMainThread:@selector(outputSimulationMessage:) withObject:userMessage waitUntilDone:NO];
-            }else{
-                [self outputSimulationMessage:userMessage];
-            }
+            [self outputSimulationMessage:userMessage];
         }else{
             unrealisedPnl = 0.0;
             if([simulation currentExposure] > 0)
@@ -1834,12 +1757,12 @@
         if(accountCurrencyIsQuoteCurrency){
             if([simulation currentExposure] > 0)
             {
-                marginUsed = fabsf([simulation currentExposure] * ask / [[simulation basicParameters] maxLeverage]);
+                marginUsed = fabs([simulation currentExposure] * ask / [[simulation basicParameters] maxLeverage]);
             }else{
-                marginUsed = fabsf([simulation currentExposure] * bid / [[simulation basicParameters] maxLeverage]);
+                marginUsed = fabs([simulation currentExposure] * bid / [[simulation basicParameters] maxLeverage]);
             }
         }else{
-            marginUsed = fabsf([simulation currentExposure]  / [[simulation basicParameters] maxLeverage]);
+            marginUsed = fabs([simulation currentExposure]  / [[simulation basicParameters] maxLeverage]);
         }
         
         if((marginUsed/2) >= nav && ![simulation unfunded]){
@@ -1899,19 +1822,14 @@
                 zeroPositionRequired = YES;
                 userMessage = [NSString stringWithFormat:@"%@ Closing position; Price weakening \n",[EpochTime stringDateWithTime:currentDateTime]];
                 [[[simulation simulationRunOutput] mutableString] appendString:userMessage];
-                if([self doThreads]){
-                    [self performSelectorOnMainThread:@selector(outputSimulationMessage:) withObject:userMessage waitUntilDone:NO];
-                }
+                [self outputSimulationMessage:userMessage];
             }
             if([simulation currentExposure] < 0 && ask - entryPrice >  [posSys exitOnWeakeningPriceThreshold]){
                 requiredExposure = 0;
                 zeroPositionRequired = YES;
                 userMessage = [NSString stringWithFormat:@"%@ Closing position; Price weakening \n",[EpochTime stringDateWithTime:currentDateTime]];
                 [[[simulation simulationRunOutput] mutableString] appendString:userMessage];
-                if([self doThreads]){
-                    [self performSelectorOnMainThread:@selector(outputSimulationMessage:) withObject:userMessage waitUntilDone:NO];
-                }
-
+                [self outputSimulationMessage:userMessage];
             }
         }
     }
@@ -1943,9 +1861,7 @@
             zeroPositionRequired = YES;
             userMessage = [NSString stringWithFormat:@"%@ Preventing position opening; Price weakening \n",[EpochTime stringDateWithTime:currentDateTime]];
             [[[simulation simulationRunOutput] mutableString] appendString:userMessage];
-            if([self doThreads]){
-                [self performSelectorOnMainThread:@selector(outputSimulationMessage:) withObject:userMessage waitUntilDone:NO];
-            }
+            [self outputSimulationMessage:userMessage];
         }
      }
     
@@ -1977,9 +1893,8 @@
             zeroPositionRequired = YES;
             userMessage = [NSString stringWithFormat:@"%@ Preventing position opening; Signal weakening \n",[EpochTime stringDateWithTime:currentDateTime]];
             [[[simulation simulationRunOutput] mutableString] appendString:userMessage];
-            if([self doThreads]){
-                [self performSelectorOnMainThread:@selector(outputSimulationMessage:) withObject:userMessage waitUntilDone:NO];
-            }
+            [self outputSimulationMessage:userMessage];
+            
         }
     }
      
@@ -2060,37 +1975,28 @@
                         requiredExposure = 0;
                         userMessage = [NSString stringWithFormat:@"%@ Preventing Short position opening because of Short Term Filter \n",[EpochTime stringDateWithTime:currentDateTime]];
                         [[[simulation simulationRunOutput] mutableString] appendString:userMessage];
-                        if([self doThreads]){
-                            [self performSelectorOnMainThread:@selector(outputSimulationMessage:) withObject:userMessage waitUntilDone:NO];
-                        }
+                        [self outputSimulationMessage:userMessage];
                     }
                 }else if([simulation currentExposure] < 0 && requiredExposure < 0){
                     if(filterValue > ([posSys shortOutFilterThreshold]*pipSize)){
                         requiredExposure = 0;
                         userMessage = [NSString stringWithFormat:@"%@ Closing Short position because of Short Term Filter \n",[EpochTime stringDateWithTime:currentDateTime]];
                         [[[simulation simulationRunOutput] mutableString] appendString:userMessage];
-                        if([self doThreads]){
-                            [self performSelectorOnMainThread:@selector(outputSimulationMessage:) withObject:userMessage waitUntilDone:NO];
-                        }
-
+                        [self outputSimulationMessage:userMessage];
                     }
                 }else if([simulation currentExposure] <= 0 && requiredExposure > 0){
                     if(filterValue < ([posSys longInFilterThreshold]*pipSize)){
                         requiredExposure = 0;
                         userMessage = [NSString stringWithFormat:@"%@ Preventing Long position opening because of Short Term Filter \n",[EpochTime stringDateWithTime:currentDateTime]];
                         [[[simulation simulationRunOutput] mutableString] appendString:userMessage];
-                        if([self doThreads]){
-                            [self performSelectorOnMainThread:@selector(outputSimulationMessage:) withObject:userMessage waitUntilDone:NO];
-                        }
+                        [self outputSimulationMessage:userMessage];
                     }
                 }else if([simulation currentExposure] > 0 && requiredExposure > 0){
                     if(filterValue < ([posSys longOutFilterThreshold]*pipSize)){
                         requiredExposure = 0;
                         userMessage = [NSString stringWithFormat:@"%@ Closing Long position because of Short Term Filter \n",[EpochTime stringDateWithTime:currentDateTime]];
                         [[[simulation simulationRunOutput] mutableString] appendString:userMessage];
-                        if([self doThreads]){
-                            [self performSelectorOnMainThread:@selector(outputSimulationMessage:) withObject:userMessage waitUntilDone:NO];
-                        }
+                        [self outputSimulationMessage:userMessage];
                     }
                 }
             }
@@ -2172,38 +2078,28 @@
     NSString *userMessage;
     userMessage = @"----Details---- \n";
     [[[simulation simulationRunOutput] mutableString] appendString:userMessage];
-    if([self doThreads]){
-        [self performSelectorOnMainThread:@selector(outputSimulationMessage:) withObject:userMessage waitUntilDone:NO];
-    }
+    [self outputSimulationMessage:userMessage];
     
     NSUInteger numberOfTrades = [simulation numberOfTrades];
     userMessage = [NSString stringWithFormat:@"There were %ld transactions \n",numberOfTrades];
     [[[simulation simulationRunOutput] mutableString] appendString:userMessage];
-    if([self doThreads]){
-        [self performSelectorOnMainThread:@selector(outputSimulationMessage:) withObject:userMessage waitUntilDone:NO];
-    }     
+    [self outputSimulationMessage:userMessage];
     
     for(int iTrade = 0; iTrade < numberOfTrades; iTrade++){
         userMessage = [simulation getTradeDetailToPrint:iTrade];
         [[[simulation simulationRunOutput] mutableString] appendString:userMessage];
-        if([self doThreads]){
-            [self performSelectorOnMainThread:@selector(outputSimulationMessage:) withObject:userMessage waitUntilDone:NO];
-        }
+        [self outputSimulationMessage:userMessage];
     }
     int numberOfBalanceAdjustments = [simulation numberOfBalanceAdjustments];
     userMessage = [NSString stringWithFormat:@"There were %d balance Adjustments \n",numberOfBalanceAdjustments];
     [[[simulation simulationRunOutput] mutableString] appendString:userMessage];
-    if([self doThreads]){
-        [self performSelectorOnMainThread:@selector(outputSimulationMessage:) withObject:userMessage waitUntilDone:NO];
-    }  
+    [self outputSimulationMessage:userMessage];
     
     for(int iBalAdj = 0; iBalAdj < numberOfBalanceAdjustments; iBalAdj++)
     {
         userMessage = [simulation getBalanceDetailToPrint:iBalAdj];
         [[[simulation simulationRunOutput] mutableString] appendString:userMessage];
-        if([self doThreads]){
-            [self performSelectorOnMainThread:@selector(outputSimulationMessage:) withObject:userMessage waitUntilDone:NO];
-        }
+        [self outputSimulationMessage:userMessage];
     }
     NSDictionary *performanceAttribution;
     NSArray *perfAttribKeys;
@@ -2215,10 +2111,7 @@
         amount = [[performanceAttribution objectForKey:@"LASTBALANCE"] doubleValue];
         perfAttribMessage = [NSString stringWithFormat:@"Final balance is: %5.2f     \n",amount];
         [[[simulation simulationRunOutput] mutableString] appendString:perfAttribMessage];
-        if([self doThreads]){
-            [self performSelectorOnMainThread:@selector(outputSimulationMessage:) withObject:perfAttribMessage waitUntilDone:NO];
-        }
-
+        [self outputSimulationMessage:perfAttribMessage];
     }
     
     perfAttribKeys = [performanceAttribution allKeys];
@@ -2228,9 +2121,7 @@
             reason = [perfAttribKeys objectAtIndex:i];
             perfAttribMessage = [NSString stringWithFormat:@"Final balance component: %5.2f     due to: %@ \n",amount,reason];
             [[[simulation simulationRunOutput] mutableString] appendString:perfAttribMessage];
-            if([self doThreads]){
-                [self performSelectorOnMainThread:@selector(outputSimulationMessage:) withObject:perfAttribMessage waitUntilDone:NO];
-            }
+            [self outputSimulationMessage:perfAttribMessage];
         }
     }
 }
@@ -2632,7 +2523,9 @@
 {
     if([[self delegate] respondsToSelector:@selector(updateStatus:)])
     {
-        [[self delegate] updateStatus:statusMessage];
+        [[self delegate]  performSelectorOnMainThread:@selector(updateStatus:)
+                                           withObject:statusMessage
+                                        waitUntilDone:YES];
     }else{
         NSLog(@"Delegate doesn't respond to \'updateStatus:\'");
     }
@@ -2643,7 +2536,9 @@
 {
     if([[self delegate] respondsToSelector:@selector(clearSimulationMessage)])
     {
-        [[self delegate] clearSimulationMessage]; 
+        [[self delegate] performSelectorOnMainThread:@selector(clearSimulationMessage)
+                                          withObject:nil
+                                       waitUntilDone:YES];
     }else{
         NSLog(@"Delegate doesn't respond to \'clearSimulationMessage\'");
     }
@@ -2656,8 +2551,10 @@
     
     if([[self delegate] respondsToSelector:@selector(outputSimulationMessage:)])
     {
-        [[self delegate] outputSimulationMessage:message]; 
-    }else{
+        [[self delegate] performSelectorOnMainThread:@selector(outputSimulationMessage:)
+                               withObject:message
+                            waitUntilDone:YES];
+   }else{
         NSLog(@"Delegate doesn't respond to \'outputSimulationMessage:\'");
     }
         
@@ -2668,7 +2565,9 @@
 {
     if([[self delegate] respondsToSelector:@selector(gettingDataIndicatorSwitchOn)])
     {
-        [[self delegate] gettingDataIndicatorSwitchOn]; 
+        [[self delegate] performSelectorOnMainThread:@selector( gettingDataIndicatorSwitchOn)
+                                          withObject:nil
+                                       waitUntilDone:YES];
     }else{
         NSLog(@"Delegate doesn't respond to \'gettingDataIndicatorSwitchOn\'");
     }
@@ -2678,7 +2577,9 @@
 {
     if([[self delegate] respondsToSelector:@selector(gettingDataIndicatorSwitchOff)])
     {
-        [[self delegate] gettingDataIndicatorSwitchOff]; 
+        [[self delegate] performSelectorOnMainThread:@selector(gettingDataIndicatorSwitchOff)
+                                          withObject:nil
+                                       waitUntilDone:YES];
     }else{
         NSLog(@"Delegate doesn't respond to \'gettingDataIndicatorSwitchOff\'");
     }
@@ -2689,7 +2590,9 @@
 {
     if([[self delegate] respondsToSelector:@selector(readingRecordSetProgress:)])
     {
-        [[self delegate] readingRecordSetProgress:progressFraction]; 
+        [[self delegate] performSelectorOnMainThread:@selector(readingRecordSetProgress:)
+                                          withObject:progressFraction
+                                       waitUntilDone:YES];
     }else{
         NSLog(@"Delegate doesn't respond to \'readingRecordSetProgress\'");
     }
@@ -2699,7 +2602,9 @@
 {
     if([[self delegate] respondsToSelector:@selector(readingRecordSetMessage:)])
     {
-        [[self delegate] readingRecordSetMessage:progressMessage];
+        [[self delegate] performSelectorOnMainThread:@selector(readingRecordSetMessage:)
+                                          withObject:progressMessage
+                                       waitUntilDone:YES];
     }else{
         NSLog(@"Delegate doesn't respond to \'readingRecordSetMessage\'");
     }
@@ -2710,7 +2615,9 @@
 {
     if([[self delegate] respondsToSelector:@selector(registerSimulation:)])
     {
-        [[self delegate] registerSimulation:sim]; 
+        [[self delegate] performSelectorOnMainThread:@selector(registerSimulation:)
+                                          withObject:sim
+                                       waitUntilDone:YES];
     }else{
         NSLog(@"Delegate not responding to \'registerSimulation:\'"); 
     }
@@ -2719,7 +2626,9 @@
 - (void) progressBarOn{
     if([[self delegate] respondsToSelector:@selector(progressBarOn)])
     {
-        [[self delegate] progressBarOn]; 
+        [[self delegate] performSelectorOnMainThread:@selector(progressBarOn)
+                                          withObject:nil
+                                       waitUntilDone:YES];
     }else{
         NSLog(@"Delegate not responding to \'progressBarOn\'"); 
     }
@@ -2728,9 +2637,11 @@
 - (void) progressBarOff{
     if([[self delegate] respondsToSelector:@selector(progressBarOff)])
     {
-        [[self delegate] progressBarOff]; 
+        [[self delegate] performSelectorOnMainThread:@selector(progressBarOff)
+                                          withObject:nil
+                                       waitUntilDone:YES];
     }else{
-        NSLog(@"Delegate not responding to \'progressBarOff\'"); 
+        NSLog(@"Delegate not responding to \'progressBarOff\'");
     }    
 }
 
@@ -2738,7 +2649,10 @@
 {
     if([[self delegate] respondsToSelector:@selector(progressAsFraction:)])
     {
-        [[self delegate] progressAsFraction:progressValue]; 
+        [[self delegate] performSelectorOnMainThread:@selector(progressAsFraction:)
+                                          withObject:progressValue
+                                       waitUntilDone:YES];
+
     }else{
         NSLog(@"Delegate not responding to \'progressAsFraction\'"); 
     }    
@@ -2747,7 +2661,10 @@
 - (void) simulationEnded{
     if([[self delegate] respondsToSelector:@selector(simulationEnded)])
     {
-        [[self delegate] simulationEnded]; 
+        [[self delegate] performSelectorOnMainThread:@selector(simulationEnded)
+                                          withObject:nil
+                                       waitUntilDone:YES];
+
     }else{
         NSLog(@"Delegate not responding to \'simulationEnded\'"); 
     }
@@ -2758,8 +2675,7 @@
 #pragma mark Variables 
 
 @synthesize cancelProcedure = _cancelProcedure;
-//@synthesize workingSimulation = _workingSimulation;
-@synthesize doThreads = _doThreads;
+//@synthesize doThreads = _doThreads;
 @synthesize dataController = _dataController;
 @synthesize cashPosition = _cashPosition;
 @synthesize interestRates = _interestRates;
