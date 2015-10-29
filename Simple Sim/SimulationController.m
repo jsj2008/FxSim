@@ -3,7 +3,7 @@
 //  Simple Sim
 //
 //  Created by Martin O'Connor on 09/02/2012.
-//  Copyright (c) 2012 OCONNOR RESEARCH. All rights reserved.
+//  Copyright (c) 2015 MARTIN OCONNOR. All rights reserved.
 //
 
 #import "SimulationController.h"

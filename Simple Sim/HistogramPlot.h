@@ -3,7 +3,7 @@
 //  Simple Sim
 //
 //  Created by Martin on 11/07/2013.
-//  Copyright (c) 2013 OCONNOR RESEARCH. All rights reserved.
+//  Copyright (c) 2015 MARTIN OCONNOR. All rights reserved.
 //
 
 #import <Foundation/Foundation.h>

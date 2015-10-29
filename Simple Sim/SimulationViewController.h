@@ -3,7 +3,7 @@
 //  Simple Sim
 //
 //  Created by Martin O'Connor on 19/03/2012.
-//  Copyright (c) 2012 OCONNOR RESEARCH. All rights reserved.
+//  Copyright (c) 2015 MARTIN OCONNOR. All rights reserved.
 //
 
 #import <Cocoa/Cocoa.h>
@@ -191,7 +191,6 @@
 @property (weak) IBOutlet NSButton *exportSimulationButton;
 @property (weak) IBOutlet NSTextField *returnsHistogramNBins;
 @property (weak) IBOutlet NSStepper *returnsHistogramBinsStepper;
-@property (weak) IBOutlet NSButtonCell *returnsHistogramZeroCheck;
 @property (weak) IBOutlet NSTextField *returnsHistogramCompareSimName;
 @property (weak) IBOutlet NSButton *returnsHistogramCompareToggleButton;
 
