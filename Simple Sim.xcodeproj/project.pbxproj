@@ -14,6 +14,8 @@
 		5B1F09CA178F0D3D00BC4C7F /* HistogramPlot.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B1F09C9178F0D3D00BC4C7F /* HistogramPlot.m */; };
 		5B22D0C01729C7AF00A55E32 /* SeriesPlotDataWrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B22D0BF1729C7AE00A55E32 /* SeriesPlotDataWrapper.m */; };
 		5B2EDCC014CD979600EC26B8 /* OCR2.icns in Resources */ = {isa = PBXBuildFile; fileRef = 5B2EDCBF14CD979600EC26B8 /* OCR2.icns */; };
+		5B363F3E1BE3577D004BFBCC /* Licence.md in Sources */ = {isa = PBXBuildFile; fileRef = 5B363F3D1BE3577D004BFBCC /* Licence.md */; };
+		5B363F421BE35B0F004BFBCC /* README.md in Sources */ = {isa = PBXBuildFile; fileRef = 5B363F411BE35B0F004BFBCC /* README.md */; };
 		5B3830AE1BE138F1006C9A24 /* CorePlot.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5B0DC75D1BE1363200A10A63 /* CorePlot.framework */; };
 		5B7B774A15DDFC9C003911FB /* PositioningSystem.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B7B774915DDFC9C003911FB /* PositioningSystem.m */; };
 		5B85EFD615EC557C004B5381 /* SignalSystem.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B85EFD515EC557C004B5381 /* SignalSystem.m */; };
@@ -101,6 +103,8 @@
 		5B22D0BE1729C7AE00A55E32 /* SeriesPlotDataWrapper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SeriesPlotDataWrapper.h; sourceTree = "<group>"; };
 		5B22D0BF1729C7AE00A55E32 /* SeriesPlotDataWrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SeriesPlotDataWrapper.m; sourceTree = "<group>"; };
 		5B2EDCBF14CD979600EC26B8 /* OCR2.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = OCR2.icns; path = ../OCR2.icns; sourceTree = "<group>"; };
+		5B363F3D1BE3577D004BFBCC /* Licence.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = Licence.md; sourceTree = "<group>"; };
+		5B363F411BE35B0F004BFBCC /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		5B7B774815DDFC9C003911FB /* PositioningSystem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PositioningSystem.h; sourceTree = "<group>"; };
 		5B7B774915DDFC9C003911FB /* PositioningSystem.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PositioningSystem.m; sourceTree = "<group>"; };
 		5B85EFD415EC557C004B5381 /* SignalSystem.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SignalSystem.h; sourceTree = "<group>"; };
@@ -245,6 +249,8 @@
 		5B8C03CD149ECEC60071189F = {
 			isa = PBXGroup;
 			children = (
+				5B363F411BE35B0F004BFBCC /* README.md */,
+				5B363F3D1BE3577D004BFBCC /* Licence.md */,
 				5B0DC7561BE1363100A10A63 /* CorePlot.xcodeproj */,
 				5B8C03E2149ECEC70071189F /* Simple Sim */,
 				5B8C03DB149ECEC60071189F /* Frameworks */,
@@ -477,6 +483,8 @@
 				5BB70FF81843EFF900B6B729 /* FMResultSet.m in Sources */,
 				5BC52995158D9B0700FDFAF0 /* TransactionRecord.m in Sources */,
 				5BB70FF51843EFED00B6B729 /* FMDatabaseAdditions.m in Sources */,
+				5B363F421BE35B0F004BFBCC /* README.md in Sources */,
+				5B363F3E1BE3577D004BFBCC /* Licence.md in Sources */,
 				5BC52998158D9ECB00FDFAF0 /* PositionRecord.m in Sources */,
 				5BE5093D158EB5BA00AB4026 /* SignalRecord.m in Sources */,
 				5B7B774A15DDFC9C003911FB /* PositioningSystem.m in Sources */,
