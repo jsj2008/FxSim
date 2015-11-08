@@ -12,6 +12,6 @@ The database holds bid and ask prices for currency pairs and the corresponding i
 
 Trading rules are added in Objective-C, but the code is meant to be modular to enable the easy addition of new types of trading signals and positioning rules.
 
-*********************************************************************
-PLEASE LOOK AT FILE Overview.pdf FOR A BETTER PICTURE OF THIS PROJECT
-*********************************************************************
+************************************************************************************
+PLEASE LOOK AT FILE Overview.pdf IN Docs FOLDER FOR A BETTER PICTURE OF THIS PROJECT
+************************************************************************************
