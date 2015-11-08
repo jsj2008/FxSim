@@ -18,7 +18,7 @@
 
 - (id)   initWithIdentifier:(NSString*) identifierString;
 - (void) initialGraphAndAddAnnotation: (BOOL) doAnnotation;
--(void)positionIndicatorOff: (SeriesPlotDataWrapper *) dataSource;
+-(void) positionIndicatorOff: (SeriesPlotDataWrapper *) dataSource;
 - (void) updatePositionIndicator: (SeriesPlotDataWrapper *) dataSource;
 - (void) leftSideExpand;
 - (void) leftSideContract;

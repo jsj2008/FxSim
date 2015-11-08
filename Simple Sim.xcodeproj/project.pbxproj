@@ -14,8 +14,8 @@
 		5B1F09CA178F0D3D00BC4C7F /* HistogramPlot.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B1F09C9178F0D3D00BC4C7F /* HistogramPlot.m */; };
 		5B22D0C01729C7AF00A55E32 /* SeriesPlotDataWrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B22D0BF1729C7AE00A55E32 /* SeriesPlotDataWrapper.m */; };
 		5B2EDCC014CD979600EC26B8 /* OCR2.icns in Resources */ = {isa = PBXBuildFile; fileRef = 5B2EDCBF14CD979600EC26B8 /* OCR2.icns */; };
-		5B363F3E1BE3577D004BFBCC /* Licence.md in Sources */ = {isa = PBXBuildFile; fileRef = 5B363F3D1BE3577D004BFBCC /* Licence.md */; };
-		5B363F421BE35B0F004BFBCC /* README.md in Sources */ = {isa = PBXBuildFile; fileRef = 5B363F411BE35B0F004BFBCC /* README.md */; };
+		5B363F3E1BE3577D004BFBCC /* Licence.md in Resources */ = {isa = PBXBuildFile; fileRef = 5B363F3D1BE3577D004BFBCC /* Licence.md */; };
+		5B363F421BE35B0F004BFBCC /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 5B363F411BE35B0F004BFBCC /* README.md */; };
 		5B3830AE1BE138F1006C9A24 /* CorePlot.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5B0DC75D1BE1363200A10A63 /* CorePlot.framework */; };
 		5B7B774A15DDFC9C003911FB /* PositioningSystem.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B7B774915DDFC9C003911FB /* PositioningSystem.m */; };
 		5B85EFD615EC557C004B5381 /* SignalSystem.m in Sources */ = {isa = PBXBuildFile; fileRef = 5B85EFD515EC557C004B5381 /* SignalSystem.m */; };
@@ -43,6 +43,7 @@
 		5BC52992158D9A0F00FDFAF0 /* CashFlowRecord.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BC52991158D9A0F00FDFAF0 /* CashFlowRecord.m */; };
 		5BC52995158D9B0700FDFAF0 /* TransactionRecord.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BC52994158D9B0700FDFAF0 /* TransactionRecord.m */; };
 		5BC52998158D9ECB00FDFAF0 /* PositionRecord.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BC52997158D9ECB00FDFAF0 /* PositionRecord.m */; };
+		5BD88DD11BEF79BE00A2BD7A /* Overview.pdf in Resources */ = {isa = PBXBuildFile; fileRef = 5BD88DD01BEF79BE00A2BD7A /* Overview.pdf */; };
 		5BDA503C14D225EA009842D5 /* DataView.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BDA503B14D225E9009842D5 /* DataView.m */; };
 		5BE265BF1519EE6D003CAA60 /* TitlePaneViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 5BE265BD1519EE6D003CAA60 /* TitlePaneViewController.m */; };
 		5BE265C01519EE6D003CAA60 /* TitlePane.xib in Resources */ = {isa = PBXBuildFile; fileRef = 5BE265BE1519EE6D003CAA60 /* TitlePane.xib */; };
@@ -155,6 +156,7 @@
 		5BC52996158D9ECB00FDFAF0 /* PositionRecord.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PositionRecord.h; sourceTree = "<group>"; };
 		5BC52997158D9ECB00FDFAF0 /* PositionRecord.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PositionRecord.m; sourceTree = "<group>"; };
 		5BCA3B6B14F4949A000141A4 /* SimulationOutput.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SimulationOutput.h; sourceTree = "<group>"; };
+		5BD88DD01BEF79BE00A2BD7A /* Overview.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; name = Overview.pdf; path = Docs/Overview.pdf; sourceTree = "<group>"; };
 		5BDA503A14D225E9009842D5 /* DataView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DataView.h; sourceTree = "<group>"; };
 		5BDA503B14D225E9009842D5 /* DataView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DataView.m; sourceTree = "<group>"; };
 		5BE265BC1519EE6D003CAA60 /* TitlePaneViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TitlePaneViewController.h; sourceTree = "<group>"; };
@@ -249,6 +251,7 @@
 		5B8C03CD149ECEC60071189F = {
 			isa = PBXGroup;
 			children = (
+				5BD88DD01BEF79BE00A2BD7A /* Overview.pdf */,
 				5B363F411BE35B0F004BFBCC /* README.md */,
 				5B363F3D1BE3577D004BFBCC /* Licence.md */,
 				5B0DC7561BE1363100A10A63 /* CorePlot.xcodeproj */,
@@ -444,11 +447,14 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5B363F421BE35B0F004BFBCC /* README.md in Resources */,
+				5B363F3E1BE3577D004BFBCC /* Licence.md in Resources */,
 				5B8C03E7149ECEC70071189F /* InfoPlist.strings in Resources */,
 				5B8C03ED149ECEC70071189F /* Credits.rtf in Resources */,
 				5B8C03F3149ECEC70071189F /* MainMenu.xib in Resources */,
 				5B2EDCC014CD979600EC26B8 /* OCR2.icns in Resources */,
 				5BEC77F21517694B0084D778 /* SimulationView.xib in Resources */,
+				5BD88DD11BEF79BE00A2BD7A /* Overview.pdf in Resources */,
 				5BE265C01519EE6D003CAA60 /* TitlePane.xib in Resources */,
 				5B9382D51521C092003F8FE5 /* redgreen14b.jpg in Resources */,
 			);
@@ -483,8 +489,6 @@
 				5BB70FF81843EFF900B6B729 /* FMResultSet.m in Sources */,
 				5BC52995158D9B0700FDFAF0 /* TransactionRecord.m in Sources */,
 				5BB70FF51843EFED00B6B729 /* FMDatabaseAdditions.m in Sources */,
-				5B363F421BE35B0F004BFBCC /* README.md in Sources */,
-				5B363F3E1BE3577D004BFBCC /* Licence.md in Sources */,
 				5BC52998158D9ECB00FDFAF0 /* PositionRecord.m in Sources */,
 				5BE5093D158EB5BA00AB4026 /* SignalRecord.m in Sources */,
 				5B7B774A15DDFC9C003911FB /* PositioningSystem.m in Sources */,
@@ -612,7 +616,6 @@
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)",
-					/Users/Martin/GoogleDrive/Shared/Library/projects/objC/CorePlot_1.5.1/Binaries/MacOS,
 				);
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "Simple Sim/Simple Sim-Prefix.pch";
@@ -633,7 +636,6 @@
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)",
-					/Users/Martin/GoogleDrive/Shared/Library/projects/objC/CorePlot_1.5.1/Binaries/MacOS,
 				);
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "Simple Sim/Simple Sim-Prefix.pch";

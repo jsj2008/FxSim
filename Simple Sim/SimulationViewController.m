@@ -1417,6 +1417,7 @@
         }else{
             if([[senderIdentifer substringToIndex:7] isEqualToString:@"BIGPLOT"]){
                 [[self simulationResultsPlot] leftSideExpand];
+              
             }
             if([[senderIdentifer substringToIndex:7] isEqualToString:@"SIGPLOT"]){
                 [[self signalAnalysisPlot] leftSideExpand];
